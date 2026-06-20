@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mon Livret – JTCF</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a202c; }
+  :root {
+    --or: #C9A227; --or-clair: #f0d98a; --or-pale: #fdf6e3;
+    --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --bleu-clair: #eaf0f4;
+    --blanc: #ffffff; --gris: #718096; --gris-clair: #f0f2f5;
+    --vert: #38a169; --vert-clair: #f0fff4;
+    --rouge: #e53e3e; --rouge-clair: #fff5f5;
+    --violet: #6b46c1; --violet-clair: #faf5ff;
+  }
+  .header { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: var(--blanc); padding: 20px 20px 14px; text-align: center; }
+  .header .stars { font-size: 13px; color: var(--or); letter-spacing: 4px; margin-bottom: 4px; }
+  .header .logo { font-size: 18px; font-weight: 800; color: var(--or); text-transform: uppercase; letter-spacing: 2px; }
+  .header .logo-sub { font-size: 10px; opacity: 0.75; letter-spacing: 1px; text-transform: uppercase; }
+  .header .welcome { margin-top: 14px; background: rgba(201,162,39,0.15); border: 1px solid rgba(201,162,39,0.3); border-radius: 12px; padding: 11px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+  .welcome-left .name { font-size: 15px; font-weight: 700; }
+  .welcome-left .formation { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+  .welcome-left .badge { display: inline-block; margin-top: 6px; background: var(--or); color: var(--bleu-fonce); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .btn-logout { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 11px; padding: 6px 10px; border-radius: 8px; cursor: pointer; flex-shrink: 0; touch-action: manipulation; -webkit-appearance: none; }
+  .nav { display: flex; overflow-x: auto; background: var(--bleu-fonce); padding: 0 4px; -webkit-overflow-scrolling: touch; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex-shrink: 0; padding: 14px 12px; border: none; background: none; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; -webkit-appearance: none; touch-action: manipulation; -webkit-user-select: none; user-select: none; display: block; }
+  .nav-btn.active { color: var(--or); border-bottom-color: var(--or); font-weight: 700; }
+  .content { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .card { background: var(--blanc); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(61,90,110,0.1); }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--bleu); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 2px solid var(--or); }
+  .info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--gris); font-size: 12px; }
+  .info-value { font-weight: 600; text-align: right; max-width: 60%; color: var(--bleu-fonce); }
+  .alert { background: var(--or-pale); border-left: 4px solid var(--or); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--bleu-fonce); margin-bottom: 14px; font-weight: 500; }
+  .slogan-card { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border-radius: 14px; padding: 16px; margin-bottom: 14px; text-align: center; color: var(--blanc); }
+  .slogan-card .slogan { font-size: 14px; font-weight: 800; color: var(--or); }
+  .slogan-card .sub { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+
+  /* MODE TOGGLE */
+  .mode-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .mode-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 12px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; transition: all 0.2s; }
+  .mode-btn.active-presentiel { border-color: var(--vert); background: var(--vert-clair); color: var(--vert); }
+  .mode-btn.active-distanciel { border-color: var(--violet); background: var(--violet-clair); color: var(--violet); }
+
+  /* PRÉSENCE */
+  .presence-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .presence-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 12px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; }
+  .presence-btn.active-present { border-color: var(--vert); background: var(--vert-clair); color: var(--vert); }
+  .presence-btn.active-absent { border-color: var(--rouge); background: var(--rouge-clair); color: var(--rouge); }
+
+  /* MOTIF ABSENCE */
+  .motif-zone { background: var(--rouge-clair); border: 1px solid #fed7d7; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .motif-label { font-size: 11px; font-weight: 700; color: var(--rouge); margin-bottom: 8px; text-transform: uppercase; }
+  .motif-select { width: 100%; padding: 10px; border: 1px solid #fed7d7; border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--bleu-fonce); background: white; -webkit-appearance: none; outline: none; margin-bottom: 10px; }
+  .btn-motif-valider { width: 100%; padding: 10px; background: var(--rouge); color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; margin-bottom: 10px; }
+
+  /* UPLOAD JUSTIFICATIF */
+  .justif-zone { background: #f0fff4; border: 2px dashed #68d391; border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; }
+  .justif-titre { font-size: 11px; font-weight: 700; color: var(--vert); margin-bottom: 8px; text-transform: uppercase; }
+  .justif-preview { width: 100%; max-height: 150px; object-fit: contain; border-radius: 8px; margin-bottom: 8px; display: none; }
+  .justif-label-upload { display: block; padding: 10px; background: var(--vert); color: white; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+  .justif-input { display: none; }
+  .justif-status { font-size: 11px; color: var(--vert); font-weight: 600; }
+  .justif-deja { background: var(--vert-clair); border: 1px solid #c6f6d5; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--vert); font-weight: 600; display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+
+  /* ÉMARGEMENT */
+  .emarg-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .btn-nav { padding: 8px 14px; border: 2px solid var(--or); border-radius: 8px; background: none; color: var(--or); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-nav:disabled { opacity: 0.3; }
+  .emarg-semaine { font-size: 13px; font-weight: 700; color: var(--bleu-fonce); }
+  .emarg-date { font-size: 13px; font-weight: 700; color: var(--bleu-fonce); margin-bottom: 12px; text-align: center; }
+  .emarg-bloc { border: 2px solid var(--gris-clair); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .emarg-bloc.signe { border-color: var(--vert); background: var(--vert-clair); }
+  .emarg-bloc.absent-bloc { border-color: var(--rouge); background: var(--rouge-clair); }
+  .emarg-titre { font-size: 12px; font-weight: 700; color: var(--bleu); margin-bottom: 10px; text-transform: uppercase; }
+  .emarg-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .emarg-label { font-size: 12px; color: var(--gris); }
+  .emarg-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .status-signe { background: #c6f6d5; color: #276749; }
+  .status-attente { background: #fed7d7; color: #c53030; }
+  .status-absent { background: #fed7d7; color: #c53030; }
+  .status-distanciel { background: #e9d8fd; color: #6b46c1; }
+  .sign-zone { border: 2px dashed var(--or-clair); border-radius: 10px; background: var(--or-pale); padding: 8px; margin-top: 8px; text-align: center; }
+  .sign-canvas { width: 100%; height: 80px; border-radius: 6px; background: white; display: block; cursor: crosshair; touch-action: none; }
+  .sign-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
+  .btn-sign { padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-valider { background: var(--vert); color: white; }
+  .btn-effacer { background: #e2e8f0; color: var(--bleu-fonce); }
+  .sign-label { font-size: 11px; color: var(--gris); margin-bottom: 6px; }
+
+  .contact-card { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gris-clair); }
+  .contact-card:last-child { border-bottom: none; }
+  .contact-avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .contact-name { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); }
+  .contact-role { font-size: 11px; color: var(--gris); }
+  .contact-tel { font-size: 12px; color: var(--or); margin-top: 2px; font-weight: 600; }
+  .contact-btns { display: flex; gap: 6px; margin-top: 6px; }
+  .btn-contact { padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .btn-tel { background: var(--bleu-clair); color: var(--bleu); }
+  .btn-wa { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+  .rule-item { padding: 10px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; line-height: 1.6; display: flex; gap: 10px; color: #2d3748; }
+  .rule-item:last-child { border-bottom: none; }
+  .rule-num { font-weight: 800; color: var(--or); flex-shrink: 0; width: 20px; }
+  .spacer { height: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="stars">★ ★ ★</div>
+  <div class="logo">JT Conseil Formation</div>
+  <div class="logo-sub">Saint-Joseph</div>
+  <div class="welcome">
+    <div class="welcome-left">
+      <div class="name" id="headerNom">👋 Bonjour</div>
+      <div class="formation" id="headerFormation"></div>
+      <div class="badge">🔄 Contrat de professionnalisation</div>
+    </div>
+    <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+  </div>
+</div>
+
+<div class="nav">
+  <a class="nav-btn active" data-target="accueil">🏠 Accueil</a>
+  <a class="nav-btn" data-target="emargement">✍️ Émargement</a>
+  <a class="nav-btn" data-target="contacts">📞 Contacts</a>
+  <a class="nav-btn" data-target="reglement">📋 Règlement</a>
+</div>
+
+<div class="content">
+
+  <!-- ACCUEIL -->
+  <div class="section active" id="accueil">
+    <div class="slogan-card">
+      <div class="slogan">NOTRE OBJECTIF = VOTRE RÉUSSITE</div>
+      <div class="sub">JT Conseil Formation Saint-Joseph</div>
+    </div>
+    <div class="alert" id="alertProchaine">📢 Chargement...</div>
+    <div class="card">
+      <div class="card-title">📋 Mon contrat</div>
+      <div class="info-row"><span class="info-label">Nom</span><span class="info-value" id="infoNom">—</span></div>
+      <div class="info-row"><span class="info-label">Formation</span><span class="info-value" id="infoFormation">—</span></div>
+      <div class="info-row"><span class="info-label">Type</span><span class="info-value">Contrat de professionnalisation</span></div>
+      <div class="info-row"><span class="info-label">Début</span><span class="info-value" id="infoDebut">—</span></div>
+      <div class="info-row"><span class="info-label">Fin</span><span class="info-value" id="infoFin">—</span></div>
+      <div class="info-row"><span class="info-label">Jour en centre</span><span class="info-value" id="infoJour">—</span></div>
+      <div class="info-row"><span class="info-label">Horaires</span><span class="info-value" id="infoHeures">—</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏢 Mon entreprise</div>
+      <div class="info-row"><span class="info-label">Entreprise</span><span class="info-value" id="infoEntreprise">—</span></div>
+      <div class="info-row"><span class="info-label">Maître d'apprentissage</span><span class="info-value" id="infoMaitre">—</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📍 Infos pratiques</div>
+      <div class="info-row"><span class="info-label">Adresse</span><span class="info-value">20a rue du Général Lambert, St Joseph</span></div>
+      <div class="info-row"><span class="info-label">Bus</span><span class="info-value">Arrêt directement devant</span></div>
+      <div class="info-row"><span class="info-label">Parking</span><span class="info-value">Places privées disponibles</span></div>
+    </div>
+  </div>
+
+  <!-- ÉMARGEMENT -->
+  <div class="section" id="emargement">
+    <div class="card">
+      <div class="card-title">✍️ Feuille d'émargement</div>
+
+      <div class="emarg-nav">
+        <button class="btn-nav" id="btnPrev">◀ Préc.</button>
+        <div class="emarg-semaine" id="semaineTitre">Séance —</div>
+        <button class="btn-nav" id="btnNext">Suiv. ▶</button>
+      </div>
+      <div class="emarg-date" id="emargDate">—</div>
+
+      <!-- MODE -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Mode de la séance</div>
+        <div class="mode-toggle">
+          <button class="mode-btn" id="btnPresentiel" data-mode="presentiel">🏫 Présentiel</button>
+          <button class="mode-btn" id="btnDistanciel" data-mode="distanciel">💻 Distanciel</button>
+        </div>
+      </div>
+
+      <!-- PRÉSENCE -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Ma présence</div>
+        <div class="presence-toggle">
+          <button class="presence-btn" id="btnPresent" data-presence="present">✅ Présent(e)</button>
+          <button class="presence-btn" id="btnAbsent" data-presence="absent">❌ Absent(e)</button>
+        </div>
+      </div>
+
+      <!-- MOTIF + JUSTIFICATIF -->
+      <div class="motif-zone" id="motifZone" style="display:none;">
+        <div class="motif-label">⚠️ Motif d'absence</div>
+        <select class="motif-select" id="motifSelect">
+          <option value="">-- Choisir un motif --</option>
+          <option value="Maladie">🤒 Maladie</option>
+          <option value="Convenance personnelle">👤 Convenance personnelle</option>
+          <option value="Cas de force majeure">⚡ Cas de force majeure</option>
+          <option value="Sans justificatif">📄 Sans justificatif</option>
+          <option value="Autre">📝 Autre</option>
+        </select>
+        <button class="btn-motif-valider" id="btnMotifValider">Enregistrer le motif</button>
+
+        <!-- UPLOAD JUSTIFICATIF -->
+        <div class="justif-zone" id="justifZone">
+          <div class="justif-titre">📎 Justificatif d'absence</div>
+          <div id="justifDeja" class="justif-deja" style="display:none;">✅ Justificatif déjà envoyé</div>
+          <img id="justifPreview" class="justif-preview" alt="Aperçu justificatif" />
+          <label class="justif-label-upload" for="justifInput">📷 Prendre une photo ou choisir un fichier</label>
+          <input type="file" id="justifInput" class="justif-input" accept="image/*,application/pdf" />
+          <div class="justif-status" id="justifStatus"></div>
+        </div>
+      </div>
+
+      <!-- MATIN -->
+      <div class="emarg-bloc" id="blocMatin">
+        <div class="emarg-titre">🌅 Matin · 8h00 – 12h00</div>
+        <div class="emarg-row"><span class="emarg-label">Mode</span><span class="emarg-status" id="modeMatinStatus">—</span></div>
+        <div class="emarg-row"><span class="emarg-label">Alternant</span><span class="emarg-status status-attente" id="statusMatinAlt">En attente</span></div>
+        <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="statusMatinForm">En attente</span></div>
+        <div class="sign-zone" id="zoneMatinAlt">
+          <div class="sign-label">Votre signature</div>
+          <canvas class="sign-canvas" id="canvasMatinAlt"></canvas>
+          <div class="sign-actions">
+            <button class="btn-sign btn-effacer" data-canvas="canvasMatinAlt">Effacer</button>
+            <button class="btn-sign btn-valider" data-slot="matin_alt">✅ Valider</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- APRÈS-MIDI -->
+      <div class="emarg-bloc" id="blocAM">
+        <div class="emarg-titre">🌇 Après-midi · 13h30 – 16h00</div>
+        <div class="emarg-row"><span class="emarg-label">Mode</span><span class="emarg-status" id="modeAMStatus">—</span></div>
+        <div class="emarg-row"><span class="emarg-label">Alternant</span><span class="emarg-status status-attente" id="statusAMAlt">En attente</span></div>
+        <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="statusAMForm">En attente</span></div>
+        <div id="verouAM" style="display:none;background:#fdf6e3;border:1px solid #f0d98a;border-radius:10px;padding:12px;margin-top:8px;text-align:center;font-size:12px;color:#744210;">
+          ⏰ La signature de l'après-midi sera disponible à partir de <strong>12h00</strong>
+        </div>
+        <div class="sign-zone" id="zoneAMAlt">
+          <div class="sign-label">Votre signature</div>
+          <canvas class="sign-canvas" id="canvasAMAlt"></canvas>
+          <div class="sign-actions">
+            <button class="btn-sign btn-effacer" data-canvas="canvasAMAlt">Effacer</button>
+            <button class="btn-sign btn-valider" data-slot="am_alt">✅ Valider</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACTS -->
+  <div class="section" id="contacts">
+    <div class="card">
+      <div class="card-title">👥 L'équipe JTCF</div>
+      <div class="contact-card"><div class="contact-avatar">TJ</div><div style="flex:1"><div class="contact-name">Tibère Julien</div><div class="contact-role">Gérant</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692242157">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692242157" target="_blank">💬 WhatsApp</a></div></div></div>
+      <div class="contact-card"><div class="contact-avatar">AB</div><div style="flex:1"><div class="contact-name">Alexandre Blard</div><div class="contact-role">CIP / Assistant de Direction</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692334788">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692334788" target="_blank">💬 WhatsApp</a></div></div></div>
+      <div class="contact-card"><div class="contact-avatar">MG</div><div style="flex:1"><div class="contact-name">Marine Grondin</div><div class="contact-role">CIP / Assistant Commercial</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692027421">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692027421" target="_blank">💬 WhatsApp</a></div></div></div>
+      <div class="contact-card"><div class="contact-avatar">EF</div><div style="flex:1"><div class="contact-name">Emilie Fontaine</div><div class="contact-role">Formatrice</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692813812">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692813812" target="_blank">💬 WhatsApp</a></div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🚨 Absences</div>
+      <div class="info-row"><span class="info-label">Signaler avant</span><span class="info-value">8h00</span></div>
+      <div class="info-row"><span class="info-label">Contacter</span><span class="info-value">Alexandre Blard</span></div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">contact@tbrgroup.fr</span></div>
+    </div>
+  </div>
+
+  <!-- RÈGLEMENT -->
+  <div class="section" id="reglement">
+    <div class="card">
+      <div class="card-title">📋 Règlement intérieur</div>
+      <div class="rule-item"><span class="rule-num">1.</span>La ponctualité est obligatoire. Tout retard doit être signalé avant 8h00.</div>
+      <div class="rule-item"><span class="rule-num">2.</span>Les absences doivent être justifiées dans les 48h avec un document officiel.</div>
+      <div class="rule-item"><span class="rule-num">3.</span>L'utilisation du téléphone est interdite pendant les séances de formation.</div>
+      <div class="rule-item"><span class="rule-num">4.</span>Le respect des locaux, du matériel et de l'équipe est exigé de tous.</div>
+      <div class="rule-item"><span class="rule-num">5.</span>Tout comportement irrespectueux pourra entraîner une exclusion.</div>
+      <div class="rule-item"><span class="rule-num">6.</span>La tenue vestimentaire doit être adaptée au contexte professionnel.</div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const userId = sessionStorage.getItem('jtcf_alt_user');
+if (!userId) { window.location.href = 'index.html'; }
+
+let user = null;
+let seances = [];
+let semIdx = 0;
+let modeActuel = null;
+let presenceActuelle = null;
+
+async function chargerUser() {
+  const snap = await get(ref(db, 'alternants/' + userId));
+  if (!snap.exists()) { window.location.href = 'index.html'; return; }
+  user = snap.val();
+  document.getElementById('headerNom').textContent = '👋 Bonjour, ' + user.nom;
+  document.getElementById('headerFormation').textContent = user.formation + ' · Alternance';
+  document.getElementById('infoNom').textContent = user.nom;
+  document.getElementById('infoFormation').textContent = user.formation;
+  document.getElementById('infoDebut').textContent = user.debut;
+  document.getElementById('infoFin').textContent = user.fin;
+  document.getElementById('infoJour').textContent = user.jourCentre;
+  document.getElementById('infoHeures').textContent = user.heures;
+  document.getElementById('infoEntreprise').textContent = user.entreprise;
+  document.getElementById('infoMaitre').textContent = user.maitre;
+
+  const jourMap = {'Lundi':1,'Mercredi':3};
+  const jourNum = jourMap[user.jourCentre] || 1;
+  const debut = new Date(2026,5,10); const fin = new Date(2028,5,10);
+  let d = new Date(debut);
+  while (d.getDay() !== jourNum) d.setDate(d.getDate()+1);
+  while (d <= fin) { seances.push(new Date(d)); d.setDate(d.getDate()+7); }
+
+  const today = new Date();
+  for (let i = 0; i < seances.length; i++) {
+    if (seances[i] >= today) { semIdx = i; break; }
+  }
+  document.getElementById('alertProchaine').innerHTML = '📢 Prochain ' + user.jourCentre + ' en centre : <strong>' + formatDate(seances[semIdx]) + '</strong>';
+}
+
+function formatDate(d) {
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return jours[d.getDay()] + ' ' + d.getDate() + ' ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function getKey(idx) {
+  const d = seances[idx];
+  return userId + '_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+}
+
+async function updateEmargement() {
+  const d = seances[semIdx];
+  document.getElementById('semaineTitre').textContent = 'Séance n°' + (semIdx+1);
+  document.getElementById('emargDate').textContent = formatDate(d);
+  document.getElementById('btnPrev').disabled = semIdx === 0;
+  document.getElementById('btnNext').disabled = semIdx === seances.length-1;
+
+  const key = getKey(semIdx);
+  const snap = await get(ref(db, 'emargements/'+key));
+  const data = snap.exists() ? snap.val() : {};
+
+  modeActuel = data.mode || null;
+  presenceActuelle = data.presence || null;
+
+  document.getElementById('btnPresentiel').className = 'mode-btn' + (modeActuel==='presentiel'?' active-presentiel':'');
+  document.getElementById('btnDistanciel').className = 'mode-btn' + (modeActuel==='distanciel'?' active-distanciel':'');
+  document.getElementById('btnPresent').className = 'presence-btn' + (presenceActuelle==='present'?' active-present':'');
+  document.getElementById('btnAbsent').className = 'presence-btn' + (presenceActuelle==='absent'?' active-absent':'');
+  document.getElementById('motifZone').style.display = presenceActuelle==='absent' ? 'block' : 'none';
+  if (data.motif) document.getElementById('motifSelect').value = data.motif;
+
+  // Justificatif
+  const justifDeja = document.getElementById('justifDeja');
+  const justifPreview = document.getElementById('justifPreview');
+  if (data.justificatif) {
+    justifDeja.style.display = 'flex';
+    justifPreview.src = data.justificatif;
+    justifPreview.style.display = 'block';
+    document.getElementById('justifStatus').textContent = '';
+  } else {
+    justifDeja.style.display = 'none';
+    justifPreview.style.display = 'none';
+    justifPreview.src = '';
+  }
+
+  const modeLabel = modeActuel==='distanciel'?'💻 Distanciel':modeActuel==='presentiel'?'🏫 Présentiel':'—';
+  document.getElementById('modeMatinStatus').textContent = modeLabel;
+  document.getElementById('modeAMStatus').textContent = modeLabel;
+  document.getElementById('modeMatinStatus').className = 'emarg-status'+(modeActuel==='distanciel'?' status-distanciel':'');
+  document.getElementById('modeAMStatus').className = 'emarg-status'+(modeActuel==='distanciel'?' status-distanciel':'');
+
+  // Verrou 12h
+  const maintenant = new Date();
+  const apremDisponible = maintenant.getHours() >= 12;
+  const verouAM = document.getElementById('verouAM');
+  const zoneAMAlt = document.getElementById('zoneAMAlt');
+  if (!apremDisponible && !data.am_alt && presenceActuelle !== 'absent') {
+    verouAM.style.display = 'block';
+    if (zoneAMAlt) zoneAMAlt.style.display = 'none';
+  } else {
+    verouAM.style.display = 'none';
+  }
+
+  const slots = [
+    {alt:'matin_alt',form:'matin_form',altEl:'statusMatinAlt',formEl:'statusMatinForm',zone:'zoneMatinAlt',bloc:'blocMatin'},
+    {alt:'am_alt',form:'am_form',altEl:'statusAMAlt',formEl:'statusAMForm',zone:'zoneAMAlt',bloc:'blocAM'}
+  ];
+
+  slots.forEach(function(s) {
+    const altSigne = data[s.alt];
+    const formSigne = data[s.form];
+    const absent = presenceActuelle === 'absent';
+
+    const altEl = document.getElementById(s.altEl);
+    if (absent) { altEl.textContent='❌ Absent(e)'; altEl.className='emarg-status status-absent'; }
+    else { altEl.textContent=altSigne?'✅ Signé':'En attente'; altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente'); }
+
+    const formEl = document.getElementById(s.formEl);
+    formEl.textContent = formSigne?'✅ Signé':'En attente';
+    formEl.className = 'emarg-status '+(formSigne?'status-signe':'status-attente');
+
+    const zone = document.getElementById(s.zone);
+    if (zone) zone.style.display = (altSigne||absent) ? 'none' : 'block';
+
+    const bloc = document.getElementById(s.bloc);
+    bloc.className = 'emarg-bloc'+(absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
+  });
+
+  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id) {
+    const c = document.getElementById(id);
+    if (c) { c.width=c.offsetWidth; c.height=80; c.getContext('2d').clearRect(0,0,c.width,c.height); }
+  });
+  initCanvases();
+}
+
+function initCanvases() {
+  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth; canvas.height = 80;
+    let drawing = false;
+    function getPos(e) { const r=canvas.getBoundingClientRect(); if(e.touches) return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}; return{x:e.clientX-r.left,y:e.clientY-r.top}; }
+    function start(e) { e.preventDefault(); drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+    function draw(e) { e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#2a3f4e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke(); }
+    function stop() { drawing=false; }
+    canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',draw); canvas.addEventListener('mouseup',stop);
+    canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',draw,{passive:false}); canvas.addEventListener('touchend',stop);
+  });
+}
+
+// UPLOAD JUSTIFICATIF
+document.getElementById('justifInput').addEventListener('change', async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('justifStatus').textContent = '⏳ Compression en cours...';
+
+  // Compresser l'image via canvas
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    const img = new Image();
+    img.onload = async function() {
+      const canvas = document.createElement('canvas');
+      const MAX = 800;
+      let w = img.width; let h = img.height;
+      if (w > MAX) { h = Math.round(h*(MAX/w)); w = MAX; }
+      if (h > MAX) { w = Math.round(w*(MAX/h)); h = MAX; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.6);
+
+      // Sauvegarder dans Firebase
+      const key = getKey(semIdx);
+      await set(ref(db,'emargements/'+key+'/justificatif'), compressed);
+      document.getElementById('justifStatus').textContent = '✅ Justificatif envoyé !';
+      document.getElementById('justifPreview').src = compressed;
+      document.getElementById('justifPreview').style.display = 'block';
+      document.getElementById('justifDeja').style.display = 'flex';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// MODE
+['btnPresentiel','btnDistanciel'].forEach(function(id) {
+  async function setMode(e) { e.preventDefault(); await set(ref(db,'emargements/'+getKey(semIdx)+'/mode'),document.getElementById(id).getAttribute('data-mode')); await updateEmargement(); }
+  document.getElementById(id).addEventListener('touchend',setMode,{passive:false}); document.getElementById(id).addEventListener('click',setMode);
+});
+
+// PRÉSENCE
+['btnPresent','btnAbsent'].forEach(function(id) {
+  async function setPresence(e) { e.preventDefault(); await set(ref(db,'emargements/'+getKey(semIdx)+'/presence'),document.getElementById(id).getAttribute('data-presence')); await updateEmargement(); }
+  document.getElementById(id).addEventListener('touchend',setPresence,{passive:false}); document.getElementById(id).addEventListener('click',setPresence);
+});
+
+// MOTIF
+async function validerMotif(e) {
+  e.preventDefault();
+  const motif = document.getElementById('motifSelect').value;
+  if (!motif) { alert('Veuillez choisir un motif.'); return; }
+  await set(ref(db,'emargements/'+getKey(semIdx)+'/motif'), motif);
+  document.getElementById('btnMotifValider').textContent = '✅ Motif enregistré';
+  setTimeout(function(){ document.getElementById('btnMotifValider').textContent = 'Enregistrer le motif'; }, 2000);
+}
+document.getElementById('btnMotifValider').addEventListener('touchend',validerMotif,{passive:false});
+document.getElementById('btnMotifValider').addEventListener('click',validerMotif);
+
+// SIGNATURE
+document.querySelectorAll('.btn-valider').forEach(function(btn) {
+  async function valider(e) {
+    e.preventDefault();
+    const slot = btn.getAttribute('data-slot');
+    const canvasMap = {'matin_alt':'canvasMatinAlt','am_alt':'canvasAMAlt'};
+    const canvas = document.getElementById(canvasMap[slot]);
+    if (!canvas) return;
+    const imageData = canvas.toDataURL();
+    const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
+    if (imageData===blank.toDataURL()) { alert('Veuillez signer avant de valider.'); return; }
+    await set(ref(db,'emargements/'+getKey(semIdx)+'/'+slot), imageData);
+    await updateEmargement();
+  }
+  btn.addEventListener('touchend',valider,{passive:false}); btn.addEventListener('click',valider);
+});
+
+// EFFACER
+document.querySelectorAll('.btn-effacer').forEach(function(btn) {
+  function effacer(e) { e.preventDefault(); const c=document.getElementById(btn.getAttribute('data-canvas')); if(c){c.getContext('2d').clearRect(0,0,c.width,c.height);} }
+  btn.addEventListener('touchend',effacer,{passive:false}); btn.addEventListener('click',effacer);
+});
+
+// NAV SEMAINES
+document.getElementById('btnPrev').addEventListener('touchend',function(e){e.preventDefault();if(semIdx>0){semIdx--;updateEmargement();}},{passive:false});
+document.getElementById('btnPrev').addEventListener('click',function(){if(semIdx>0){semIdx--;updateEmargement();}});
+document.getElementById('btnNext').addEventListener('touchend',function(e){e.preventDefault();if(semIdx<seances.length-1){semIdx++;updateEmargement();}},{passive:false});
+document.getElementById('btnNext').addEventListener('click',function(){if(semIdx<seances.length-1){semIdx++;updateEmargement();}});
+
+// NAV ONGLETS
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  function activate(e) {
+    e.preventDefault();
+    var target = btn.getAttribute('data-target');
+    document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+    document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+    document.getElementById(target).classList.add('active');
+    btn.classList.add('active');
+    if (target==='emargement') updateEmargement();
+  }
+  btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
+});
+
+// DÉCONNEXION
+document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_alt_user');window.location.href='index.html';},{passive:false});
+document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_alt_user');window.location.href='index.html';});
+
+// INIT
+chargerUser().then(function(){ updateEmargement(); });
+</script>
+</body>
+</html>

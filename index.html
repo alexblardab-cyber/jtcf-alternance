@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>JTCF Alternance – Connexion</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(160deg, #2a3f4e, #3d5a6e); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  :root { --or: #C9A227; --or-pale: #fdf6e3; --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --blanc: #ffffff; --gris: #718096; --erreur: #e53e3e; }
+  .login-box { background: white; border-radius: 20px; padding: 36px 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center; }
+  .stars { font-size: 16px; color: var(--or); letter-spacing: 6px; margin-bottom: 6px; }
+  .logo { font-size: 22px; font-weight: 800; color: var(--or); letter-spacing: 2px; text-transform: uppercase; }
+  .logo-sub { font-size: 11px; color: var(--bleu); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; font-weight: 600; }
+  .divider { width: 50px; height: 3px; background: var(--or); margin: 16px auto; border-radius: 2px; }
+  .title { font-size: 15px; font-weight: 700; color: var(--bleu-fonce); margin-bottom: 6px; }
+  .subtitle { font-size: 12px; color: var(--gris); margin-bottom: 24px; }
+  .field { margin-bottom: 16px; text-align: left; }
+  .field label { display: block; font-size: 11px; font-weight: 700; color: var(--bleu); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .field input { width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; font-family: inherit; color: var(--bleu-fonce); transition: border 0.2s; outline: none; text-transform: uppercase; letter-spacing: 1px; -webkit-appearance: none; }
+  .field input:focus { border-color: var(--or); }
+  .field input.error { border-color: var(--erreur); }
+  .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 1px; margin-top: 4px; touch-action: manipulation; -webkit-appearance: none; }
+  .error-msg { display: none; background: #fff5f5; border: 1px solid #fed7d7; color: var(--erreur); font-size: 12px; font-weight: 600; padding: 10px 14px; border-radius: 8px; margin-top: 12px; }
+  .error-msg.visible { display: block; }
+  .footer-note { margin-top: 24px; font-size: 11px; color: var(--gris); line-height: 1.6; }
+  .footer-note strong { color: var(--bleu); }
+</style>
+</head>
+<body>
+<div class="login-box">
+  <div class="stars">★ ★ ★</div>
+  <div class="logo">JT Conseil Formation</div>
+  <div class="logo-sub">Saint-Joseph · Alternance</div>
+  <div class="divider"></div>
+  <div class="title">Accès Mon Espace</div>
+  <div class="subtitle">Alternant ou Formatrice — même page de connexion</div>
+  <div class="field">
+    <label>Votre identifiant</label>
+    <input type="text" id="identifiant" placeholder="Ex : AB01, FORM01..." maxlength="10" />
+  </div>
+  <div class="field">
+    <label>Code d'accès</label>
+    <input type="password" id="code" placeholder="••••••••" maxlength="20" />
+  </div>
+  <button class="btn" id="btnConnect">ACCÉDER À MON ESPACE</button>
+  <div class="error-msg" id="errorMsg">❌ Identifiant ou code incorrect.</div>
+  <div class="footer-note">Identifiant oublié ?<br>Contactez <strong>Alexandre Blard</strong> — 06 92 33 47 88</div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const CODE = "JTCF2026";
+
+async function connexion(e) {
+  if (e) e.preventDefault();
+  const id = document.getElementById('identifiant').value.trim().toUpperCase();
+  const code = document.getElementById('code').value.trim().toUpperCase();
+  const err = document.getElementById('errorMsg');
+  document.getElementById('identifiant').classList.remove('error');
+  document.getElementById('code').classList.remove('error');
+  err.classList.remove('visible');
+
+  if (code !== CODE) {
+    document.getElementById('code').classList.add('error');
+    err.classList.add('visible');
+    return;
+  }
+
+  try {
+    // Vérifier si c'est un alternant
+    const altSnap = await get(ref(db, 'alternants/' + id));
+    if (altSnap.exists()) {
+      sessionStorage.setItem('jtcf_alt_user', id);
+      window.location.href = 'livret.html';
+      return;
+    }
+    // Vérifier si c'est une formatrice
+    const formSnap = await get(ref(db, 'formateurs/' + id));
+    if (formSnap.exists()) {
+      sessionStorage.setItem('jtcf_form_user', id);
+      window.location.href = 'formatrice.html';
+      return;
+    }
+    // Vérifier si c'est un admin
+    const adminSnap = await get(ref(db, 'admins/' + id));
+    if (adminSnap.exists()) {
+      sessionStorage.setItem('jtcf_admin_user', id);
+      window.location.href = 'admin.html';
+      return;
+    }
+    document.getElementById('identifiant').classList.add('error');
+    err.classList.add('visible');
+  } catch(err2) {
+    err.textContent = '❌ Erreur de connexion. Réessayez.';
+    err.classList.add('visible');
+  }
+}
+
+document.getElementById('btnConnect').addEventListener('touchend', connexion, {passive:false});
+document.getElementById('btnConnect').addEventListener('click', connexion);
+document.addEventListener('keydown', function(e) { if (e.key === 'Enter') connexion(); });
+</script>
+</body>
+</html>

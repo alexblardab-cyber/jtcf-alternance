@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Init données JTCF</title>
+<style>
+  body { font-family: sans-serif; padding: 40px; background: #f0f2f5; }
+  .card { background: white; border-radius: 14px; padding: 24px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  h2 { color: #2a3f4e; margin-bottom: 16px; }
+  .btn { padding: 12px 24px; background: #C9A227; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 12px; }
+  .result { margin-top: 16px; font-size: 13px; color: #38a169; font-weight: 600; }
+  .error { color: #e53e3e; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>⚙️ Initialisation des données</h2>
+  <p style="font-size:13px;color:#718096;margin-bottom:16px;">Ajoute Alexandre Blard et Mme Fontaine Emilie dans Firebase.</p>
+  <button class="btn" id="btnInit">Initialiser les données</button>
+  <div class="result" id="result"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+async function initData(e) {
+  e.preventDefault();
+  const result = document.getElementById('result');
+  result.textContent = '⏳ En cours...';
+  result.className = 'result';
+  try {
+    // Alternant
+    await set(ref(db, 'alternants/AB01'), {
+      nom: "Alexandre Blard", formation: "TP Assistant de Direction",
+      entreprise: "JT Conseil Formation", maitre: "Tibère Julien",
+      debut: "10/06/2026", fin: "10/06/2028",
+      jourCentre: "Lundi", heures: "8h00 – 16h00"
+    });
+    // Formatrice
+    await set(ref(db, 'formateurs/FORM01'), {
+      nom: "Fontaine Emilie", role: "Formatrice"
+    });
+    // Admin
+    await set(ref(db, 'admins/ADMIN01'), {
+      nom: "Tibère Julien", role: "Directeur"
+    });
+    result.textContent = '✅ Alexandre Blard (AB01), Mme Fontaine (FORM01) et Tibère Julien (ADMIN01) ajoutés dans Firebase !';
+  } catch(err) {
+    result.textContent = '❌ Erreur : ' + err.message;
+    result.className = 'result error';
+  }
+}
+
+document.getElementById('btnInit').addEventListener('click', initData);
+document.getElementById('btnInit').addEventListener('touchend', initData, {passive:false});
+</script>
+</body>
+</html>

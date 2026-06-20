@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Espace Formatrice – JTCF</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a202c; }
+  :root {
+    --or: #C9A227; --or-clair: #f0d98a; --or-pale: #fdf6e3;
+    --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --bleu-clair: #eaf0f4;
+    --blanc: #ffffff; --gris: #718096; --gris-clair: #f0f2f5;
+    --vert: #38a169; --vert-clair: #f0fff4;
+    --rouge: #e53e3e; --rouge-clair: #fff5f5;
+    --violet: #6b46c1; --violet-clair: #faf5ff;
+  }
+
+  .header { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: var(--blanc); padding: 20px 20px 14px; text-align: center; }
+  .header .stars { font-size: 13px; color: var(--or); letter-spacing: 4px; margin-bottom: 4px; }
+  .header .logo { font-size: 18px; font-weight: 800; color: var(--or); text-transform: uppercase; letter-spacing: 2px; }
+  .header .logo-sub { font-size: 10px; opacity: 0.75; letter-spacing: 1px; text-transform: uppercase; }
+  .header .welcome { margin-top: 14px; background: rgba(201,162,39,0.15); border: 1px solid rgba(201,162,39,0.3); border-radius: 12px; padding: 11px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+  .welcome-left .name { font-size: 15px; font-weight: 700; }
+  .welcome-left .role { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+  .welcome-left .badge { display: inline-block; margin-top: 6px; background: var(--or); color: var(--bleu-fonce); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .btn-logout { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 11px; padding: 6px 10px; border-radius: 8px; cursor: pointer; flex-shrink: 0; touch-action: manipulation; -webkit-appearance: none; }
+
+  .nav { display: flex; overflow-x: auto; background: var(--bleu-fonce); padding: 0 4px; -webkit-overflow-scrolling: touch; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex-shrink: 0; padding: 14px 11px; border: none; background: none; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; -webkit-appearance: none; touch-action: manipulation; -webkit-user-select: none; user-select: none; display: block; }
+  .nav-btn.active { color: var(--or); border-bottom-color: var(--or); font-weight: 700; }
+
+  .content { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card { background: var(--blanc); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(61,90,110,0.1); }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--bleu); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 2px solid var(--or); }
+
+  /* LISTE ALTERNANTS */
+  .jour-titre { font-size: 11px; font-weight: 700; color: var(--bleu); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; border-left: 3px solid var(--or); padding-left: 8px; }
+  .alternant-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; margin-bottom: 8px; background: var(--gris-clair); cursor: pointer; border: 2px solid transparent; transition: all 0.2s; touch-action: manipulation; }
+  .alternant-card:hover { border-color: var(--or); background: var(--or-pale); }
+  .alternant-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+  .alternant-nom { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); }
+  .alternant-formation { font-size: 11px; color: var(--gris); }
+  .alternant-arrow { margin-left: auto; color: var(--or); font-size: 18px; font-weight: 700; }
+
+  /* RÉCAP HEURES */
+  .recap-filter { display: flex; gap: 8px; margin-bottom: 14px; }
+  .filter-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 11px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; }
+  .filter-btn.active { border-color: var(--or); background: var(--or-pale); color: var(--bleu-fonce); }
+
+  .mois-select { width: 100%; padding: 10px 14px; border: 2px solid var(--or-clair); border-radius: 10px; font-size: 13px; font-family: inherit; color: var(--bleu-fonce); background: var(--or-pale); margin-bottom: 14px; outline: none; -webkit-appearance: none; }
+
+  .recap-card { background: var(--blanc); border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(61,90,110,0.08); border-left: 4px solid var(--or); }
+  .recap-nom { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); margin-bottom: 8px; }
+  .recap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .recap-item { background: var(--gris-clair); border-radius: 8px; padding: 8px 10px; text-align: center; }
+  .recap-item.vert { background: var(--vert-clair); }
+  .recap-item.rouge { background: var(--rouge-clair); }
+  .recap-item.or { background: var(--or-pale); }
+  .recap-val { font-size: 18px; font-weight: 800; color: var(--bleu-fonce); }
+  .recap-val.vert { color: var(--vert); }
+  .recap-val.rouge { color: var(--rouge); }
+  .recap-val.or { color: var(--or); }
+  .recap-lbl { font-size: 10px; color: var(--gris); margin-top: 2px; }
+  .recap-motifs { margin-top: 8px; font-size: 11px; color: var(--gris); }
+  .recap-motif-item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--gris-clair); }
+  .recap-motif-item:last-child { border-bottom: none; }
+  .btn-export { width: 100%; padding: 13px; background: linear-gradient(135deg, #C9A227, #f0d98a); color: #2a3f4e; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; margin-bottom: 14px; letter-spacing: 0.5px; }
+
+  .total-card { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border-radius: 12px; padding: 14px; margin-bottom: 14px; color: var(--blanc); }
+  .total-titre { font-size: 12px; font-weight: 700; color: var(--or); margin-bottom: 10px; text-transform: uppercase; }
+  .total-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .total-item { text-align: center; }
+  .total-val { font-size: 20px; font-weight: 800; color: var(--or); }
+  .total-lbl { font-size: 10px; opacity: 0.75; margin-top: 2px; }
+
+  /* FICHE ALTERNANT */
+  .back-btn { display: flex; align-items: center; gap: 6px; color: var(--or); font-weight: 700; font-size: 13px; margin-bottom: 14px; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; border: none; background: none; }
+  .info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--gris); font-size: 12px; }
+  .info-value { font-weight: 600; text-align: right; max-width: 60%; color: var(--bleu-fonce); }
+
+  .emarg-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .btn-nav { padding: 8px 14px; border: 2px solid var(--or); border-radius: 8px; background: none; color: var(--or); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-nav:disabled { opacity: 0.3; }
+  .emarg-semaine { font-size: 13px; font-weight: 700; color: var(--bleu-fonce); }
+  .emarg-date { font-size: 13px; font-weight: 700; color: var(--bleu-fonce); margin-bottom: 12px; text-align: center; }
+  .emarg-bloc { border: 2px solid var(--gris-clair); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .emarg-bloc.signe { border-color: var(--vert); background: var(--vert-clair); }
+  .emarg-bloc.absent-bloc { border-color: var(--rouge); background: var(--rouge-clair); }
+  .emarg-titre { font-size: 12px; font-weight: 700; color: var(--bleu); margin-bottom: 10px; text-transform: uppercase; }
+  .emarg-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .emarg-label { font-size: 12px; color: var(--gris); }
+  .emarg-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .status-signe { background: #c6f6d5; color: #276749; }
+  .status-attente { background: #fed7d7; color: #c53030; }
+  .status-distanciel { background: #e9d8fd; color: #6b46c1; }
+  .sign-zone { border: 2px dashed var(--or-clair); border-radius: 10px; background: var(--or-pale); padding: 8px; margin-top: 8px; text-align: center; }
+  .sign-canvas { width: 100%; height: 80px; border-radius: 6px; background: white; display: block; cursor: crosshair; touch-action: none; }
+  .sign-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
+  .btn-sign { padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-valider { background: var(--vert); color: white; }
+  .btn-effacer { background: #e2e8f0; color: var(--bleu-fonce); }
+  .sign-label { font-size: 11px; color: var(--gris); margin-bottom: 6px; }
+
+  .loading { text-align: center; color: var(--gris); font-size: 13px; padding: 20px; }
+  .spacer { height: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="stars">★ ★ ★</div>
+  <div class="logo">JT Conseil Formation</div>
+  <div class="logo-sub">Saint-Joseph · Formatrice</div>
+  <div class="welcome">
+    <div class="welcome-left">
+      <div class="name" id="headerNom">👩‍🏫 Espace Formatrice</div>
+      <div class="role">Fontaine Emilie · Tous les alternants</div>
+      <div class="badge">✏️ Formatrice</div>
+    </div>
+    <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+  </div>
+</div>
+
+<div class="nav" id="mainNav">
+  <a class="nav-btn active" data-target="lundi">📅 Lundi</a>
+  <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
+  <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
+  <a class="nav-btn" data-target="recap">📊 Récap heures</a>
+</div>
+
+<div class="content" id="mainContent">
+
+  <!-- LUNDI -->
+  <div class="section active" id="lundi">
+    <div class="jour-titre">Alternants du Lundi</div>
+    <div id="listeLundi"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- MERCREDI -->
+  <div class="section" id="mercredi">
+    <div class="jour-titre">Alternants du Mercredi</div>
+    <div id="listeMercredi"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- GROUPES -->
+  <div class="section" id="groupes">
+    <div class="card">
+      <div class="card-title">🗂️ Capacité d'accueil</div>
+      <div id="formCapaciteGroupe"><div class="loading">Chargement...</div></div>
+    </div>
+    <div style="background:var(--or-pale);border:1px solid var(--or-clair);border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--bleu);margin-bottom:10px;">📋 Prévisionnel Région Réunion</div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--or-clair);font-size:12px;"><span style="color:var(--gris);">Financement par titre / période</span><span style="font-weight:700;color:var(--bleu-fonce);">4 dossiers</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--or-clair);font-size:12px;"><span style="color:var(--gris);">Durée période</span><span style="font-weight:700;color:var(--bleu-fonce);">6 mois</span></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;"><span style="color:var(--gris);">Statut</span><span style="font-weight:700;" id="formPrevStatut">—</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📅 Répartition par formation</div>
+      <div id="formRepartition"><div class="loading">Chargement...</div></div>
+    </div>
+  </div>
+
+  <!-- RÉCAP HEURES -->
+  <div class="section" id="recap">
+    <div class="recap-filter">
+      <button class="filter-btn active" id="filterMois" data-filter="mois">📅 Par mois</button>
+      <button class="filter-btn" id="filterTotal" data-filter="total">📈 Total contrat</button>
+    </div>
+
+    <select class="mois-select" id="moisSelect" style="display:block;">
+      <!-- rempli dynamiquement -->
+    </select>
+
+    <!-- TOTAL GLOBAL -->
+    <div class="total-card" id="totalCard">
+      <div class="total-titre">📊 Total — tous alternants</div>
+      <div class="total-grid">
+        <div class="total-item"><div class="total-val" id="totalHeures">—</div><div class="total-lbl">Heures présence</div></div>
+        <div class="total-item"><div class="total-val" id="totalAbsences">—</div><div class="total-lbl">Heures absence</div></div>
+        <div class="total-item"><div class="total-val" id="totalSeances">—</div><div class="total-lbl">Séances total</div></div>
+      </div>
+    </div>
+
+    <!-- BOUTON EXPORT PDF -->
+    <button class="btn-export" id="btnExportPDF">📄 Exporter le PDF mensuel</button>
+
+    <!-- LISTE RÉCAP PAR ALTERNANT -->
+    <div id="recapListe"><div class="loading">Chargement...</div></div>
+  </div>
+
+</div>
+
+<!-- VUE FICHE ALTERNANT -->
+<div id="ficheView" style="display:none;">
+  <div class="header">
+    <div class="stars">★ ★ ★</div>
+    <div class="logo">JT Conseil Formation</div>
+    <div class="logo-sub">Saint-Joseph · Formatrice</div>
+  </div>
+  <div class="content">
+    <button class="back-btn" id="btnRetour">◀ Retour à la liste</button>
+    <div class="card">
+      <div class="card-title">👤 Fiche alternant</div>
+      <div class="info-row"><span class="info-label">Nom</span><span class="info-value" id="ficheNom">—</span></div>
+      <div class="info-row"><span class="info-label">Formation</span><span class="info-value" id="ficheFormation">—</span></div>
+      <div class="info-row"><span class="info-label">Entreprise</span><span class="info-value" id="ficheEntreprise">—</span></div>
+      <div class="info-row"><span class="info-label">Maître app.</span><span class="info-value" id="ficheMaitre">—</span></div>
+      <div class="info-row"><span class="info-label">Contrat</span><span class="info-value" id="ficheContrat">—</span></div>
+      <div class="info-row"><span class="info-label">Jour en centre</span><span class="info-value" id="ficheJour">—</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">✍️ Émargement</div>
+      <div class="emarg-nav">
+        <button class="btn-nav" id="ficheBtnPrev">◀ Préc.</button>
+        <div class="emarg-semaine" id="ficheSemaine">Séance —</div>
+        <button class="btn-nav" id="ficheBtnNext">Suiv. ▶</button>
+      </div>
+      <div class="emarg-date" id="ficheDate">—</div>
+      <div class="emarg-bloc" id="ficheBlocMatin">
+        <div class="emarg-titre">🌅 Matin · 8h00 – 12h00</div>
+        <div class="emarg-row"><span class="emarg-label">Mode</span><span class="emarg-status" id="ficheModeMatinStatus">—</span></div>
+        <div class="emarg-row"><span class="emarg-label">Alternant</span><span class="emarg-status status-attente" id="ficheStatusMatinAlt">En attente</span></div>
+        <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="ficheStatusMatinForm">En attente</span></div>
+        <div class="sign-zone" id="ficheZoneMatinForm">
+          <div class="sign-label">Votre signature (formatrice)</div>
+          <canvas class="sign-canvas" id="ficheCanvasMatinForm"></canvas>
+          <div class="sign-actions">
+            <button class="btn-sign btn-effacer" data-canvas="ficheCanvasMatinForm">Effacer</button>
+            <button class="btn-sign btn-valider" data-slot="matin_form">✅ Valider</button>
+          </div>
+        </div>
+      </div>
+      <div class="emarg-bloc" id="ficheBlocAM">
+        <div class="emarg-titre">🌇 Après-midi · 13h30 – 16h00</div>
+        <div class="emarg-row"><span class="emarg-label">Mode</span><span class="emarg-status" id="ficheModeAMStatus">—</span></div>
+        <div class="emarg-row"><span class="emarg-label">Alternant</span><span class="emarg-status status-attente" id="ficheStatusAMAlt">En attente</span></div>
+        <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="ficheStatusAMForm">En attente</span></div>
+        <div class="sign-zone" id="ficheZoneAMForm">
+          <div class="sign-label">Votre signature (formatrice)</div>
+          <canvas class="sign-canvas" id="ficheCanvasAMForm"></canvas>
+          <div class="sign-actions">
+            <button class="btn-sign btn-effacer" data-canvas="ficheCanvasAMForm">Effacer</button>
+            <button class="btn-sign btn-valider" data-slot="am_form">✅ Valider</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const userId = sessionStorage.getItem('jtcf_form_user');
+if (!userId) { window.location.href = 'index.html'; }
+
+let allAlternants = [];
+let currentAlt = null;
+let seances = [];
+let semIdx = 0;
+let filterMode = 'mois';
+
+const MATIN_H = 4;
+const AM_H = 3.5;
+
+// CHARGER ALTERNANTS
+async function chargerAlternants() {
+  const snap = await get(ref(db, 'alternants'));
+  if (!snap.exists()) return;
+  allAlternants = [];
+  snap.forEach(function(child) {
+    const alt = child.val(); alt.id = child.key;
+    allAlternants.push(alt);
+  });
+  afficherListe('listeLundi', allAlternants.filter(a => a.jourCentre === 'Lundi'));
+  afficherListe('listeMercredi', allAlternants.filter(a => a.jourCentre === 'Mercredi'));
+  remplirMoisSelect();
+  chargerRecap();
+}
+
+function afficherListe(containerId, alts) {
+  const container = document.getElementById(containerId);
+  if (alts.length === 0) { container.innerHTML = '<div class="loading">Aucun alternant.</div>'; return; }
+  container.innerHTML = '';
+  alts.forEach(function(alt) {
+    const initiales = alt.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    const card = document.createElement('div');
+    card.className = 'alternant-card';
+    card.innerHTML = `<div class="alternant-avatar">${initiales}</div><div style="flex:1"><div class="alternant-nom">${alt.nom}</div><div class="alternant-formation">${alt.formation}</div></div><div class="alternant-arrow">›</div>`;
+    function open(e) { e.preventDefault(); ouvrirFiche(alt); }
+    card.addEventListener('touchend', open, {passive:false});
+    card.addEventListener('click', open);
+    container.appendChild(card);
+  });
+}
+
+// CALCUL SÉANCES
+function getSeances(alt) {
+  const jourMap = {'Lundi':1,'Mercredi':3};
+  const jourNum = jourMap[alt.jourCentre] || 1;
+  const debut = new Date(2026,5,10);
+  const fin = new Date(2028,5,10);
+  let d = new Date(debut);
+  while (d.getDay() !== jourNum) d.setDate(d.getDate()+1);
+  const result = [];
+  while (d <= fin) { result.push(new Date(d)); d.setDate(d.getDate()+7); }
+  return result;
+}
+
+function getKey(altId, d) {
+  return altId + '_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+}
+
+// MOIS SELECT
+function remplirMoisSelect() {
+  const select = document.getElementById('moisSelect');
+  const moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const today = new Date();
+  select.innerHTML = '';
+  // Générer les 24 mois du contrat
+  for (let y = 2026; y <= 2028; y++) {
+    const startM = y === 2026 ? 5 : 0;
+    const endM = y === 2028 ? 5 : 11;
+    for (let m = startM; m <= endM; m++) {
+      const opt = document.createElement('option');
+      opt.value = y + '-' + m;
+      opt.textContent = moisNoms[m] + ' ' + y;
+      if (y === today.getFullYear() && m === today.getMonth()) opt.selected = true;
+      select.appendChild(opt);
+    }
+  }
+}
+
+// RÉCAP HEURES
+async function chargerRecap() {
+  const container = document.getElementById('recapListe');
+  container.innerHTML = '<div class="loading">Calcul en cours...</div>';
+
+  const [filterYear, filterMonth] = filterMode === 'mois'
+    ? document.getElementById('moisSelect').value.split('-').map(Number)
+    : [null, null];
+
+  let totalHeuresGlobal = 0;
+  let totalAbsencesGlobal = 0;
+  let totalSeancesGlobal = 0;
+
+  container.innerHTML = '';
+
+  for (const alt of allAlternants) {
+    const altSeances = getSeances(alt);
+    let heuresPresence = 0;
+    let heuresAbsence = 0;
+    let seancesCount = 0;
+    const motifsCount = {};
+
+    for (const d of altSeances) {
+      // Filtre par mois si nécessaire
+      if (filterMode === 'mois' && (d.getFullYear() !== filterYear || d.getMonth() !== filterMonth)) continue;
+      if (d > new Date()) continue; // Pas les séances futures
+
+      const key = getKey(alt.id, d);
+      const snap = await get(ref(db, 'emargements/'+key));
+      const data = snap.exists() ? snap.val() : {};
+
+      seancesCount++;
+      const absent = data.presence === 'absent';
+
+      if (absent) {
+        heuresAbsence += (MATIN_H + AM_H);
+        const motif = data.motif || 'Non renseigné';
+        motifsCount[motif] = (motifsCount[motif] || 0) + 1;
+      } else {
+        if (data.matin_alt) heuresPresence += MATIN_H;
+        if (data.am_alt) heuresPresence += AM_H;
+      }
+    }
+
+    totalHeuresGlobal += heuresPresence;
+    totalAbsencesGlobal += heuresAbsence;
+    totalSeancesGlobal += seancesCount;
+
+    if (seancesCount === 0) continue;
+
+    const card = document.createElement('div');
+    card.className = 'recap-card';
+    const initiales = alt.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+
+    let motifsHtml = '';
+    if (Object.keys(motifsCount).length > 0) {
+      motifsHtml = '<div class="recap-motifs"><div style="font-size:11px;font-weight:700;color:var(--rouge);margin-bottom:4px;">Motifs d\'absence :</div>';
+      for (const [motif, count] of Object.entries(motifsCount)) {
+        motifsHtml += `<div class="recap-motif-item"><span>${motif}</span><span style="font-weight:700;">${count} fois</span></div>`;
+      }
+      motifsHtml += '</div>';
+    }
+
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;">${initiales}</div>
+        <div>
+          <div class="recap-nom">${alt.nom}</div>
+          <div style="font-size:11px;color:var(--gris);">${alt.formation} · ${alt.jourCentre}</div>
+        </div>
+      </div>
+      <div class="recap-grid">
+        <div class="recap-item vert"><div class="recap-val vert">${heuresPresence}h</div><div class="recap-lbl">Heures présence</div></div>
+        <div class="recap-item rouge"><div class="recap-val rouge">${heuresAbsence}h</div><div class="recap-lbl">Heures absence</div></div>
+        <div class="recap-item or"><div class="recap-val or">${seancesCount}</div><div class="recap-lbl">Séances passées</div></div>
+        <div class="recap-item"><div class="recap-val">${heuresPresence + heuresAbsence}h</div><div class="recap-lbl">Heures totales</div></div>
+      </div>
+      ${motifsHtml}
+    `;
+    container.appendChild(card);
+  }
+
+  // Total global
+  document.getElementById('totalHeures').textContent = totalHeuresGlobal + 'h';
+  document.getElementById('totalAbsences').textContent = totalAbsencesGlobal + 'h';
+  document.getElementById('totalSeances').textContent = totalSeancesGlobal;
+}
+
+// FILTRES
+['filterMois','filterTotal'].forEach(function(id) {
+  function setFilter(e) {
+    e.preventDefault();
+    filterMode = document.getElementById(id).getAttribute('data-filter');
+    document.getElementById('filterMois').className = 'filter-btn' + (filterMode==='mois'?' active':'');
+    document.getElementById('filterTotal').className = 'filter-btn' + (filterMode==='total'?' active':'');
+    document.getElementById('moisSelect').style.display = filterMode==='mois' ? 'block' : 'none';
+    chargerRecap();
+  }
+  document.getElementById(id).addEventListener('touchend',setFilter,{passive:false});
+  document.getElementById(id).addEventListener('click',setFilter);
+});
+
+document.getElementById('moisSelect').addEventListener('change', chargerRecap);
+
+// FICHE ALTERNANT
+function ouvrirFiche(alt) {
+  currentAlt = alt;
+  document.getElementById('mainNav').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('ficheView').style.display = 'block';
+
+  document.getElementById('ficheNom').textContent = alt.nom;
+  document.getElementById('ficheFormation').textContent = alt.formation;
+  document.getElementById('ficheEntreprise').textContent = alt.entreprise;
+  document.getElementById('ficheMaitre').textContent = alt.maitre;
+  document.getElementById('ficheContrat').textContent = alt.debut + ' → ' + alt.fin;
+  document.getElementById('ficheJour').textContent = alt.jourCentre + ' · ' + alt.heures;
+
+  seances = getSeances(alt);
+  const today = new Date();
+  semIdx = 0;
+  for (let i = 0; i < seances.length; i++) {
+    if (seances[i] >= today) { semIdx = i; break; }
+  }
+  updateFicheEmarg();
+}
+
+function formatDate(d) {
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return jours[d.getDay()] + ' ' + d.getDate() + ' ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+async function updateFicheEmarg() {
+  const d = seances[semIdx];
+  document.getElementById('ficheSemaine').textContent = 'Séance n°' + (semIdx+1);
+  document.getElementById('ficheDate').textContent = formatDate(d);
+  document.getElementById('ficheBtnPrev').disabled = semIdx === 0;
+  document.getElementById('ficheBtnNext').disabled = semIdx === seances.length-1;
+
+  const key = getKey(currentAlt.id, d);
+  const snap = await get(ref(db,'emargements/'+key));
+  const data = snap.exists() ? snap.val() : {};
+  const absent = data.presence === 'absent';
+
+  const modeLabel = data.mode==='distanciel' ? '💻 Distanciel' : data.mode==='presentiel' ? '🏫 Présentiel' : '—';
+  const modeCls = data.mode==='distanciel' ? 'status-distanciel' : '';
+
+  const slots = [
+    {alt:'matin_alt',form:'matin_form',altEl:'ficheStatusMatinAlt',formEl:'ficheStatusMatinForm',zone:'ficheZoneMatinForm',bloc:'ficheBlocMatin',modeEl:'ficheModeMatinStatus'},
+    {alt:'am_alt',form:'am_form',altEl:'ficheStatusAMAlt',formEl:'ficheStatusAMForm',zone:'ficheZoneAMForm',bloc:'ficheBlocAM',modeEl:'ficheModeAMStatus'}
+  ];
+
+  slots.forEach(function(s) {
+    document.getElementById(s.modeEl).textContent = modeLabel;
+    document.getElementById(s.modeEl).className = 'emarg-status ' + modeCls;
+
+    const altSigne = data[s.alt];
+    const formSigne = data[s.form];
+
+    const altEl = document.getElementById(s.altEl);
+    if (absent) { altEl.textContent = '❌ Absent(e)'; altEl.className = 'emarg-status status-attente'; }
+    else { altEl.textContent = altSigne ? '✅ Signé' : 'En attente'; altEl.className = 'emarg-status '+(altSigne?'status-signe':'status-attente'); }
+
+    const formEl = document.getElementById(s.formEl);
+    formEl.textContent = formSigne ? '✅ Signé' : 'En attente';
+    formEl.className = 'emarg-status '+(formSigne?'status-signe':'status-attente');
+
+    const zone = document.getElementById(s.zone);
+    zone.style.display = (formSigne || absent) ? 'none' : 'block';
+
+    const bloc = document.getElementById(s.bloc);
+    bloc.className = 'emarg-bloc' + (absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
+  });
+
+  if (data.motif) {
+    // Afficher motif si absent
+  }
+
+  ['ficheCanvasMatinForm','ficheCanvasAMForm'].forEach(function(id) {
+    const c = document.getElementById(id);
+    c.width = c.offsetWidth; c.height = 80;
+    c.getContext('2d').clearRect(0,0,c.width,c.height);
+  });
+  initCanvases();
+}
+
+function initCanvases() {
+  ['ficheCanvasMatinForm','ficheCanvasAMForm'].forEach(function(id) {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth; canvas.height = 80;
+    let drawing = false;
+    function getPos(e) { const r=canvas.getBoundingClientRect(); if(e.touches) return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}; return{x:e.clientX-r.left,y:e.clientY-r.top}; }
+    function start(e) { e.preventDefault(); drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+    function draw(e) { e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#2a3f4e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke(); }
+    function stop() { drawing=false; }
+    canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',draw); canvas.addEventListener('mouseup',stop);
+    canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',draw,{passive:false}); canvas.addEventListener('touchend',stop);
+  });
+}
+
+document.querySelectorAll('.btn-valider').forEach(function(btn) {
+  async function valider(e) {
+    e.preventDefault();
+    const slot = btn.getAttribute('data-slot');
+    const canvasMap = {'matin_form':'ficheCanvasMatinForm','am_form':'ficheCanvasAMForm'};
+    const canvas = document.getElementById(canvasMap[slot]);
+    if (!canvas) return;
+    const imageData = canvas.toDataURL();
+    const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
+    if (imageData===blank.toDataURL()) { alert('Veuillez signer avant de valider.'); return; }
+    const key = getKey(currentAlt.id, seances[semIdx]);
+    await set(ref(db,'emargements/'+key+'/'+slot), imageData);
+    await updateFicheEmarg();
+  }
+  btn.addEventListener('touchend',valider,{passive:false}); btn.addEventListener('click',valider);
+});
+
+document.querySelectorAll('.btn-effacer').forEach(function(btn) {
+  function effacer(e) { e.preventDefault(); const c=document.getElementById(btn.getAttribute('data-canvas')); if(c){c.getContext('2d').clearRect(0,0,c.width,c.height);} }
+  btn.addEventListener('touchend',effacer,{passive:false}); btn.addEventListener('click',effacer);
+});
+
+document.getElementById('ficheBtnPrev').addEventListener('touchend',function(e){e.preventDefault();if(semIdx>0){semIdx--;updateFicheEmarg();}},{passive:false});
+document.getElementById('ficheBtnPrev').addEventListener('click',function(){if(semIdx>0){semIdx--;updateFicheEmarg();}});
+document.getElementById('ficheBtnNext').addEventListener('touchend',function(e){e.preventDefault();if(semIdx<seances.length-1){semIdx++;updateFicheEmarg();}},{passive:false});
+document.getElementById('ficheBtnNext').addEventListener('click',function(){if(semIdx<seances.length-1){semIdx++;updateFicheEmarg();}});
+
+function retourListe(e) {
+  e.preventDefault();
+  document.getElementById('ficheView').style.display = 'none';
+  document.getElementById('mainNav').style.display = 'flex';
+  document.getElementById('mainContent').style.display = 'block';
+  currentAlt = null;
+}
+document.getElementById('btnRetour').addEventListener('touchend',retourListe,{passive:false});
+document.getElementById('btnRetour').addEventListener('click',retourListe);
+
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  function activate(e) {
+    e.preventDefault();
+    var target = btn.getAttribute('data-target');
+    document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+    document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+    document.getElementById(target).classList.add('active');
+    btn.classList.add('active');
+    if (target==='recap') chargerRecap();
+  }
+  btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
+});
+
+document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';},{passive:false});
+document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
+
+chargerAlternants();
+</script>
+</body>
+</html>
+<script>
+// EXPORT PDF — chargé séparément pour ne pas bloquer le module Firebase
+document.getElementById('btnExportPDF').addEventListener('click', exporterPDF);
+document.getElementById('btnExportPDF').addEventListener('touchend', function(e){ e.preventDefault(); exporterPDF(); }, {passive:false});
+
+async function exporterPDF() {
+  const btn = document.getElementById('btnExportPDF');
+  btn.textContent = '⏳ Génération en cours...';
+  btn.disabled = true;
+
+  // Charger jsPDF depuis CDN
+  if (!window.jspdf) {
+    await new Promise(function(resolve) {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = resolve;
+      document.head.appendChild(s);
+    });
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const moisVal = document.getElementById('moisSelect').value.split('-').map(Number);
+  const filterYear = moisVal[0];
+  const filterMonth = moisVal[1];
+  const periodeTitre = moisNoms[filterMonth] + ' ' + filterYear;
+
+  const MATIN_H = 4;
+  const AM_H = 3.5;
+  const jourMap = {'Lundi':1,'Mercredi':3};
+
+  // Couleurs JTCF
+  const OR = [201, 162, 39];
+  const BLEU = [61, 90, 110];
+  const BLEU_FONCE = [42, 63, 78];
+  const GRIS = [113, 128, 150];
+  const VERT = [56, 161, 105];
+  const ROUGE = [229, 62, 62];
+
+  let pageNum = 1;
+
+  function addHeader(titre) {
+    // Fond header
+    doc.setFillColor(...BLEU_FONCE);
+    doc.rect(0, 0, 210, 30, 'F');
+    // Logo texte
+    doc.setTextColor(...OR);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('JT CONSEIL FORMATION', 15, 12);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255,255,255);
+    doc.text('Saint-Joseph · La Réunion', 15, 18);
+    // Titre document
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255,255,255);
+    doc.text(titre, 15, 25);
+    // Date génération
+    const now = new Date();
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(200,200,200);
+    doc.text('Généré le ' + now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR'), 150, 25);
+  }
+
+  function addFooter(pageN) {
+    doc.setFillColor(...BLEU_FONCE);
+    doc.rect(0, 285, 210, 12, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr', 15, 292);
+    doc.text('Page ' + pageN, 195, 292, {align: 'right'});
+  }
+
+  // PAGE DE GARDE
+  addHeader('FEUILLES D\'ÉMARGEMENT · ' + periodeTitre.toUpperCase());
+  addFooter(pageNum);
+
+  doc.setFillColor(...OR);
+  doc.rect(0, 30, 210, 2, 'F');
+
+  doc.setTextColor(...BLEU_FONCE);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Récapitulatif des émargements', 105, 80, {align: 'center'});
+
+  doc.setFontSize(14);
+  doc.setTextColor(...BLEU);
+  doc.text('Période : ' + periodeTitre, 105, 95, {align: 'center'});
+
+  doc.setFontSize(10);
+  doc.setTextColor(...GRIS);
+  doc.text('Document généré automatiquement via l\'application JTCF', 105, 110, {align: 'center'});
+  doc.text('Ce document est destiné à l\'OPCO et aux organismes financeurs', 105, 118, {align: 'center'});
+
+  // Récupérer données Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+    databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app"
+  };
+
+  // Utiliser la db déjà initialisée
+  const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  const { getApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+  const db = getDatabase(getApp());
+
+  const altSnap = await get(ref(db, 'alternants'));
+  const alts = [];
+  if (altSnap.exists()) { altSnap.forEach(function(c){ const a=c.val(); a.id=c.key; alts.push(a); }); }
+
+  let totalHGlobal=0, totalAGlobal=0, totalSGlobal=0;
+  const recapData = [];
+
+  for (const alt of alts) {
+    const jourNum = jourMap[alt.jourCentre] || 1;
+    const debut = new Date(2026,5,10); const fin = new Date(2028,5,10);
+    let d = new Date(debut);
+    while (d.getDay()!==jourNum) d.setDate(d.getDate()+1);
+    const seancesMois = [];
+    while (d<=fin) { if(d.getFullYear()===filterYear&&d.getMonth()===filterMonth&&d<=new Date()) seancesMois.push(new Date(d)); d.setDate(d.getDate()+7); }
+
+    let hP=0,hA=0;
+    const seancesDetail = [];
+
+    for (const s of seancesMois) {
+      const key=alt.id+'_'+s.getFullYear()+'_'+(s.getMonth()+1)+'_'+s.getDate();
+      const snap=await get(ref(db,'emargements/'+key));
+      const data=snap.exists()?snap.val():{};
+      const absent=data.presence==='absent';
+      if(absent){hA+=(MATIN_H+AM_H);}
+      else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
+      seancesDetail.push({date:s,data,absent});
+    }
+
+    totalHGlobal+=hP; totalAGlobal+=hA; totalSGlobal+=seancesMois.length;
+    recapData.push({alt,seancesDetail,hP,hA,seances:seancesMois.length});
+  }
+
+  // TABLEAU RÉCAPITULATIF GLOBAL
+  doc.setTextColor(...BLEU_FONCE);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Résumé global', 15, 140);
+
+  doc.setFillColor(...BLEU_FONCE);
+  doc.rect(15, 144, 180, 8, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.text('Alternant', 18, 149);
+  doc.text('Formation', 65, 149);
+  doc.text('Séances', 120, 149);
+  doc.text('H. Présence', 140, 149);
+  doc.text('H. Absence', 165, 149);
+
+  let yTab = 152;
+  recapData.forEach(function(r, i) {
+    doc.setFillColor(i%2===0?245:255, i%2===0?247:255, i%2===0?250:255);
+    doc.rect(15, yTab, 180, 7, 'F');
+    doc.setTextColor(...BLEU_FONCE);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(r.alt.nom, 18, yTab+5);
+    doc.text(r.alt.formation.replace('TP ',''), 65, yTab+5);
+    doc.text(String(r.seances), 124, yTab+5);
+    doc.setTextColor(...VERT);
+    doc.text(r.hP+'h', 144, yTab+5);
+    doc.setTextColor(r.hA>0?ROUGE[0]:GRIS[0], r.hA>0?ROUGE[1]:GRIS[1], r.hA>0?ROUGE[2]:GRIS[2]);
+    doc.text(r.hA+'h', 169, yTab+5);
+    yTab += 7;
+  });
+
+  // Ligne total
+  doc.setFillColor(...OR);
+  doc.rect(15, yTab, 180, 8, 'F');
+  doc.setTextColor(...BLEU_FONCE);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text('TOTAL', 18, yTab+5);
+  doc.text(String(totalSGlobal), 124, yTab+5);
+  doc.text(totalHGlobal+'h', 144, yTab+5);
+  doc.text(totalAGlobal+'h', 169, yTab+5);
+
+  // UNE PAGE PAR ALTERNANT
+  for (const r of recapData) {
+    pageNum++;
+    doc.addPage();
+    addHeader('ÉMARGEMENT · ' + r.alt.nom.toUpperCase() + ' · ' + periodeTitre.toUpperCase());
+    addFooter(pageNum);
+
+    doc.setFillColor(...OR);
+    doc.rect(0, 30, 210, 2, 'F');
+
+    // Infos alternant
+    doc.setFillColor(...BLEU_FONCE);
+    doc.rect(15, 38, 180, 28, 'F');
+    doc.setTextColor(...OR);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text(r.alt.nom, 20, 48);
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Formation : ' + r.alt.formation, 20, 55);
+    doc.text('Entreprise : ' + r.alt.entreprise + '   ·   Maître : ' + r.alt.maitre, 20, 61);
+    doc.text('Jour en centre : ' + r.alt.jourCentre + '   ·   Contrat : ' + r.alt.debut + ' → ' + r.alt.fin, 20, 67);
+
+    // Récap heures
+    doc.setFillColor(...VERT);
+    doc.rect(15, 72, 57, 14, 'F');
+    doc.setFillColor(229,62,62);
+    doc.rect(76, 72, 57, 14, 'F');
+    doc.setFillColor(...BLEU);
+    doc.rect(137, 72, 58, 14, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(r.hP+'h', 43, 81, {align:'center'});
+    doc.text(r.hA+'h', 104, 81, {align:'center'});
+    doc.text(String(r.seances), 166, 81, {align:'center'});
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Heures présence', 43, 84, {align:'center'});
+    doc.text('Heures absence', 104, 84, {align:'center'});
+    doc.text('Séances', 166, 84, {align:'center'});
+
+    // Tableau séances
+    let y = 95;
+    doc.setFillColor(...BLEU_FONCE);
+    doc.rect(15, y, 180, 8, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date', 18, y+5);
+    doc.text('Mode', 55, y+5);
+    doc.text('Présence', 80, y+5);
+    doc.text('Motif', 110, y+5);
+    doc.text('Sig. Alternant', 145, y+5);
+    doc.text('Sig. Formatrice', 172, y+5);
+    y += 8;
+
+    const moisNomsFr = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+
+    for (const s of r.seancesDetail) {
+      if (y > 265) {
+        addFooter(pageNum);
+        pageNum++;
+        doc.addPage();
+        addHeader('ÉMARGEMENT · ' + r.alt.nom.toUpperCase() + ' (suite)');
+        addFooter(pageNum);
+        y = 38;
+      }
+
+      const dateStr = s.date.getDate() + ' ' + moisNomsFr[s.date.getMonth()];
+      const mode = s.data.mode || '—';
+      const present = !s.absent;
+      const motif = s.data.motif || (present ? '—' : 'Non renseigné');
+      const altSigne = s.data.matin_alt || s.data.am_alt;
+      const formSigne = s.data.matin_form || s.data.am_form;
+
+      const rowColor = s.absent ? [255,245,245] : (altSigne&&formSigne ? [240,255,244] : [250,250,252]);
+      doc.setFillColor(...rowColor);
+      doc.rect(15, y, 180, 10, 'F');
+
+      doc.setTextColor(...BLEU_FONCE);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text(dateStr, 18, y+6);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRIS);
+      doc.text(mode==='presentiel'?'🏫 Présentiel':mode==='distanciel'?'💻 Distanciel':'—', 55, y+6);
+
+      if (s.absent) {
+        doc.setTextColor(...ROUGE);
+        doc.text('Absent(e)', 80, y+6);
+        doc.setTextColor(...GRIS);
+        doc.text(motif.substring(0,25), 110, y+6);
+      } else {
+        doc.setTextColor(...VERT);
+        doc.text('Présent(e)', 80, y+6);
+        doc.setTextColor(...GRIS);
+        doc.text('—', 110, y+6);
+      }
+
+      // Signatures
+      if (s.data.matin_alt && !s.absent) {
+        try {
+          doc.addImage(s.data.matin_alt, 'JPEG', 143, y+1, 22, 8);
+        } catch(e) {
+          doc.setTextColor(...VERT);
+          doc.text('✓ Signé', 145, y+6);
+        }
+      } else {
+        doc.setTextColor(s.absent?ROUGE[0]:GRIS[0], s.absent?ROUGE[1]:GRIS[1], s.absent?ROUGE[2]:GRIS[2]);
+        doc.text(s.absent?'Absent':'En attente', 145, y+6);
+      }
+
+      if (s.data.matin_form && !s.absent) {
+        try {
+          doc.addImage(s.data.matin_form, 'JPEG', 170, y+1, 22, 8);
+        } catch(e) {
+          doc.setTextColor(...VERT);
+          doc.text('✓ Signé', 172, y+6);
+        }
+      } else {
+        doc.setTextColor(s.absent?ROUGE[0]:GRIS[0], s.absent?ROUGE[1]:GRIS[1], s.absent?ROUGE[2]:GRIS[2]);
+        doc.text(s.absent?'Absent':'En attente', 172, y+6);
+      }
+
+      // Ligne séparateur
+      doc.setDrawColor(230,230,230);
+      doc.line(15, y+10, 195, y+10);
+      y += 10;
+    }
+
+    // Zone signatures officielles en bas
+    y += 10;
+    if (y < 240) {
+      doc.setDrawColor(...OR);
+      doc.setLineWidth(0.5);
+      doc.rect(15, y, 84, 30);
+      doc.rect(111, y, 84, 30);
+      doc.setTextColor(...GRIS);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Signature Formatrice', 57, y+5, {align:'center'});
+      doc.text('Signature Alternant', 153, y+5, {align:'center'});
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text('Lu et approuvé', 57, y+28, {align:'center'});
+      doc.text('Lu et approuvé', 153, y+28, {align:'center'});
+    }
+  }
+
+  // Télécharger
+  const nomFichier = 'JTCF_Emargements_' + periodeTitre.replace(' ','_') + '.pdf';
+  doc.save(nomFichier);
+  btn.textContent = '📄 Exporter le PDF mensuel';
+  btn.disabled = false;
+}
+</script>
+<script>
+// GESTION GROUPES FORMATRICE
+function chargerGroupesForm() {
+  // Récupérer allAlternants depuis la variable globale du module
+  // On recharge depuis Firebase pour être sûr
+  (async function() {
+    const {getDatabase, ref, get} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const {getApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const db = getDatabase(getApp());
+    const snap = await get(ref(db, 'alternants'));
+    const alts = [];
+    if (snap.exists()) { snap.forEach(function(c){ const a=c.val(); a.id=c.key; alts.push(a); }); }
+
+    const lundis = alts.filter(function(a){ return a.jourCentre==='Lundi'; });
+    const mercredis = alts.filter(function(a){ return a.jourCentre==='Mercredi'; });
+    const container = document.getElementById('formCapaciteGroupe');
+    container.innerHTML = '';
+
+    const groupes = [
+      {jour:'Lundi', list:lundis, bg:'#eaf0f4', color:'#3d5a6e'},
+      {jour:'Mercredi', list:mercredis, bg:'#faf5ff', color:'#6b46c1'}
+    ];
+
+    groupes.forEach(function(g) {
+      const pct = Math.min((g.list.length/8)*100, 100);
+      const div = document.createElement('div');
+      div.style.cssText = 'background:'+g.bg+';border-left:4px solid '+g.color+';border-radius:12px;padding:14px;margin-bottom:10px;';
+      const altRows = g.list.map(function(a) {
+        return '<div style="font-size:12px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;">'
+          +'<span>👤 '+a.nom+'</span>'
+          +'<span style="font-size:11px;color:#718096;">'+a.formation.replace('TP ','')+'</span></div>';
+      }).join('');
+      div.innerHTML = '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:8px;">'+g.jour+' — '+g.list.length+' alternant'+(g.list.length>1?'s':'')+'</div>'
+        +'<div style="background:#e2e8f0;border-radius:20px;height:10px;margin:6px 0;">'
+        +'<div style="height:10px;border-radius:20px;background:#C9A227;width:'+pct+'%;"></div></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:11px;color:#718096;margin-bottom:10px;">'
+        +'<span>'+g.list.length+' / 8 places</span>'
+        +'<span>'+(8-g.list.length)+' libre'+(8-g.list.length>1?'s':'')+'</span></div>'
+        + altRows;
+      container.appendChild(div);
+    });
+
+    // Prévisionnel
+    const total = alts.length;
+    const restantes = Math.max(0, (4*2) - total);
+    const statutEl = document.getElementById('formPrevStatut');
+    if (restantes === 0) { statutEl.textContent='🔴 Capacité atteinte'; statutEl.style.color='#e53e3e'; }
+    else if (restantes <= 2) { statutEl.textContent='🟡 Presque complet ('+restantes+' place'+(restantes>1?'s':'')+')'; statutEl.style.color='#dd6b20'; }
+    else { statutEl.textContent='🟢 '+restantes+' place'+(restantes>1?'s':'')+' disponible'+(restantes>1?'s':''); statutEl.style.color='#38a169'; }
+
+    // Répartition
+    const parFormation = {};
+    alts.forEach(function(a){ parFormation[a.formation]=(parFormation[a.formation]||0)+1; });
+    const repartition = document.getElementById('formRepartition');
+    repartition.innerHTML = Object.entries(parFormation).map(function(e){
+      return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:13px;">'
+        +'<span style="color:#718096;font-size:12px;">'+e[0]+'</span>'
+        +'<span style="font-weight:600;color:#2a3f4e;">'+e[1]+' alternant'+(e[1]>1?'s':'')+'</span></div>';
+    }).join('') || '<div style="color:#718096;font-size:13px;padding:10px 0;">Aucune donnée.</div>';
+  })();
+}
+
+// Activer au clic sur l'onglet groupes
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  if (btn.getAttribute('data-target') === 'groupes') {
+    btn.addEventListener('click', chargerGroupesForm);
+    btn.addEventListener('touchend', function(e){ e.preventDefault(); chargerGroupesForm(); }, {passive:false});
+  }
+});
+</script>

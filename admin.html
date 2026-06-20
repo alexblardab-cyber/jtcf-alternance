@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Espace Admin – JTCF</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a202c; }
+  :root {
+    --or: #C9A227; --or-clair: #f0d98a; --or-pale: #fdf6e3;
+    --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --bleu-clair: #eaf0f4;
+    --blanc: #ffffff; --gris: #718096; --gris-clair: #f0f2f5;
+    --vert: #38a169; --vert-clair: #f0fff4;
+    --rouge: #e53e3e; --rouge-clair: #fff5f5;
+    --violet: #6b46c1; --violet-clair: #faf5ff;
+    --orange: #dd6b20; --orange-clair: #fffaf0;
+  }
+
+  .header { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: var(--blanc); padding: 20px 20px 14px; text-align: center; }
+  .header .stars { font-size: 13px; color: var(--or); letter-spacing: 4px; margin-bottom: 4px; }
+  .header .logo { font-size: 18px; font-weight: 800; color: var(--or); text-transform: uppercase; letter-spacing: 2px; }
+  .header .logo-sub { font-size: 10px; opacity: 0.75; letter-spacing: 1px; text-transform: uppercase; }
+  .header .welcome { margin-top: 14px; background: rgba(201,162,39,0.15); border: 1px solid rgba(201,162,39,0.3); border-radius: 12px; padding: 11px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+  .welcome-left .name { font-size: 15px; font-weight: 700; }
+  .welcome-left .role { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+  .welcome-left .badge { display: inline-block; margin-top: 6px; background: var(--or); color: var(--bleu-fonce); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .btn-logout { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 11px; padding: 6px 10px; border-radius: 8px; cursor: pointer; flex-shrink: 0; touch-action: manipulation; -webkit-appearance: none; }
+
+  .nav { display: flex; overflow-x: auto; background: var(--bleu-fonce); padding: 0 4px; -webkit-overflow-scrolling: touch; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex-shrink: 0; padding: 14px 11px; border: none; background: none; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; -webkit-appearance: none; touch-action: manipulation; -webkit-user-select: none; user-select: none; display: block; }
+  .nav-btn.active { color: var(--or); border-bottom-color: var(--or); font-weight: 700; }
+
+  .content { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card { background: var(--blanc); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(61,90,110,0.1); }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--bleu); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 2px solid var(--or); }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .kpi-card { background: var(--blanc); border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 1px 6px rgba(61,90,110,0.1); }
+  .kpi-val { font-size: 28px; font-weight: 800; color: var(--bleu-fonce); }
+  .kpi-val.vert { color: var(--vert); }
+  .kpi-val.or { color: var(--or); }
+  .kpi-val.rouge { color: var(--rouge); }
+  .kpi-lbl { font-size: 11px; color: var(--gris); margin-top: 4px; }
+  .kpi-card .border-or { border-top: 3px solid var(--or); }
+
+  /* TABLEAU DE BORD JOUR */
+  .today-card { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border-radius: 14px; padding: 16px; margin-bottom: 14px; color: var(--blanc); }
+  .today-titre { font-size: 12px; font-weight: 700; color: var(--or); margin-bottom: 10px; text-transform: uppercase; }
+  .today-date { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+  .today-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .today-row:last-child { border-bottom: none; }
+  .today-nom { font-size: 13px; font-weight: 600; }
+  .today-statuts { display: flex; gap: 4px; }
+  .dot-sign { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-sign.signe { background: #68d391; }
+  .dot-sign.attente { background: #fc8181; }
+  .dot-sign.absent { background: #a0aec0; }
+
+  /* ALTERNANTS */
+  .alternant-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; margin-bottom: 8px; background: var(--gris-clair); cursor: pointer; border: 2px solid transparent; touch-action: manipulation; }
+  .alternant-card:hover { border-color: var(--or); background: var(--or-pale); }
+  .alternant-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+  .alternant-nom { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); }
+  .alternant-sub { font-size: 11px; color: var(--gris); }
+  .alternant-arrow { margin-left: auto; color: var(--or); font-size: 18px; font-weight: 700; }
+
+  /* FORMULAIRE ALTERNANT */
+  .form-field { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 11px; font-weight: 700; color: var(--bleu); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .form-input { width: 100%; padding: 11px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; color: var(--bleu-fonce); outline: none; -webkit-appearance: none; }
+  .form-input:focus { border-color: var(--or); }
+  .form-select { width: 100%; padding: 11px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; color: var(--bleu-fonce); outline: none; -webkit-appearance: none; background: white; }
+  .btn-primary { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; margin-top: 4px; }
+  .btn-danger { width: 100%; padding: 11px; background: var(--rouge-clair); color: var(--rouge); border: 2px solid var(--rouge); border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; margin-top: 8px; }
+  .btn-secondary { width: 100%; padding: 11px; background: var(--gris-clair); color: var(--bleu-fonce); border: none; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; margin-top: 8px; }
+
+  /* GROUPES & CAPACITÉ */
+  .capacite-card { border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .capacite-card.lundi { background: var(--bleu-clair); border-left: 4px solid var(--bleu); }
+  .capacite-card.mercredi { background: var(--violet-clair); border-left: 4px solid var(--violet); }
+  .capacite-titre { font-size: 13px; font-weight: 700; color: var(--bleu-fonce); margin-bottom: 8px; }
+  .capacite-bar-bg { background: #e2e8f0; border-radius: 20px; height: 10px; margin: 6px 0; }
+  .capacite-bar { height: 10px; border-radius: 20px; background: var(--or); transition: width 0.3s; }
+  .capacite-info { display: flex; justify-content: space-between; font-size: 11px; color: var(--gris); }
+
+  .previsionnel-card { background: var(--or-pale); border: 1px solid var(--or-clair); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .previsionnel-titre { font-size: 12px; font-weight: 700; color: var(--bleu); margin-bottom: 10px; }
+  .prev-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--or-clair); font-size: 12px; }
+  .prev-row:last-child { border-bottom: none; }
+  .prev-label { color: var(--gris); }
+  .prev-val { font-weight: 700; color: var(--bleu-fonce); }
+  .prev-val.ok { color: var(--vert); }
+  .prev-val.plein { color: var(--rouge); }
+
+  /* INFO ROW */
+  .info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--gris); font-size: 12px; }
+  .info-value { font-weight: 600; text-align: right; max-width: 60%; color: var(--bleu-fonce); }
+
+  /* RECAP */
+  .recap-filter { display: flex; gap: 8px; margin-bottom: 14px; }
+  .filter-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 11px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; }
+  .filter-btn.active { border-color: var(--or); background: var(--or-pale); color: var(--bleu-fonce); }
+  .mois-select { width: 100%; padding: 10px 14px; border: 2px solid var(--or-clair); border-radius: 10px; font-size: 13px; font-family: inherit; color: var(--bleu-fonce); background: var(--or-pale); margin-bottom: 14px; outline: none; -webkit-appearance: none; }
+  .recap-card { background: var(--blanc); border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(61,90,110,0.08); border-left: 4px solid var(--or); }
+  .recap-nom { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); margin-bottom: 8px; }
+  .recap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .recap-item { background: var(--gris-clair); border-radius: 8px; padding: 8px 10px; text-align: center; }
+  .recap-item.vert { background: var(--vert-clair); }
+  .recap-item.rouge { background: var(--rouge-clair); }
+  .recap-item.or { background: var(--or-pale); }
+  .recap-val { font-size: 18px; font-weight: 800; color: var(--bleu-fonce); }
+  .recap-val.vert { color: var(--vert); }
+  .recap-val.rouge { color: var(--rouge); }
+  .recap-val.or { color: var(--or); }
+  .recap-lbl { font-size: 10px; color: var(--gris); margin-top: 2px; }
+  .total-card { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border-radius: 12px; padding: 14px; margin-bottom: 14px; color: var(--blanc); }
+  .total-titre { font-size: 12px; font-weight: 700; color: var(--or); margin-bottom: 10px; text-transform: uppercase; }
+  .total-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .total-item { text-align: center; }
+  .total-val { font-size: 20px; font-weight: 800; color: var(--or); }
+  .total-lbl { font-size: 10px; opacity: 0.75; margin-top: 2px; }
+
+  .back-btn { display: flex; align-items: center; gap: 6px; color: var(--or); font-weight: 700; font-size: 13px; margin-bottom: 14px; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; border: none; background: none; }
+  .success-msg { background: var(--vert-clair); border: 1px solid #c6f6d5; color: var(--vert); font-size: 12px; font-weight: 600; padding: 10px 14px; border-radius: 8px; margin-top: 8px; display: none; }
+  .success-msg.visible { display: block; }
+  .loading { text-align: center; color: var(--gris); font-size: 13px; padding: 20px; }
+  .spacer { height: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="stars">★ ★ ★</div>
+  <div class="logo">JT Conseil Formation</div>
+  <div class="logo-sub">Saint-Joseph · Administration</div>
+  <div class="welcome">
+    <div class="welcome-left">
+      <div class="name">👔 Espace Directeur</div>
+      <div class="role">Tibère Julien · Vue globale</div>
+      <div class="badge">⚙️ Administrateur</div>
+    </div>
+    <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+  </div>
+</div>
+
+<div class="nav">
+  <a class="nav-btn active" data-target="dashboard">📊 Tableau de bord</a>
+  <a class="nav-btn" data-target="alternants">👥 Alternants</a>
+  <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
+  <a class="nav-btn" data-target="recap">📈 Récap heures</a>
+</div>
+
+<div class="content">
+
+  <!-- TABLEAU DE BORD -->
+  <div class="section active" id="dashboard">
+    <div class="today-card">
+      <div class="today-titre">📅 Séances aujourd'hui</div>
+      <div class="today-date" id="todayDate">—</div>
+      <div id="todayList"><div style="opacity:0.7;font-size:12px;">Chargement...</div></div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-val or" id="kpiTotal">—</div><div class="kpi-lbl">Alternants actifs</div></div>
+      <div class="kpi-card"><div class="kpi-val vert" id="kpiLundi">—</div><div class="kpi-lbl">Groupe Lundi</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kpiMercredi" style="color:var(--violet)">—</div><div class="kpi-lbl">Groupe Mercredi</div></div>
+      <div class="kpi-card"><div class="kpi-val rouge" id="kpiAbsents">—</div><div class="kpi-lbl">Absences ce mois</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚡ Activité récente</div>
+      <div id="activiteRecente"><div class="loading">Chargement...</div></div>
+    </div>
+  </div>
+
+  <!-- ALTERNANTS -->
+  <div class="section" id="alternants">
+    <div id="altListeView">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:var(--bleu);">Liste des alternants</div>
+        <button class="btn-primary" id="btnAjouterAlt" style="width:auto;padding:8px 14px;font-size:12px;">+ Ajouter</button>
+      </div>
+      <div id="listeAlternants"><div class="loading">Chargement...</div></div>
+    </div>
+
+    <!-- FORMULAIRE AJOUT/MODIFICATION -->
+    <div id="altFormView" style="display:none;">
+      <button class="back-btn" id="btnRetourListe">◀ Retour à la liste</button>
+      <div class="card">
+        <div class="card-title" id="formTitre">➕ Nouvel alternant</div>
+        <div class="form-field"><label class="form-label">Identifiant</label><input class="form-input" id="formId" placeholder="Ex: AB02" maxlength="10" /></div>
+        <div class="form-field"><label class="form-label">Nom complet</label><input class="form-input" id="formNom" placeholder="Prénom Nom" /></div>
+        <div class="form-field"><label class="form-label">Formation</label>
+          <select class="form-select" id="formFormation">
+            <option value="TP Assistant de Direction">TP Assistant de Direction</option>
+            <option value="TP Secrétaire Comptable">TP Secrétaire Comptable</option>
+            <option value="TP Conseiller de Vente">TP Conseiller de Vente</option>
+            <option value="TP Employé Commercial">TP Employé Commercial</option>
+            <option value="TP Secrétaire Assistant">TP Secrétaire Assistant</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Entreprise</label><input class="form-input" id="formEntreprise" placeholder="Nom de l'entreprise" /></div>
+        <div class="form-field"><label class="form-label">Maître d'apprentissage</label><input class="form-input" id="formMaitre" placeholder="Prénom Nom" /></div>
+        <div class="form-field"><label class="form-label">Jour en centre</label>
+          <select class="form-select" id="formJour">
+            <option value="Lundi">Lundi</option>
+            <option value="Mercredi">Mercredi</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Horaires</label><input class="form-input" id="formHeures" placeholder="Ex: 8h00 – 16h00" value="8h00 – 16h00" /></div>
+        <div class="form-field"><label class="form-label">Date de début</label><input class="form-input" id="formDebut" placeholder="JJ/MM/AAAA" /></div>
+        <div class="form-field"><label class="form-label">Date de fin</label><input class="form-input" id="formFin" placeholder="JJ/MM/AAAA" /></div>
+        <button class="btn-primary" id="btnSauvegarder">💾 Sauvegarder</button>
+        <button class="btn-danger" id="btnSupprimer" style="display:none;">🗑️ Supprimer cet alternant</button>
+        <div class="success-msg" id="formSuccess">✅ Alternant sauvegardé avec succès !</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROUPES & CAPACITÉ -->
+  <div class="section" id="groupes">
+    <div class="card">
+      <div class="card-title">🗂️ Capacité d'accueil</div>
+      <div id="capaciteGroupe"><div class="loading">Chargement...</div></div>
+    </div>
+
+    <div class="previsionnel-card">
+      <div class="previsionnel-titre">📋 Prévisionnel Région Réunion</div>
+      <div class="prev-row"><span class="prev-label">Financement par titre / période</span><span class="prev-val">4 dossiers</span></div>
+      <div class="prev-row"><span class="prev-label">Durée période</span><span class="prev-val">6 mois</span></div>
+      <div id="prevRow1" class="prev-row"><span class="prev-label">Dossiers envoyés</span><span class="prev-val" id="prevEnvoyes">—</span></div>
+      <div id="prevRow2" class="prev-row"><span class="prev-label">Places restantes</span><span class="prev-val" id="prevRestantes">—</span></div>
+      <div id="prevRow3" class="prev-row"><span class="prev-label">Statut</span><span class="prev-val" id="prevStatut">—</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📅 Répartition par jour</div>
+      <div id="repartitionJour"><div class="loading">Chargement...</div></div>
+    </div>
+  </div>
+
+  <!-- RÉCAP HEURES -->
+  <div class="section" id="recap">
+    <div class="recap-filter">
+      <button class="filter-btn active" id="adminFilterMois" data-filter="mois">📅 Par mois</button>
+      <button class="filter-btn" id="adminFilterTotal" data-filter="total">📈 Total contrat</button>
+    </div>
+    <select class="mois-select" id="adminMoisSelect"></select>
+    <div class="total-card">
+      <div class="total-titre">📊 Total — tous alternants</div>
+      <div class="total-grid">
+        <div class="total-item"><div class="total-val" id="adminTotalH">—</div><div class="total-lbl">Heures présence</div></div>
+        <div class="total-item"><div class="total-val" id="adminTotalA">—</div><div class="total-lbl">Heures absence</div></div>
+        <div class="total-item"><div class="total-val" id="adminTotalS">—</div><div class="total-lbl">Séances total</div></div>
+      </div>
+    </div>
+    <button class="btn-primary" id="btnExportPDFAdmin" style="margin-bottom:14px;background:linear-gradient(135deg,#C9A227,#f0d98a);color:#2a3f4e;font-weight:800;">📄 Exporter le PDF mensuel</button>
+    <div id="adminRecapListe"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const userId = sessionStorage.getItem('jtcf_admin_user');
+if (!userId) { window.location.href = 'index.html'; }
+
+let allAlternants = [];
+let editingId = null;
+let filterMode = 'mois';
+const MATIN_H = 4;
+const AM_H = 3.5;
+const CAPACITE_MAX = 4; // Par titre par période Région
+
+// CHARGER TOUT
+async function chargerTout() {
+  const snap = await get(ref(db, 'alternants'));
+  allAlternants = [];
+  if (snap.exists()) {
+    snap.forEach(function(child) {
+      const alt = child.val(); alt.id = child.key;
+      allAlternants.push(alt);
+    });
+  }
+  chargerDashboard();
+  afficherListeAlternants();
+  chargerGroupes();
+  remplirMoisSelect();
+}
+
+// DASHBOARD
+function formatDate(d) {
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return jours[d.getDay()] + ' ' + d.getDate() + ' ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+async function chargerDashboard() {
+  const today = new Date();
+  document.getElementById('todayDate').textContent = formatDate(today);
+  document.getElementById('kpiTotal').textContent = allAlternants.length;
+  document.getElementById('kpiLundi').textContent = allAlternants.filter(a=>a.jourCentre==='Lundi').length;
+  document.getElementById('kpiMercredi').textContent = allAlternants.filter(a=>a.jourCentre==='Mercredi').length;
+
+  // Alternants qui ont séance aujourd'hui
+  const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today.getDay()];
+  const altAujourdhui = allAlternants.filter(a => a.jourCentre === jourNom);
+
+  const todayList = document.getElementById('todayList');
+  if (altAujourdhui.length === 0) {
+    todayList.innerHTML = '<div style="opacity:0.7;font-size:12px;">Aucune séance prévue aujourd\'hui</div>';
+  } else {
+    todayList.innerHTML = '';
+    let absentsCount = 0;
+    for (const alt of altAujourdhui) {
+      const key = alt.id + '_' + today.getFullYear() + '_' + (today.getMonth()+1) + '_' + today.getDate();
+      const snap = await get(ref(db,'emargements/'+key));
+      const data = snap.exists() ? snap.val() : {};
+      const absent = data.presence === 'absent';
+      if (absent) absentsCount++;
+      const matinAlt = data.matin_alt ? true : false;
+      const matinForm = data.matin_form ? true : false;
+      const amAlt = data.am_alt ? true : false;
+      const amForm = data.am_form ? true : false;
+
+      const row = document.createElement('div');
+      row.className = 'today-row';
+      row.innerHTML = `
+        <div class="today-nom">${alt.nom}</div>
+        <div class="today-statuts">
+          <div class="dot-sign ${absent?'absent':matinAlt?'signe':'attente'}" title="Matin alternant"></div>
+          <div class="dot-sign ${absent?'absent':matinForm?'signe':'attente'}" title="Matin formatrice"></div>
+          <div class="dot-sign ${absent?'absent':amAlt?'signe':'attente'}" title="AM alternant"></div>
+          <div class="dot-sign ${absent?'absent':amForm?'signe':'attente'}" title="AM formatrice"></div>
+        </div>
+      `;
+      todayList.appendChild(row);
+    }
+    document.getElementById('kpiAbsents').textContent = absentsCount;
+  }
+
+  // Activité récente — dernières signatures
+  const activite = document.getElementById('activiteRecente');
+  activite.innerHTML = '<div style="font-size:12px;color:var(--gris);">🟢 Signé &nbsp; 🔴 En attente &nbsp; ⚫ Absent</div>';
+}
+
+// LISTE ALTERNANTS
+function afficherListeAlternants() {
+  const container = document.getElementById('listeAlternants');
+  if (allAlternants.length === 0) { container.innerHTML = '<div class="loading">Aucun alternant.</div>'; return; }
+  container.innerHTML = '';
+  allAlternants.forEach(function(alt) {
+    const initiales = alt.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    const card = document.createElement('div');
+    card.className = 'alternant-card';
+    card.innerHTML = `
+      <div class="alternant-avatar">${initiales}</div>
+      <div style="flex:1">
+        <div class="alternant-nom">${alt.nom}</div>
+        <div class="alternant-sub">${alt.formation} · ${alt.jourCentre}</div>
+        <div class="alternant-sub">${alt.entreprise}</div>
+      </div>
+      <div class="alternant-arrow">✏️</div>
+    `;
+    function open(e) { e.preventDefault(); ouvrirFormModif(alt); }
+    card.addEventListener('touchend',open,{passive:false}); card.addEventListener('click',open);
+    container.appendChild(card);
+  });
+}
+
+// FORMULAIRE AJOUT
+document.getElementById('btnAjouterAlt').addEventListener('click', function() { ouvrirFormAjout(); });
+document.getElementById('btnAjouterAlt').addEventListener('touchend', function(e) { e.preventDefault(); ouvrirFormAjout(); }, {passive:false});
+
+function ouvrirFormAjout() {
+  editingId = null;
+  document.getElementById('formTitre').textContent = '➕ Nouvel alternant';
+  document.getElementById('formId').value = '';
+  document.getElementById('formId').disabled = false;
+  document.getElementById('formNom').value = '';
+  document.getElementById('formEntreprise').value = '';
+  document.getElementById('formMaitre').value = '';
+  document.getElementById('formHeures').value = '8h00 – 16h00';
+  document.getElementById('formDebut').value = '';
+  document.getElementById('formFin').value = '';
+  document.getElementById('btnSupprimer').style.display = 'none';
+  document.getElementById('formSuccess').classList.remove('visible');
+  document.getElementById('altListeView').style.display = 'none';
+  document.getElementById('altFormView').style.display = 'block';
+}
+
+function ouvrirFormModif(alt) {
+  editingId = alt.id;
+  document.getElementById('formTitre').textContent = '✏️ Modifier ' + alt.nom;
+  document.getElementById('formId').value = alt.id;
+  document.getElementById('formId').disabled = true;
+  document.getElementById('formNom').value = alt.nom;
+  document.getElementById('formFormation').value = alt.formation;
+  document.getElementById('formEntreprise').value = alt.entreprise;
+  document.getElementById('formMaitre').value = alt.maitre;
+  document.getElementById('formJour').value = alt.jourCentre;
+  document.getElementById('formHeures').value = alt.heures;
+  document.getElementById('formDebut').value = alt.debut;
+  document.getElementById('formFin').value = alt.fin;
+  document.getElementById('btnSupprimer').style.display = 'block';
+  document.getElementById('formSuccess').classList.remove('visible');
+  document.getElementById('altListeView').style.display = 'none';
+  document.getElementById('altFormView').style.display = 'block';
+}
+
+// SAUVEGARDER
+async function sauvegarder(e) {
+  e.preventDefault();
+  const id = editingId || document.getElementById('formId').value.trim().toUpperCase();
+  if (!id) { alert('Veuillez saisir un identifiant.'); return; }
+  const data = {
+    nom: document.getElementById('formNom').value.trim(),
+    formation: document.getElementById('formFormation').value,
+    entreprise: document.getElementById('formEntreprise').value.trim(),
+    maitre: document.getElementById('formMaitre').value.trim(),
+    jourCentre: document.getElementById('formJour').value,
+    heures: document.getElementById('formHeures').value.trim(),
+    debut: document.getElementById('formDebut').value.trim(),
+    fin: document.getElementById('formFin').value.trim()
+  };
+  await set(ref(db,'alternants/'+id), data);
+  document.getElementById('formSuccess').classList.add('visible');
+  await chargerTout();
+  setTimeout(function() { retourListe(); }, 1500);
+}
+document.getElementById('btnSauvegarder').addEventListener('touchend',sauvegarder,{passive:false});
+document.getElementById('btnSauvegarder').addEventListener('click',sauvegarder);
+
+// SUPPRIMER
+async function supprimer(e) {
+  e.preventDefault();
+  if (!editingId) return;
+  if (!confirm('Supprimer ' + editingId + ' ? Cette action est irréversible.')) return;
+  await remove(ref(db,'alternants/'+editingId));
+  await chargerTout();
+  retourListe();
+}
+document.getElementById('btnSupprimer').addEventListener('touchend',supprimer,{passive:false});
+document.getElementById('btnSupprimer').addEventListener('click',supprimer);
+
+// RETOUR LISTE
+function retourListe(e) {
+  if (e) e.preventDefault();
+  document.getElementById('altFormView').style.display = 'none';
+  document.getElementById('altListeView').style.display = 'block';
+}
+document.getElementById('btnRetourListe').addEventListener('touchend',retourListe,{passive:false});
+document.getElementById('btnRetourListe').addEventListener('click',retourListe);
+
+// GROUPES & CAPACITÉ
+function chargerGroupes() {
+  const lundis = allAlternants.filter(a=>a.jourCentre==='Lundi');
+  const mercredis = allAlternants.filter(a=>a.jourCentre==='Mercredi');
+
+  // Capacité
+  const container = document.getElementById('capaciteGroupe');
+  container.innerHTML = '';
+
+  [['Lundi', lundis, 'lundi'], ['Mercredi', mercredis, 'mercredi']].forEach(function([jour, alts, cls]) {
+    const pct = Math.min((alts.length / 8) * 100, 100);
+    const div = document.createElement('div');
+    div.className = 'capacite-card ' + cls;
+    div.innerHTML = `
+      <div class="capacite-titre">${jour} — ${alts.length} alternant${alts.length>1?'s':''}</div>
+      <div class="capacite-bar-bg"><div class="capacite-bar" style="width:${pct}%"></div></div>
+      <div class="capacite-info"><span>${alts.length} / 8 places</span><span>${8-alts.length} place${8-alts.length>1?'s':''} libre${8-alts.length>1?'s':''}</span></div>
+      <div style="margin-top:10px;">${alts.map(a=>`<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.06);">👤 ${a.nom} — ${a.formation}</div>`).join('')}</div>
+    `;
+    container.appendChild(div);
+  });
+
+  // Prévisionnel Région
+  const totalAlts = allAlternants.length;
+  const restantes = Math.max(0, (CAPACITE_MAX * 2) - totalAlts); // 4 par titre * 2 titres principaux
+  document.getElementById('prevEnvoyes').textContent = totalAlts + ' dossier' + (totalAlts>1?'s':'');
+  document.getElementById('prevRestantes').textContent = restantes + ' place' + (restantes>1?'s':'');
+  const statutEl = document.getElementById('prevStatut');
+  if (restantes === 0) { statutEl.textContent = '🔴 Capacité atteinte'; statutEl.className = 'prev-val plein'; }
+  else if (restantes <= 2) { statutEl.textContent = '🟡 Presque complet'; statutEl.className = 'prev-val'; }
+  else { statutEl.textContent = '🟢 Places disponibles'; statutEl.className = 'prev-val ok'; }
+
+  // Répartition
+  const repartition = document.getElementById('repartitionJour');
+  const parFormation = {};
+  allAlternants.forEach(function(a) {
+    parFormation[a.formation] = (parFormation[a.formation]||0) + 1;
+  });
+  repartition.innerHTML = Object.entries(parFormation).map(([f,n])=>`
+    <div class="info-row"><span class="info-label">${f}</span><span class="info-value">${n} alternant${n>1?'s':''}</span></div>
+  `).join('') || '<div class="loading">Aucune donnée.</div>';
+}
+
+// RÉCAP HEURES ADMIN
+function remplirMoisSelect() {
+  const select = document.getElementById('adminMoisSelect');
+  const moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const today = new Date();
+  select.innerHTML = '';
+  for (let y = 2026; y <= 2028; y++) {
+    const startM = y===2026?5:0; const endM = y===2028?5:11;
+    for (let m = startM; m <= endM; m++) {
+      const opt = document.createElement('option');
+      opt.value = y+'-'+m;
+      opt.textContent = moisNoms[m]+' '+y;
+      if (y===today.getFullYear()&&m===today.getMonth()) opt.selected=true;
+      select.appendChild(opt);
+    }
+  }
+}
+
+function getSeances(alt) {
+  const jourMap={'Lundi':1,'Mercredi':3};
+  const jourNum=jourMap[alt.jourCentre]||1;
+  const debut=new Date(2026,5,10); const fin=new Date(2028,5,10);
+  let d=new Date(debut);
+  while(d.getDay()!==jourNum) d.setDate(d.getDate()+1);
+  const result=[];
+  while(d<=fin){result.push(new Date(d));d.setDate(d.getDate()+7);}
+  return result;
+}
+
+async function chargerRecapAdmin() {
+  const container = document.getElementById('adminRecapListe');
+  container.innerHTML = '<div class="loading">Calcul en cours...</div>';
+  const [filterYear, filterMonth] = filterMode==='mois'
+    ? document.getElementById('adminMoisSelect').value.split('-').map(Number) : [null,null];
+
+  let totalH=0, totalA=0, totalS=0;
+  container.innerHTML='';
+
+  for (const alt of allAlternants) {
+    const altSeances=getSeances(alt);
+    let hP=0,hA=0,sCount=0;
+    const motifsCount={};
+
+    for (const d of altSeances) {
+      if (filterMode==='mois'&&(d.getFullYear()!==filterYear||d.getMonth()!==filterMonth)) continue;
+      if (d>new Date()) continue;
+      const key=alt.id+'_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+d.getDate();
+      const snap=await get(ref(db,'emargements/'+key));
+      const data=snap.exists()?snap.val():{};
+      sCount++;
+      if (data.presence==='absent') { hA+=(MATIN_H+AM_H); const m=data.motif||'Non renseigné'; motifsCount[m]=(motifsCount[m]||0)+1; }
+      else { if(data.matin_alt) hP+=MATIN_H; if(data.am_alt) hP+=AM_H; }
+    }
+
+    totalH+=hP; totalA+=hA; totalS+=sCount;
+    if (sCount===0) continue;
+
+    const initiales=alt.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    let motifsHtml='';
+    if(Object.keys(motifsCount).length>0){
+      motifsHtml='<div style="margin-top:8px;font-size:11px;"><div style="font-weight:700;color:var(--rouge);margin-bottom:4px;">Motifs :</div>'+
+      Object.entries(motifsCount).map(([m,c])=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--gris-clair);"><span>${m}</span><span style="font-weight:700;">${c}×</span></div>`).join('')+'</div>';
+    }
+
+    const card=document.createElement('div');
+    card.className='recap-card';
+    card.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;">${initiales}</div>
+        <div><div class="recap-nom">${alt.nom}</div><div style="font-size:11px;color:var(--gris);">${alt.formation} · ${alt.jourCentre}</div></div>
+      </div>
+      <div class="recap-grid">
+        <div class="recap-item vert"><div class="recap-val vert">${hP}h</div><div class="recap-lbl">Présence</div></div>
+        <div class="recap-item rouge"><div class="recap-val rouge">${hA}h</div><div class="recap-lbl">Absence</div></div>
+        <div class="recap-item or"><div class="recap-val or">${sCount}</div><div class="recap-lbl">Séances</div></div>
+        <div class="recap-item"><div class="recap-val">${hP+hA}h</div><div class="recap-lbl">Total</div></div>
+      </div>
+      ${motifsHtml}
+    `;
+    container.appendChild(card);
+  }
+
+  document.getElementById('adminTotalH').textContent=totalH+'h';
+  document.getElementById('adminTotalA').textContent=totalA+'h';
+  document.getElementById('adminTotalS').textContent=totalS;
+}
+
+['adminFilterMois','adminFilterTotal'].forEach(function(id){
+  function setFilter(e){
+    e.preventDefault();
+    filterMode=document.getElementById(id).getAttribute('data-filter');
+    document.getElementById('adminFilterMois').className='filter-btn'+(filterMode==='mois'?' active':'');
+    document.getElementById('adminFilterTotal').className='filter-btn'+(filterMode==='total'?' active':'');
+    document.getElementById('adminMoisSelect').style.display=filterMode==='mois'?'block':'none';
+    chargerRecapAdmin();
+  }
+  document.getElementById(id).addEventListener('touchend',setFilter,{passive:false});
+  document.getElementById(id).addEventListener('click',setFilter);
+});
+document.getElementById('adminMoisSelect').addEventListener('change',chargerRecapAdmin);
+
+// NAV ONGLETS
+document.querySelectorAll('.nav-btn').forEach(function(btn){
+  function activate(e){
+    e.preventDefault();
+    var target=btn.getAttribute('data-target');
+    document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+    document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+    document.getElementById(target).classList.add('active');
+    btn.classList.add('active');
+    if(target==='recap') chargerRecapAdmin();
+  }
+  btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
+});
+
+// DÉCONNEXION
+document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_admin_user');window.location.href='index.html';},{passive:false});
+document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_admin_user');window.location.href='index.html';});
+
+chargerTout();
+</script>
+</body>
+</html>
+<script>
+document.getElementById('btnExportPDFAdmin').addEventListener('click', exporterPDFAdmin);
+document.getElementById('btnExportPDFAdmin').addEventListener('touchend', function(e){ e.preventDefault(); exporterPDFAdmin(); }, {passive:false});
+
+async function exporterPDFAdmin() {
+  const btn = document.getElementById('btnExportPDFAdmin');
+  btn.textContent = '⏳ Génération en cours...';
+  btn.disabled = true;
+
+  if (!window.jspdf) {
+    await new Promise(function(resolve) {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = resolve;
+      document.head.appendChild(s);
+    });
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const moisVal = document.getElementById('adminMoisSelect').value.split('-').map(Number);
+  const filterYear = moisVal[0]; const filterMonth = moisVal[1];
+  const periodeTitre = moisNoms[filterMonth] + ' ' + filterYear;
+
+  const OR=[201,162,39], BLEU=[61,90,110], BLEU_FONCE=[42,63,78], GRIS=[113,128,150], VERT=[56,161,105], ROUGE=[229,62,62];
+  const MATIN_H=4, AM_H=3.5;
+  const jourMap={'Lundi':1,'Mercredi':3};
+  let pageNum=1;
+
+  function addHeader(titre){
+    doc.setFillColor(...BLEU_FONCE); doc.rect(0,0,210,30,'F');
+    doc.setTextColor(...OR); doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text('JT CONSEIL FORMATION',15,12);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255); doc.text('Saint-Joseph · La Réunion',15,18);
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text(titre,15,25);
+    const now=new Date(); doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(200,200,200);
+    doc.text('Généré le '+now.toLocaleDateString('fr-FR')+' à '+now.toLocaleTimeString('fr-FR'),150,25);
+  }
+  function addFooter(n){
+    doc.setFillColor(...BLEU_FONCE); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('Page '+n,195,292,{align:'right'});
+  }
+
+  addHeader('FEUILLES D\'ÉMARGEMENT · '+periodeTitre.toUpperCase()); addFooter(pageNum);
+  doc.setFillColor(...OR); doc.rect(0,30,210,2,'F');
+  doc.setTextColor(...BLEU_FONCE); doc.setFontSize(20); doc.setFont('helvetica','bold');
+  doc.text('Récapitulatif des émargements',105,80,{align:'center'});
+  doc.setFontSize(14); doc.setTextColor(...BLEU); doc.text('Période : '+periodeTitre,105,95,{align:'center'});
+  doc.setFontSize(10); doc.setTextColor(...GRIS);
+  doc.text('Document généré automatiquement via l\'application JTCF',105,110,{align:'center'});
+  doc.text('Ce document est destiné à l\'OPCO et aux organismes financeurs',105,118,{align:'center'});
+
+  const {getDatabase,ref,get}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  const {getApp}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+  const db=getDatabase(getApp());
+  const altSnap=await get(ref(db,'alternants'));
+  const alts=[];
+  if(altSnap.exists()){altSnap.forEach(function(c){const a=c.val();a.id=c.key;alts.push(a);});}
+
+  let totalHGlobal=0,totalAGlobal=0,totalSGlobal=0;
+  const recapData=[];
+
+  for(const alt of alts){
+    const jourNum=jourMap[alt.jourCentre]||1;
+    const debut=new Date(2026,5,10);const fin=new Date(2028,5,10);
+    let d=new Date(debut);
+    while(d.getDay()!==jourNum)d.setDate(d.getDate()+1);
+    const seancesMois=[];
+    while(d<=fin){if(d.getFullYear()===filterYear&&d.getMonth()===filterMonth&&d<=new Date())seancesMois.push(new Date(d));d.setDate(d.getDate()+7);}
+    let hP=0,hA=0;const seancesDetail=[];
+    for(const s of seancesMois){
+      const key=alt.id+'_'+s.getFullYear()+'_'+(s.getMonth()+1)+'_'+s.getDate();
+      const snap=await get(ref(db,'emargements/'+key));
+      const data=snap.exists()?snap.val():{};
+      const absent=data.presence==='absent';
+      if(absent){hA+=(MATIN_H+AM_H);}else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
+      seancesDetail.push({date:s,data,absent});
+    }
+    totalHGlobal+=hP;totalAGlobal+=hA;totalSGlobal+=seancesMois.length;
+    recapData.push({alt,seancesDetail,hP,hA,seances:seancesMois.length});
+  }
+
+  // Tableau récap global
+  doc.setTextColor(...BLEU_FONCE);doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text('Résumé global',15,140);
+  doc.setFillColor(...BLEU_FONCE);doc.rect(15,144,180,8,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(8);
+  doc.text('Alternant',18,149);doc.text('Formation',65,149);doc.text('Séances',120,149);doc.text('H. Présence',140,149);doc.text('H. Absence',165,149);
+  let yTab=152;
+  recapData.forEach(function(r,i){
+    doc.setFillColor(i%2===0?245:255,i%2===0?247:255,i%2===0?250:255);doc.rect(15,yTab,180,7,'F');
+    doc.setTextColor(...BLEU_FONCE);doc.setFontSize(8);doc.setFont('helvetica','normal');
+    doc.text(r.alt.nom,18,yTab+5);doc.text(r.alt.formation.replace('TP ',''),65,yTab+5);doc.text(String(r.seances),124,yTab+5);
+    doc.setTextColor(...VERT);doc.text(r.hP+'h',144,yTab+5);
+    doc.setTextColor(r.hA>0?ROUGE[0]:GRIS[0],r.hA>0?ROUGE[1]:GRIS[1],r.hA>0?ROUGE[2]:GRIS[2]);doc.text(r.hA+'h',169,yTab+5);
+    yTab+=7;
+  });
+  doc.setFillColor(...OR);doc.rect(15,yTab,180,8,'F');
+  doc.setTextColor(...BLEU_FONCE);doc.setFont('helvetica','bold');doc.setFontSize(8);
+  doc.text('TOTAL',18,yTab+5);doc.text(String(totalSGlobal),124,yTab+5);doc.text(totalHGlobal+'h',144,yTab+5);doc.text(totalAGlobal+'h',169,yTab+5);
+
+  const moisNomsFr=['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+
+  for(const r of recapData){
+    pageNum++;doc.addPage();
+    addHeader('ÉMARGEMENT · '+r.alt.nom.toUpperCase()+' · '+periodeTitre.toUpperCase());
+    addFooter(pageNum);
+    doc.setFillColor(...OR);doc.rect(0,30,210,2,'F');
+    doc.setFillColor(...BLEU_FONCE);doc.rect(15,38,180,28,'F');
+    doc.setTextColor(...OR);doc.setFontSize(13);doc.setFont('helvetica','bold');doc.text(r.alt.nom,20,48);
+    doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','normal');
+    doc.text('Formation : '+r.alt.formation,20,55);
+    doc.text('Entreprise : '+r.alt.entreprise+'   ·   Maître : '+r.alt.maitre,20,61);
+    doc.text('Jour en centre : '+r.alt.jourCentre+'   ·   Contrat : '+r.alt.debut+' → '+r.alt.fin,20,67);
+    doc.setFillColor(...VERT);doc.rect(15,72,57,14,'F');
+    doc.setFillColor(229,62,62);doc.rect(76,72,57,14,'F');
+    doc.setFillColor(...BLEU);doc.rect(137,72,58,14,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
+    doc.text(r.hP+'h',43,81,{align:'center'});doc.text(r.hA+'h',104,81,{align:'center'});doc.text(String(r.seances),166,81,{align:'center'});
+    doc.setFontSize(7);doc.setFont('helvetica','normal');
+    doc.text('Heures présence',43,84,{align:'center'});doc.text('Heures absence',104,84,{align:'center'});doc.text('Séances',166,84,{align:'center'});
+    let y=95;
+    doc.setFillColor(...BLEU_FONCE);doc.rect(15,y,180,8,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont('helvetica','bold');
+    doc.text('Date',18,y+5);doc.text('Mode',55,y+5);doc.text('Présence',80,y+5);doc.text('Motif',110,y+5);doc.text('Sig. Alternant',145,y+5);doc.text('Sig. Formatrice',172,y+5);
+    y+=8;
+    for(const s of r.seancesDetail){
+      if(y>265){addFooter(pageNum);pageNum++;doc.addPage();addHeader('ÉMARGEMENT · '+r.alt.nom.toUpperCase()+' (suite)');addFooter(pageNum);y=38;}
+      const dateStr=s.date.getDate()+' '+moisNomsFr[s.date.getMonth()];
+      const mode=s.data.mode||'—';const present=!s.absent;const motif=s.data.motif||(present?'—':'Non renseigné');
+      const altSigne=s.data.matin_alt||s.data.am_alt;const formSigne=s.data.matin_form||s.data.am_form;
+      const rowColor=s.absent?[255,245,245]:(altSigne&&formSigne?[240,255,244]:[250,250,252]);
+      doc.setFillColor(...rowColor);doc.rect(15,y,180,10,'F');
+      doc.setTextColor(...BLEU_FONCE);doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.text(dateStr,18,y+6);
+      doc.setFont('helvetica','normal');doc.setTextColor(...GRIS);
+      doc.text(mode==='presentiel'?'Présentiel':mode==='distanciel'?'Distanciel':'—',55,y+6);
+      if(s.absent){doc.setTextColor(...ROUGE);doc.text('Absent(e)',80,y+6);doc.setTextColor(...GRIS);doc.text(motif.substring(0,25),110,y+6);}
+      else{doc.setTextColor(...VERT);doc.text('Présent(e)',80,y+6);doc.setTextColor(...GRIS);doc.text('—',110,y+6);}
+      if(s.data.matin_alt&&!s.absent){try{doc.addImage(s.data.matin_alt,'JPEG',143,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓ Signé',145,y+6);}}
+      else{doc.setTextColor(s.absent?ROUGE[0]:GRIS[0],s.absent?ROUGE[1]:GRIS[1],s.absent?ROUGE[2]:GRIS[2]);doc.text(s.absent?'Absent':'En attente',145,y+6);}
+      if(s.data.matin_form&&!s.absent){try{doc.addImage(s.data.matin_form,'JPEG',170,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓ Signé',172,y+6);}}
+      else{doc.setTextColor(s.absent?ROUGE[0]:GRIS[0],s.absent?ROUGE[1]:GRIS[1],s.absent?ROUGE[2]:GRIS[2]);doc.text(s.absent?'Absent':'En attente',172,y+6);}
+      doc.setDrawColor(230,230,230);doc.line(15,y+10,195,y+10);y+=10;
+    }
+    y+=10;
+    if(y<240){
+      doc.setDrawColor(...OR);doc.setLineWidth(0.5);doc.rect(15,y,84,30);doc.rect(111,y,84,30);
+      doc.setTextColor(...GRIS);doc.setFontSize(8);doc.setFont('helvetica','bold');
+      doc.text('Signature Formatrice',57,y+5,{align:'center'});doc.text('Signature Alternant',153,y+5,{align:'center'});
+      doc.setFont('helvetica','normal');doc.setFontSize(7);
+      doc.text('Lu et approuvé',57,y+28,{align:'center'});doc.text('Lu et approuvé',153,y+28,{align:'center'});
+    }
+  }
+
+  const nomFichier='JTCF_Emargements_'+periodeTitre.replace(' ','_')+'.pdf';
+  doc.save(nomFichier);
+  btn.textContent='📄 Exporter le PDF mensuel';
+  btn.disabled=false;
+}
+</script>
