@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <!-- Fond bleu marine -->
+  <rect width="192" height="192" rx="32" fill="#1a3a5c"/>
+
+  <!-- Ligne décorative dorée -->
+  <rect x="24" y="140" width="144" height="4" rx="2" fill="#c9a84c"/>
+
+  <!-- Lettres JT -->
+  <text x="96" y="110"
+    font-family="Georgia, serif"
+    font-size="72"
+    font-weight="bold"
+    fill="#ffffff"
+    text-anchor="middle"
+    letter-spacing="-2">JT</text>
+
+  <!-- Sous-titre CF -->
+  <text x="96" y="135"
+    font-family="Georgia, serif"
+    font-size="22"
+    font-weight="normal"
+    fill="#c9a84c"
+    text-anchor="middle"
+    letter-spacing="6">CF</text>
+</svg>
