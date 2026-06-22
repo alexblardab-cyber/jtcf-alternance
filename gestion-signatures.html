@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion signatures JTCF</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 16px; }
+  :root { --or: #C9A227; --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --vert: #38a169; --rouge: #e53e3e; }
+  .card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.1); max-width: 480px; margin: 0 auto 14px; }
+  .title { font-size: 16px; font-weight: 800; color: var(--bleu-fonce); margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #718096; margin-bottom: 16px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 11px; font-weight: 700; color: var(--bleu); text-transform: uppercase; margin-bottom: 5px; }
+  .field select, .field input { width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; -webkit-appearance: none; }
+  .field select:focus, .field input:focus { border-color: var(--or); }
+  .btn-chercher { width: 100%; padding: 12px; background: var(--bleu-fonce); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
+  .result-card { background: #f8f9fa; border-radius: 10px; padding: 14px; margin-bottom: 8px; border-left: 4px solid var(--or); }
+  .result-nom { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); margin-bottom: 8px; }
+  .sign-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+  .sign-row:last-child { border-bottom: none; }
+  .sign-label { color: #718096; }
+  .sign-status { font-weight: 700; }
+  .signe { color: var(--vert); }
+  .attente { color: #a0aec0; }
+  .btn-suppr { padding: 5px 10px; background: #fff5f5; color: var(--rouge); border: 1px solid #fed7d7; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+  .loading { text-align: center; color: #718096; padding: 20px; font-size: 13px; }
+  .msg { padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-top: 8px; }
+  .msg.ok { background: #f0fff4; color: var(--vert); }
+  .msg.err { background: #fff5f5; color: var(--rouge); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="title">🔧 Gestion des signatures</div>
+  <div class="subtitle">Consultez et supprimez les signatures d'une séance</div>
+
+  <div class="field">
+    <label>Alternant</label>
+    <select id="selectAlt">
+      <option value="">-- Choisir --</option>
+      <option value="AB01">AB01 — Alexandre Blard (Lundi)</option>
+      <option value="LB01">LB01 — Léa Barret (Lundi)</option>
+      <option value="BD01">BD01 — Dourga Boqui Que Ni (Lundi)</option>
+      <option value="BL01">BL01 — Loelia Brassac (Lundi)</option>
+      <option value="SL01">SL01 — Loanne Salambeau (Lundi)</option>
+      <option value="CA01">CA01 — Ahamada Chamou (Mercredi)</option>
+      <option value="BS01">BS01 — Sila Bijoux (Mercredi)</option>
+      <option value="AE01">AE01 — Engy Atrigo Firmang (Mercredi)</option>
+      <option value="AN01">AN01 — Nadia Anli (Mercredi)</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Date de la séance</label>
+    <input type="date" id="inputDate" />
+  </div>
+
+  <button class="btn-chercher" id="btnChercher">🔍 Rechercher la séance</button>
+  <div id="resultat"></div>
+  <div id="msg"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Mettre la date d'aujourd'hui par défaut
+const today = new Date();
+document.getElementById('inputDate').value = today.toISOString().split('T')[0];
+
+async function chercher(e) {
+  if (e) e.preventDefault();
+  const altId = document.getElementById('selectAlt').value;
+  const dateStr = document.getElementById('inputDate').value;
+  const resultat = document.getElementById('resultat');
+  const msg = document.getElementById('msg');
+  msg.innerHTML = '';
+
+  if (!altId || !dateStr) { msg.innerHTML = '<div class="msg err">Veuillez choisir un alternant et une date.</div>'; return; }
+
+  resultat.innerHTML = '<div class="loading">🔍 Recherche...</div>';
+
+  const d = new Date(dateStr);
+  const key = altId + '_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+  const snap = await get(ref(db, 'emargements/' + key));
+  const data = snap.exists() ? snap.val() : {};
+
+  const moisNoms = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const dateAff = d.getDate() + ' ' + moisNoms[d.getMonth()] + ' ' + d.getFullYear();
+
+  const slots = [
+    { label: '🌅 Matin — Alternant', key: 'matin_alt' },
+    { label: '🌅 Matin — Formatrice', key: 'matin_form' },
+    { label: '🌇 Après-midi — Alternant', key: 'am_alt' },
+    { label: '🌇 Après-midi — Formatrice', key: 'am_form' }
+  ];
+
+  resultat.innerHTML = '<div class="result-card"><div class="result-nom">📅 ' + dateAff + ' · ' + altId + '</div>'
+    + slots.map(function(s) {
+      const signe = data[s.key] ? true : false;
+      return '<div class="sign-row">'
+        + '<span class="sign-label">' + s.label + '</span>'
+        + '<span style="display:flex;align-items:center;gap:8px;">'
+        + '<span class="sign-status ' + (signe?'signe':'attente') + '">' + (signe?'✅ Signé':'— En attente') + '</span>'
+        + (signe ? '<button class="btn-suppr" data-key="'+key+'" data-slot="'+s.key+'" data-label="'+s.label+'">🗑️ Supprimer</button>' : '')
+        + '</span></div>';
+    }).join('')
+    + '</div>';
+
+  // Boutons supprimer
+  resultat.querySelectorAll('.btn-suppr').forEach(function(btn) {
+    btn.addEventListener('click', async function() {
+      const k = btn.getAttribute('data-key');
+      const slot = btn.getAttribute('data-slot');
+      const label = btn.getAttribute('data-label');
+      if (!confirm('Supprimer la signature : ' + label + ' ?\nCette action est irréversible.')) return;
+      await remove(ref(db, 'emargements/' + k + '/' + slot));
+      msg.innerHTML = '<div class="msg ok">✅ Signature supprimée : ' + label + '</div>';
+      chercher();
+    });
+  });
+}
+
+document.getElementById('btnChercher').addEventListener('click', chercher);
+document.getElementById('btnChercher').addEventListener('touchend', function(e){ e.preventDefault(); chercher(); }, {passive:false});
+</script>
+</body>
+</html>
