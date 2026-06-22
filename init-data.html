@@ -2,23 +2,47 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Init données JTCF</title>
 <style>
-  body { font-family: sans-serif; padding: 40px; background: #f0f2f5; }
-  .card { background: white; border-radius: 14px; padding: 24px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-  h2 { color: #2a3f4e; margin-bottom: 16px; }
-  .btn { padding: 12px 24px; background: #C9A227; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 12px; }
-  .result { margin-top: 16px; font-size: 13px; color: #38a169; font-weight: 600; }
-  .error { color: #e53e3e; }
+  body { font-family: sans-serif; padding: 30px; background: #f0f2f5; }
+  .card { background: white; border-radius: 14px; padding: 24px; max-width: 500px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  h2 { color: #2a3f4e; margin-bottom: 8px; }
+  p { font-size: 13px; color: #718096; margin-bottom: 20px; }
+  .btn { padding: 12px 24px; background: #C9A227; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px; }
+  .result { margin-top: 16px; font-size: 13px; font-weight: 600; line-height: 1.8; }
+  .ok { color: #38a169; }
+  .err { color: #e53e3e; }
+  .alt-list { margin-top: 16px; }
+  .alt-item { padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 12px; background: #f0f2f5; display: flex; justify-content: space-between; }
+  .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .lundi { background: #eaf0f4; color: #3d5a6e; }
+  .mercredi { background: #faf5ff; color: #6b46c1; }
 </style>
 </head>
 <body>
 <div class="card">
-  <h2>⚙️ Initialisation des données</h2>
-  <p style="font-size:13px;color:#718096;margin-bottom:16px;">Ajoute Alexandre Blard et Mme Fontaine Emilie dans Firebase.</p>
-  <button class="btn" id="btnInit">Initialiser les données</button>
+  <h2>⚙️ Initialisation des données JTCF</h2>
+  <p>Ajoute tous les alternants, la formatrice et les admins dans Firebase.</p>
+
+  <div class="alt-list">
+    <div style="font-size:11px;font-weight:700;color:#3d5a6e;text-transform:uppercase;margin-bottom:8px;">📅 Lundi (5 alternants)</div>
+    <div class="alt-item"><span>AB01 — Alexandre Blard</span><span class="badge lundi">Lundi</span></div>
+    <div class="alt-item"><span>LB01 — Léa Barret</span><span class="badge lundi">Lundi</span></div>
+    <div class="alt-item"><span>BD01 — Dourga Boqui Que Ni</span><span class="badge lundi">Lundi</span></div>
+    <div class="alt-item"><span>BL01 — Loelia Brassac</span><span class="badge lundi">Lundi</span></div>
+    <div class="alt-item"><span>SL01 — Loanne Salambeau</span><span class="badge lundi">Lundi</span></div>
+    <div style="font-size:11px;font-weight:700;color:#6b46c1;text-transform:uppercase;margin:12px 0 8px;">📅 Mercredi (4 alternants)</div>
+    <div class="alt-item"><span>CA01 — Ahamada Chamou</span><span class="badge mercredi">Mercredi</span></div>
+    <div class="alt-item"><span>BS01 — Sila Bijoux</span><span class="badge mercredi">Mercredi</span></div>
+    <div class="alt-item"><span>AE01 — Engy Atrigo Firmang</span><span class="badge mercredi">Mercredi</span></div>
+    <div class="alt-item"><span>AN01 — Nadia Anli</span><span class="badge mercredi">Mercredi</span></div>
+  </div>
+
+  <button class="btn" id="btnInit">🚀 Initialiser toutes les données</button>
   <div class="result" id="result"></div>
 </div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -36,36 +60,48 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+const alternants = {
+  "AB01": { nom: "Alexandre Blard", formation: "TP Assistant de Direction", entreprise: "JT Conseil Formation", maitre: "Tibère Julien", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "15/06/2026", fin: "10/06/2028" },
+  "LB01": { nom: "Léa Barret", formation: "TP Assistant de Direction", entreprise: "—", maitre: "—", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "16/02/2026", fin: "31/12/2026" },
+  "BD01": { nom: "Dourga Boqui Que Ni", formation: "TP Assistant de Direction", entreprise: "—", maitre: "—", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "01/12/2025", fin: "13/12/2027" },
+  "BL01": { nom: "Loelia Brassac", formation: "TP Manager d'Unité Marchande", entreprise: "—", maitre: "—", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "13/10/2025", fin: "31/01/2027" },
+  "SL01": { nom: "Loanne Salambeau", formation: "TP Conseiller de Vente", entreprise: "—", maitre: "—", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "15/06/2026", fin: "18/03/2027" },
+  "CA01": { nom: "Ahamada Chamou", formation: "TP Assistant Commercial", entreprise: "—", maitre: "—", jourCentre: "Mercredi", heures: "8h00 – 16h00", debut: "20/05/2026", fin: "28/07/2027" },
+  "BS01": { nom: "Sila Bijoux", formation: "TP Conseiller de Vente", entreprise: "—", maitre: "—", jourCentre: "Mercredi", heures: "8h00 – 16h00", debut: "03/12/2025", fin: "31/01/2027" },
+  "AE01": { nom: "Engy Atrigo Firmang", formation: "TP Conseiller de Vente", entreprise: "—", maitre: "—", jourCentre: "Mercredi", heures: "8h00 – 16h00", debut: "16/07/2025", fin: "31/10/2026" },
+  "AN01": { nom: "Nadia Anli", formation: "TP Conseiller de Vente", entreprise: "—", maitre: "—", jourCentre: "Mercredi", heures: "8h00 – 16h00", debut: "18/05/2026", fin: "31/03/2027" }
+};
+
 async function initData(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   const result = document.getElementById('result');
-  result.textContent = '⏳ En cours...';
+  result.innerHTML = '⏳ Initialisation en cours...';
   result.className = 'result';
+
   try {
-    // Alternant
-    await set(ref(db, 'alternants/AB01'), {
-      nom: "Alexandre Blard", formation: "TP Assistant de Direction",
-      entreprise: "JT Conseil Formation", maitre: "Tibère Julien",
-      debut: "10/06/2026", fin: "10/06/2028",
-      jourCentre: "Lundi", heures: "8h00 – 16h00"
-    });
+    // Alternants
+    for (const [id, data] of Object.entries(alternants)) {
+      await set(ref(db, 'alternants/' + id), data);
+      result.innerHTML += '<div class="ok">✅ ' + id + ' — ' + data.nom + '</div>';
+    }
+
     // Formatrice
-    await set(ref(db, 'formateurs/FORM01'), {
-      nom: "Fontaine Emilie", role: "Formatrice"
-    });
+    await set(ref(db, 'formateurs/FORM01'), { nom: "Fontaine Emilie", role: "Formatrice" });
+    result.innerHTML += '<div class="ok">✅ FORM01 — Emilie Fontaine (Formatrice)</div>';
+
     // Admin
-    await set(ref(db, 'admins/ADMIN01'), {
-      nom: "Tibère Julien", role: "Directeur"
-    });
-    result.textContent = '✅ Alexandre Blard (AB01), Mme Fontaine (FORM01) et Tibère Julien (ADMIN01) ajoutés dans Firebase !';
+    await set(ref(db, 'admins/ADMIN01'), { nom: "Tibère Julien", role: "Directeur" });
+    result.innerHTML += '<div class="ok">✅ ADMIN01 — Tibère Julien (Admin)</div>';
+
+    result.innerHTML += '<div style="margin-top:12px;padding:10px;background:#f0fff4;border-radius:8px;color:#276749;font-weight:700;">🎉 Toutes les données ont été initialisées avec succès !</div>';
+
   } catch(err) {
-    result.textContent = '❌ Erreur : ' + err.message;
-    result.className = 'result error';
+    result.innerHTML += '<div class="err">❌ Erreur : ' + err.message + '</div>';
   }
 }
 
 document.getElementById('btnInit').addEventListener('click', initData);
-document.getElementById('btnInit').addEventListener('touchend', initData, {passive:false});
+document.getElementById('btnInit').addEventListener('touchend', function(e){ e.preventDefault(); initData(); }, {passive:false});
 </script>
 </body>
 </html>

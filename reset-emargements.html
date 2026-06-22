@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reset Émargements JTCF</title>
+<style>
+  body { font-family: sans-serif; padding: 30px; background: #f0f2f5; }
+  .card { background: white; border-radius: 14px; padding: 24px; max-width: 500px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  h2 { color: #e53e3e; margin-bottom: 8px; }
+  p { font-size: 13px; color: #718096; margin-bottom: 20px; }
+  .btn { padding: 12px 24px; background: #e53e3e; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px; }
+  .result { margin-top: 16px; font-size: 13px; font-weight: 600; line-height: 1.8; }
+  .ok { color: #38a169; }
+  .err { color: #e53e3e; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>🗑️ Remise à zéro des émargements</h2>
+  <p>Efface uniquement les données d'émargement de test. Les profils alternants, formatrice et admin sont conservés.</p>
+  <button class="btn" id="btnReset">🗑️ Effacer les émargements de test</button>
+  <div class="result" id="result"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+async function reset(e) {
+  if (e) e.preventDefault();
+  const result = document.getElementById('result');
+  result.innerHTML = '⏳ Suppression en cours...';
+
+  try {
+    await remove(ref(db, 'emargements'));
+    result.innerHTML = '<div class="ok">✅ Tous les émargements de test ont été supprimés !<br>Vous pouvez maintenant signer normalement depuis l\'appli.</div>';
+  } catch(err) {
+    result.innerHTML = '<div class="err">❌ Erreur : ' + err.message + '</div>';
+  }
+}
+
+document.getElementById('btnReset').addEventListener('click', reset);
+document.getElementById('btnReset').addEventListener('touchend', function(e){ e.preventDefault(); reset(); }, {passive:false});
+</script>
+</body>
+</html>
