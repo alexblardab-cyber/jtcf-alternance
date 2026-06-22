@@ -105,8 +105,14 @@
   .sign-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
   .btn-sign { padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
   .btn-valider { background: var(--vert); color: white; }
+  .btn-global { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--vert), #2f855a); color: white; border: none; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .btn-annuler-sign { width: 100%; margin-top: 8px; padding: 9px; background: var(--rouge-clair); color: var(--rouge); border: 2px solid var(--rouge); border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-signature-globale { width: 100%; padding: 13px; background: linear-gradient(135deg, #2a3f4e, #3d5a6e); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; letter-spacing: 0.5px; }
   .btn-effacer { background: #e2e8f0; color: var(--bleu-fonce); }
   .sign-label { font-size: 11px; color: var(--gris); margin-bottom: 6px; }
+  .btn-global { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--vert), #2f855a); color: white; border: none; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .btn-annuler-sign { width: 100%; padding: 8px; background: #fff5f5; color: var(--rouge); border: 1px solid #fed7d7; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; margin-top: 8px; }
+  .btn-global { width: 100%; padding: 13px; background: linear-gradient(135deg, #276749, #38a169); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; letter-spacing: 0.5px; }
 
   .loading { text-align: center; color: var(--gris); font-size: 13px; padding: 20px; }
   .spacer { height: 20px; }
@@ -139,12 +145,16 @@
 
   <!-- LUNDI -->
   <div class="section active" id="lundi">
+    <button class="btn-global" id="btnSignGlobalMatinLundi">✍️ Signer MATIN — Tous les lundis</button>
+    <button class="btn-global" id="btnSignGlobalAMLundi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les lundis</button>
     <div class="jour-titre">Alternants du Lundi</div>
     <div id="listeLundi"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- MERCREDI -->
   <div class="section" id="mercredi">
+    <button class="btn-global" id="btnSignGlobalMatinMercredi">✍️ Signer MATIN — Tous les mercredis</button>
+    <button class="btn-global" id="btnSignGlobalAMMercredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les mercredis</button>
     <div class="jour-titre">Alternants du Mercredi</div>
     <div id="listeMercredi"><div class="loading">Chargement...</div></div>
   </div>
@@ -236,6 +246,7 @@
             <button class="btn-sign btn-valider" data-slot="matin_form">✅ Valider</button>
           </div>
         </div>
+        <button class="btn-annuler-sign" id="btnAnnulerMatin" style="display:none;" data-slot="matin_form">🗑️ Annuler ma signature matin</button>
       </div>
       <div class="emarg-bloc" id="ficheBlocAM">
         <div class="emarg-titre">🌇 Après-midi · 13h30 – 16h00</div>
@@ -250,6 +261,7 @@
             <button class="btn-sign btn-valider" data-slot="am_form">✅ Valider</button>
           </div>
         </div>
+        <button class="btn-annuler-sign" id="btnAnnulerAM" style="display:none;" data-slot="am_form">🗑️ Annuler ma signature après-midi</button>
       </div>
     </div>
     <div class="spacer"></div>
@@ -494,6 +506,10 @@ async function updateFicheEmarg() {
   document.getElementById('ficheBtnNext').disabled = semIdx === seances.length-1;
 
   const key = getKey(currentAlt.id, d);
+  document.getElementById('ficheDate').setAttribute('data-key', key);
+  // Boutons annuler
+  var btnAnnMatin = document.getElementById('btnAnnulerMatin');
+  var btnAnnAM = document.getElementById('btnAnnulerAM');
   const snap = await get(ref(db,'emargements/'+key));
   const data = snap.exists() ? snap.val() : {};
   const absent = data.presence === 'absent';
@@ -527,6 +543,10 @@ async function updateFicheEmarg() {
     const bloc = document.getElementById(s.bloc);
     bloc.className = 'emarg-bloc' + (absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
   });
+
+  // Afficher boutons annuler selon statut signature
+  if (btnAnnMatin) btnAnnMatin.style.display = data.matin_form ? 'block' : 'none';
+  if (btnAnnAM) btnAnnAM.style.display = data.am_form ? 'block' : 'none';
 
   if (data.motif) {
     // Afficher motif si absent
@@ -1026,5 +1046,132 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     btn.addEventListener('click', chargerGroupesForm);
     btn.addEventListener('touchend', function(e){ e.preventDefault(); chargerGroupesForm(); }, {passive:false});
   }
+});
+</script>
+<script type="module">
+// ANNULER SIGNATURE + SIGNATURE GLOBALE
+import { getDatabase, ref, remove, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+const db2 = getDatabase(getApp());
+
+// ========== ANNULER SIGNATURE ==========
+function getKeyFromFiche() {
+  // Récupérer la clé Firebase de la séance affichée dans la fiche
+  const dateEl = document.getElementById('ficheDate');
+  if (!dateEl || !dateEl.textContent || dateEl.textContent === '—') return null;
+  // On stocke la clé courante dans un attribut data
+  return dateEl.getAttribute('data-key');
+}
+
+async function annulerSignature(slot) {
+  const key = document.getElementById('ficheDate').getAttribute('data-key');
+  if (!key) { alert('Impossible de trouver la séance.'); return; }
+  if (!confirm('Confirmer l\'annulation de cette signature ?')) return;
+  await remove(ref(db2, 'emargements/' + key + '/' + slot));
+  // Recharger la fiche
+  document.getElementById('ficheBtnPrev').click();
+  document.getElementById('ficheBtnNext').click();
+  // Trick pour forcer le refresh
+  const event = new Event('refresh-fiche');
+  document.dispatchEvent(event);
+  alert('✅ Signature annulée.');
+  location.reload();
+}
+
+document.getElementById('btnAnnulerMatin').addEventListener('click', function() { annulerSignature('matin_form'); });
+document.getElementById('btnAnnulerMatin').addEventListener('touchend', function(e){ e.preventDefault(); annulerSignature('matin_form'); }, {passive:false});
+document.getElementById('btnAnnulerAM').addEventListener('click', function() { annulerSignature('am_form'); });
+document.getElementById('btnAnnulerAM').addEventListener('touchend', function(e){ e.preventDefault(); annulerSignature('am_form'); }, {passive:false});
+
+// Afficher/cacher les boutons annuler selon le statut
+const observer = new MutationObserver(function() {
+  const matinForm = document.getElementById('ficheStatusMatinForm');
+  const amForm = document.getElementById('ficheStatusAMForm');
+  const btnMatin = document.getElementById('btnAnnulerMatin');
+  const btnAM = document.getElementById('btnAnnulerAM');
+  if (matinForm && btnMatin) btnMatin.style.display = matinForm.textContent.includes('✅') ? 'block' : 'none';
+  if (amForm && btnAM) btnAM.style.display = amForm.textContent.includes('✅') ? 'block' : 'none';
+});
+observer.observe(document.getElementById('ficheView'), {childList: true, subtree: true});
+
+// ========== SIGNATURE GLOBALE ==========
+async function signerTousLeGroupe(jour, periode) {
+  const snap = await get(ref(db2, 'alternants'));
+  const alts = [];
+  if (snap.exists()) { snap.forEach(function(c){ const a=c.val(); a.id=c.key; if(a.jourCentre===jour) alts.push(a); }); }
+  if (alts.length === 0) { alert('Aucun alternant trouvé pour ' + jour); return; }
+
+  // Ouvrir une zone de signature unique
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:20px;width:100%;max-width:400px;">
+      <div style="font-size:14px;font-weight:700;color:#2a3f4e;margin-bottom:4px;">✍️ Signature globale</div>
+      <div style="font-size:12px;color:#718096;margin-bottom:12px;">${periode==='matin'?'Matin':'Après-midi'} · Tous les alternants du ${jour}</div>
+      <div style="font-size:11px;color:#3d5a6e;font-weight:700;margin-bottom:8px;">Signez une fois pour tous :</div>
+      <canvas id="canvasGlobal" style="width:100%;height:100px;background:white;border:2px dashed #f0d98a;border-radius:10px;display:block;touch-action:none;cursor:crosshair;"></canvas>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button id="btnEffacerGlobal" style="flex:1;padding:10px;background:#e2e8f0;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Effacer</button>
+        <button id="btnValiderGlobal" style="flex:1;padding:10px;background:#38a169;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✅ Valider pour tous</button>
+        <button id="btnAnnulerGlobal" style="flex:1;padding:10px;background:#fff5f5;color:#e53e3e;border:1px solid #fed7d7;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Annuler</button>
+      </div>
+      <div id="globalStatus" style="margin-top:10px;font-size:12px;color:#38a169;font-weight:600;"></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  // Canvas signature
+  const canvas = document.getElementById('canvasGlobal');
+  canvas.width = canvas.offsetWidth; canvas.height = 100;
+  const ctx = canvas.getContext('2d');
+  let drawing = false;
+  function getPos(e) { const r=canvas.getBoundingClientRect(); if(e.touches) return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}; return{x:e.clientX-r.left,y:e.clientY-r.top}; }
+  canvas.addEventListener('mousedown', function(e){ drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); });
+  canvas.addEventListener('mousemove', function(e){ if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#2a3f4e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke(); });
+  canvas.addEventListener('mouseup', function(){ drawing=false; });
+  canvas.addEventListener('touchstart', function(e){ e.preventDefault(); drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }, {passive:false});
+  canvas.addEventListener('touchmove', function(e){ e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#2a3f4e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke(); }, {passive:false});
+  canvas.addEventListener('touchend', function(){ drawing=false; });
+
+  document.getElementById('btnEffacerGlobal').addEventListener('click', function(){ ctx.clearRect(0,0,canvas.width,canvas.height); });
+  document.getElementById('btnAnnulerGlobal').addEventListener('click', function(){ document.body.removeChild(modal); });
+
+  document.getElementById('btnValiderGlobal').addEventListener('click', async function() {
+    const imageData = canvas.toDataURL();
+    const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
+    if (imageData === blank.toDataURL()) { alert('Veuillez signer avant de valider.'); return; }
+
+    const slot = periode === 'matin' ? 'matin_form' : 'am_form';
+    const today = new Date();
+    const status = document.getElementById('globalStatus');
+    status.textContent = '⏳ Signature en cours...';
+
+    for (const alt of alts) {
+      // Trouver la séance du jour actuel pour cet alternant
+      const jourMap = {'Lundi':1,'Mercredi':3};
+      const jourNum = jourMap[alt.jourCentre] || 1;
+      // Trouver le lundi/mercredi le plus proche passé ou aujourd'hui
+      let d = new Date(today);
+      while (d.getDay() !== jourNum) d.setDate(d.getDate() - 1);
+      const key = alt.id + '_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+      await set(ref(db2, 'emargements/' + key + '/' + slot), imageData);
+      status.textContent += '\n✅ ' + alt.nom;
+    }
+
+    status.innerHTML = '<span style="color:#38a169;">✅ Signature appliquée pour tous les alternants du ' + jour + ' !</span>';
+    setTimeout(function(){ document.body.removeChild(modal); }, 2000);
+  });
+}
+
+// Boutons signature globale
+['btnSignGlobalMatinLundi','btnSignGlobalAMLundi','btnSignGlobalMatinMercredi','btnSignGlobalAMMercredi'].forEach(function(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const jour = id.includes('Lundi') ? 'Lundi' : 'Mercredi';
+  const periode = id.includes('Matin') ? 'matin' : 'am';
+  function open(e) { if(e) e.preventDefault(); signerTousLeGroupe(jour, periode); }
+  el.addEventListener('click', open);
+  el.addEventListener('touchend', open, {passive:false});
 });
 </script>
