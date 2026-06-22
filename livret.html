@@ -338,8 +338,13 @@ async function chargerUser() {
   while (d <= fin) { seances.push(new Date(d)); d.setDate(d.getDate()+7); }
 
   const today = new Date();
+  today.setHours(0,0,0,0);
+  // Trouver la séance la plus proche d'aujourd'hui (passée ou en cours)
+  semIdx = 0;
   for (let i = 0; i < seances.length; i++) {
-    if (seances[i] >= today) { semIdx = i; break; }
+    const s = new Date(seances[i]); s.setHours(0,0,0,0);
+    if (s <= today) { semIdx = i; }
+    else { break; }
   }
   document.getElementById('alertProchaine').innerHTML = '📢 Prochain ' + user.jourCentre + ' en centre : <strong>' + formatDate(seances[semIdx]) + '</strong>';
 }
@@ -396,12 +401,30 @@ async function updateEmargement() {
   document.getElementById('modeMatinStatus').className = 'emarg-status'+(modeActuel==='distanciel'?' status-distanciel':'');
   document.getElementById('modeAMStatus').className = 'emarg-status'+(modeActuel==='distanciel'?' status-distanciel':'');
 
-  // Verrou 12h
+  // Verrou jour + heure
   const maintenant = new Date();
   const apremDisponible = maintenant.getHours() >= 12;
+  const jourMap2 = {'Lundi':1,'Mercredi':3};
+  const jourCentreNum = jourMap2[user.jourCentre] || 1;
+  const estJourCentre = maintenant.getDay() === jourCentreNum;
+
+  // Verrou jour — si ce n'est pas le bon jour, bloquer les signatures
+  const zoneMatinAlt = document.getElementById('zoneMatinAlt');
+  const verouJour = document.getElementById('verouJour');
+  if (!estJourCentre && !data.matin_alt) {
+    if (verouJour) verouJour.style.display = 'block';
+    if (zoneMatinAlt) zoneMatinAlt.style.display = 'none';
+  } else {
+    if (verouJour) verouJour.style.display = 'none';
+  }
+  // Mettre à jour le message avec le bon jour
+  const jourMsg = document.getElementById('jourCentreMsg');
+  if (jourMsg) jourMsg.textContent = 'le ' + user.jourCentre.toLowerCase() + ' en centre';
+
+  // Verrou 12h après-midi
   const verouAM = document.getElementById('verouAM');
   const zoneAMAlt = document.getElementById('zoneAMAlt');
-  if (!apremDisponible && !data.am_alt && presenceActuelle !== 'absent') {
+  if ((!apremDisponible || !estJourCentre) && !data.am_alt && presenceActuelle !== 'absent') {
     verouAM.style.display = 'block';
     if (zoneAMAlt) zoneAMAlt.style.display = 'none';
   } else {
