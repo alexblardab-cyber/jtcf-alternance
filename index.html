@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>JTCF Alternance – Connexion</title>
- <link rel="manifest" href="manifest.json">
+<title>JTCF – Connexion</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(160deg, #2a3f4e, #3d5a6e); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -25,20 +24,19 @@
   .error-msg { display: none; background: #fff5f5; border: 1px solid #fed7d7; color: var(--erreur); font-size: 12px; font-weight: 600; padding: 10px 14px; border-radius: 8px; margin-top: 12px; }
   .error-msg.visible { display: block; }
   .footer-note { margin-top: 24px; font-size: 11px; color: var(--gris); line-height: 1.6; }
-  .footer-note strong { color: var(--bleu); }
 </style>
 </head>
 <body>
 <div class="login-box">
   <div class="stars">★ ★ ★</div>
   <div class="logo">JT Conseil Formation</div>
-  <div class="logo-sub">Saint-Joseph · Alternance</div>
+  <div class="logo-sub">Saint-Joseph</div>
   <div class="divider"></div>
   <div class="title">Accès Mon Espace</div>
-  <div class="subtitle">Alternant ou Formatrice — même page de connexion</div>
+  <div class="subtitle">Alternant, Stagiaire, Formatrice ou Admin — même page de connexion</div>
   <div class="field">
     <label>Votre identifiant</label>
-    <input type="text" id="identifiant" placeholder="Ex : AB01, FORM01..." maxlength="10" />
+    <input type="text" id="identifiant" placeholder="Ex : AB01, ML01, FORM01..." maxlength="10" />
   </div>
   <div class="field">
     <label>Code d'accès</label>
@@ -48,6 +46,7 @@
   <div class="error-msg" id="errorMsg">❌ Identifiant ou code incorrect.</div>
   <div class="footer-note">Identifiant oublié ?<br>Contactez-nous : <a href="mailto:contact@tbrgroup.fr" style="color:#3d5a6e;font-weight:700;">contact@tbrgroup.fr</a></div>
 </div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -82,21 +81,28 @@ async function connexion(e) {
   }
 
   try {
-    // Vérifier si c'est un alternant
+    // Alternant
     const altSnap = await get(ref(db, 'alternants/' + id));
     if (altSnap.exists()) {
       sessionStorage.setItem('jtcf_alt_user', id);
       window.location.href = 'livret.html';
       return;
     }
-    // Vérifier si c'est une formatrice
+    // Stagiaire FC
+    const fcSnap = await get(ref(db, 'stagiairesFC/' + id));
+    if (fcSnap.exists()) {
+      sessionStorage.setItem('jtcf_fc_user', id);
+      window.location.href = 'livret-fc.html';
+      return;
+    }
+    // Formatrice
     const formSnap = await get(ref(db, 'formateurs/' + id));
     if (formSnap.exists()) {
       sessionStorage.setItem('jtcf_form_user', id);
       window.location.href = 'formatrice.html';
       return;
     }
-    // Vérifier si c'est un admin
+    // Admin
     const adminSnap = await get(ref(db, 'admins/' + id));
     if (adminSnap.exists()) {
       sessionStorage.setItem('jtcf_admin_user', id);
