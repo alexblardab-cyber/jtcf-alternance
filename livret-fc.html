@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mon Livret – JTCF Formation Continue</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a202c; }
+  :root {
+    --or: #C9A227; --or-clair: #f0d98a; --or-pale: #fdf6e3;
+    --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --bleu-clair: #eaf0f4;
+    --blanc: #ffffff; --gris: #718096; --gris-clair: #f0f2f5;
+    --vert: #38a169; --vert-clair: #f0fff4;
+    --rouge: #e53e3e; --rouge-clair: #fff5f5;
+    --violet: #6b46c1; --violet-clair: #faf5ff;
+  }
+
+  .header { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: var(--blanc); padding: 20px 20px 14px; text-align: center; }
+  .header .stars { font-size: 13px; color: var(--or); letter-spacing: 4px; margin-bottom: 4px; }
+  .header .logo { font-size: 18px; font-weight: 800; color: var(--or); text-transform: uppercase; letter-spacing: 2px; }
+  .header .logo-sub { font-size: 10px; opacity: 0.75; letter-spacing: 1px; text-transform: uppercase; }
+  .header .badge-fc { display: inline-block; margin-top: 8px; background: var(--or); color: var(--bleu-fonce); font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 1px; }
+  .header .welcome { margin-top: 14px; background: rgba(201,162,39,0.15); border: 1px solid rgba(201,162,39,0.3); border-radius: 12px; padding: 11px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+  .welcome-left .name { font-size: 15px; font-weight: 700; }
+  .welcome-left .formation { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+  .btn-logout { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 11px; padding: 6px 10px; border-radius: 8px; cursor: pointer; flex-shrink: 0; touch-action: manipulation; -webkit-appearance: none; }
+
+  .nav { display: flex; overflow-x: auto; background: var(--bleu-fonce); padding: 0 4px; -webkit-overflow-scrolling: touch; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex-shrink: 0; padding: 14px 12px; border: none; background: none; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; -webkit-appearance: none; touch-action: manipulation; -webkit-user-select: none; user-select: none; display: block; }
+  .nav-btn.active { color: var(--or); border-bottom-color: var(--or); font-weight: 700; }
+
+  .content { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card { background: var(--blanc); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(61,90,110,0.1); }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--bleu); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 2px solid var(--or); }
+  .info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--gris); font-size: 12px; }
+  .info-value { font-weight: 600; text-align: right; max-width: 60%; color: var(--bleu-fonce); }
+
+  .alert { background: var(--or-pale); border-left: 4px solid var(--or); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--bleu-fonce); margin-bottom: 14px; font-weight: 500; }
+  .slogan-card { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border-radius: 14px; padding: 16px; margin-bottom: 14px; text-align: center; color: var(--blanc); }
+  .slogan-card .slogan { font-size: 14px; font-weight: 800; color: var(--or); }
+  .slogan-card .sub { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+
+  /* PLANNING QUOTIDIEN */
+  .semaine-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .btn-sem { padding: 7px 12px; border: 2px solid var(--or); border-radius: 8px; background: none; color: var(--or); font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-sem:disabled { opacity: 0.3; }
+  .semaine-titre { font-size: 13px; font-weight: 700; color: var(--bleu-fonce); }
+  .jour-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; margin-bottom: 6px; }
+  .jour-row.formation { background: var(--bleu-clair); border-left: 3px solid var(--bleu); }
+  .jour-row.repos { background: var(--gris-clair); border-left: 3px solid #a0aec0; opacity: 0.7; }
+  .jour-row.ferie { background: var(--violet-clair); border-left: 3px solid var(--violet); }
+  .jour-row.today { background: var(--or-pale); border-left: 3px solid var(--or); }
+  .jour-row.stage { background: #fff9f0; border-left: 3px solid #dd6b20; }
+  .jour-nom { font-weight: 600; font-size: 13px; width: 90px; color: var(--bleu-fonce); }
+  .jour-info { font-size: 12px; color: var(--gris); flex: 1; }
+  .jour-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .badge-formation { background: var(--bleu-clair); color: var(--bleu); }
+  .badge-repos { background: #e2e8f0; color: #718096; }
+  .badge-ferie { background: var(--violet-clair); color: var(--violet); }
+  .badge-today { background: var(--or); color: var(--bleu-fonce); }
+  .badge-stage { background: #feebc8; color: #dd6b20; }
+
+  /* ÉMARGEMENT */
+  .emarg-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .btn-nav { padding: 8px 14px; border: 2px solid var(--or); border-radius: 8px; background: none; color: var(--or); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-nav:disabled { opacity: 0.3; }
+  .emarg-date { background: var(--or-pale); border: 2px solid var(--or); border-radius: 10px; padding: 10px; text-align: center; margin-bottom: 12px; font-weight: 800; font-size: 14px; color: var(--bleu-fonce); }
+  .emarg-bloc { border: 2px solid var(--gris-clair); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .emarg-bloc.signe { border-color: var(--vert); background: var(--vert-clair); }
+  .emarg-bloc.absent-bloc { border-color: var(--rouge); background: var(--rouge-clair); }
+  .emarg-titre { font-size: 12px; font-weight: 700; color: var(--bleu); margin-bottom: 10px; text-transform: uppercase; }
+  .emarg-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .emarg-label { font-size: 12px; color: var(--gris); }
+  .emarg-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .status-signe { background: #c6f6d5; color: #276749; }
+  .status-attente { background: #fed7d7; color: #c53030; }
+  .status-distanciel { background: #e9d8fd; color: #6b46c1; }
+  .sign-zone { border: 2px dashed var(--or-clair); border-radius: 10px; background: var(--or-pale); padding: 8px; margin-top: 8px; text-align: center; }
+  .sign-canvas { width: 100%; height: 80px; border-radius: 6px; background: white; display: block; cursor: crosshair; touch-action: none; }
+  .sign-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
+  .btn-sign { padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-valider { background: var(--vert); color: white; }
+  .btn-effacer { background: #e2e8f0; color: var(--bleu-fonce); }
+  .sign-label { font-size: 11px; color: var(--gris); margin-bottom: 6px; }
+
+  /* MODE + PRESENCE */
+  .mode-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .mode-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 12px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; }
+  .mode-btn.active-presentiel { border-color: var(--vert); background: var(--vert-clair); color: var(--vert); }
+  .mode-btn.active-distanciel { border-color: var(--violet); background: var(--violet-clair); color: var(--violet); }
+  .presence-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .presence-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 12px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; }
+  .presence-btn.active-present { border-color: var(--vert); background: var(--vert-clair); color: var(--vert); }
+  .presence-btn.active-absent { border-color: var(--rouge); background: var(--rouge-clair); color: var(--rouge); }
+  .motif-zone { background: var(--rouge-clair); border: 1px solid #fed7d7; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .motif-label { font-size: 11px; font-weight: 700; color: var(--rouge); margin-bottom: 8px; text-transform: uppercase; }
+  .motif-select { width: 100%; padding: 10px; border: 1px solid #fed7d7; border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--bleu-fonce); background: white; -webkit-appearance: none; outline: none; margin-bottom: 10px; }
+  .btn-motif-valider { width: 100%; padding: 10px; background: var(--rouge); color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; margin-bottom: 10px; }
+  .justif-zone { background: var(--vert-clair); border: 2px dashed #68d391; border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; }
+  .justif-label-upload { display: block; padding: 10px; background: var(--vert); color: white; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+  .justif-input { display: none; }
+  .justif-deja { background: var(--vert-clair); border: 1px solid #c6f6d5; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--vert); font-weight: 600; display: none; align-items: center; gap: 6px; margin-top: 8px; }
+
+  /* VERROU */
+  .verrou-box { background: var(--or-pale); border: 2px solid var(--or); border-radius: 10px; padding: 14px; margin-bottom: 12px; text-align: center; }
+
+  /* CONTACTS */
+  .contact-card { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gris-clair); }
+  .contact-card:last-child { border-bottom: none; }
+  .contact-avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .contact-name { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); }
+  .contact-role { font-size: 11px; color: var(--gris); }
+  .contact-btns { display: flex; gap: 6px; margin-top: 6px; }
+  .btn-contact { padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .btn-tel { background: var(--bleu-clair); color: var(--bleu); }
+  .btn-wa { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+
+  .rule-item { padding: 10px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; line-height: 1.6; display: flex; gap: 10px; color: #2d3748; }
+  .rule-item:last-child { border-bottom: none; }
+  .rule-num { font-weight: 800; color: var(--or); flex-shrink: 0; width: 20px; }
+  .spacer { height: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="stars">★ ★ ★</div>
+  <div class="logo">JT Conseil Formation</div>
+  <div class="logo-sub">Saint-Joseph</div>
+  <div class="badge-fc">🎓 Formation Continue</div>
+  <div class="welcome">
+    <div class="welcome-left">
+      <div class="name" id="headerNom">👋 Bonjour</div>
+      <div class="formation" id="headerFormation"></div>
+    </div>
+    <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+  </div>
+</div>
+
+<div class="nav">
+  <a class="nav-btn active" data-target="accueil">🏠 Accueil</a>
+  <a class="nav-btn" data-target="planning">📅 Planning</a>
+  <a class="nav-btn" data-target="emargement">✍️ Émargement</a>
+  <a class="nav-btn" data-target="contacts">📞 Contacts</a>
+  <a class="nav-btn" data-target="reglement">📋 Règlement</a>
+</div>
+
+<div class="content">
+
+  <!-- ACCUEIL -->
+  <div class="section active" id="accueil">
+    <div class="slogan-card">
+      <div class="slogan">NOTRE OBJECTIF = VOTRE RÉUSSITE</div>
+      <div class="sub">JT Conseil Formation Saint-Joseph</div>
+    </div>
+    <div class="alert" id="alertProchaine">📢 Chargement...</div>
+    <div class="card">
+      <div class="card-title">🎓 Ma formation</div>
+      <div class="info-row"><span class="info-label">Nom</span><span class="info-value" id="infoNom">—</span></div>
+      <div class="info-row"><span class="info-label">Formation</span><span class="info-value" id="infoFormation">—</span></div>
+      <div class="info-row"><span class="info-label">Type</span><span class="info-value">Formation Continue</span></div>
+      <div class="info-row"><span class="info-label">Financement</span><span class="info-value">Pass Formation — Région Réunion</span></div>
+      <div class="info-row"><span class="info-label">Début</span><span class="info-value" id="infoDebut">—</span></div>
+      <div class="info-row"><span class="info-label">Jours en centre</span><span class="info-value">Lundi au Jeudi</span></div>
+      <div class="info-row"><span class="info-label">Horaires</span><span class="info-value" id="infoHeures">—</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📍 Infos pratiques</div>
+      <div class="info-row"><span class="info-label">Adresse</span><span class="info-value">20a rue du Général Lambert, St Joseph</span></div>
+      <div class="info-row"><span class="info-label">Bus</span><span class="info-value">Arrêt directement devant</span></div>
+      <div class="info-row"><span class="info-label">Parking</span><span class="info-value">Places privées disponibles</span></div>
+      <div class="info-row"><span class="info-label">Boissons</span><span class="info-value">Chaudes et froides offertes ☕</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">💬 Mot d'accueil</div>
+      <p style="font-size:13px;line-height:1.7;color:#4a5568;">Bienvenue chez JT Conseil Formation. Nous sommes ravis de vous accueillir dans le cadre de votre formation financée par la Région Réunion. Notre équipe est entièrement dédiée à votre réussite. N'hésitez pas à nous solliciter à tout moment.</p>
+    </div>
+  </div>
+
+  <!-- PLANNING -->
+  <div class="section" id="planning">
+    <div class="card">
+      <div class="card-title">📅 Planning de formation</div>
+      <div class="semaine-nav">
+        <button class="btn-sem" id="btnSemPrev">◀ Préc.</button>
+        <div class="semaine-titre" id="semaineTitrePlan">Semaine —</div>
+        <button class="btn-sem" id="btnSemNext">Suiv. ▶</button>
+      </div>
+      <div id="planningJours"></div>
+    </div>
+  </div>
+
+  <!-- ÉMARGEMENT -->
+  <div class="section" id="emargement">
+    <div class="card">
+      <div class="card-title">✍️ Feuille d'émargement</div>
+      <div class="emarg-nav">
+        <button class="btn-nav" id="btnPrev">◀ Préc.</button>
+        <div class="emarg-date" id="emargDate">—</div>
+        <button class="btn-nav" id="btnNext">Suiv. ▶</button>
+      </div>
+
+      <!-- VERROU JOUR -->
+      <div class="verrou-box" id="verouJour" style="display:none;">
+        <div style="font-size:20px;margin-bottom:6px;">🔒</div>
+        <div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">Signature disponible</div>
+        <div style="font-size:13px;font-weight:700;color:var(--or);">uniquement du lundi au jeudi</div>
+        <div style="font-size:11px;color:var(--gris);margin-top:4px;">Vous pouvez consulter vos autres informations librement</div>
+      </div>
+
+      <!-- MODE -->
+      <div id="zoneEmarg">
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Mode de la séance</div>
+          <div class="mode-toggle">
+            <button class="mode-btn" id="btnPresentiel" data-mode="presentiel">🏫 Présentiel</button>
+            <button class="mode-btn" id="btnDistanciel" data-mode="distanciel">💻 Distanciel</button>
+          </div>
+        </div>
+
+        <!-- PRÉSENCE -->
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Ma présence</div>
+          <div class="presence-toggle">
+            <button class="presence-btn" id="btnPresent" data-presence="present">✅ Présent(e)</button>
+            <button class="presence-btn" id="btnAbsent" data-presence="absent">❌ Absent(e)</button>
+          </div>
+        </div>
+
+        <!-- MOTIF -->
+        <div class="motif-zone" id="motifZone" style="display:none;">
+          <div class="motif-label">⚠️ Motif d'absence</div>
+          <select class="motif-select" id="motifSelect">
+            <option value="">-- Choisir un motif --</option>
+            <option value="Maladie">🤒 Maladie</option>
+            <option value="Convenance personnelle">👤 Convenance personnelle</option>
+            <option value="Cas de force majeure">⚡ Cas de force majeure</option>
+            <option value="Sans justificatif">📄 Sans justificatif</option>
+            <option value="Autre">📝 Autre</option>
+          </select>
+          <button class="btn-motif-valider" id="btnMotifValider">Enregistrer le motif</button>
+          <div class="justif-zone">
+            <div style="font-size:11px;font-weight:700;color:var(--vert);margin-bottom:8px;text-transform:uppercase;">📎 Justificatif</div>
+            <div id="justifDeja" class="justif-deja">✅ Justificatif déjà envoyé</div>
+            <img id="justifPreview" style="width:100%;max-height:150px;object-fit:contain;border-radius:8px;margin-bottom:8px;display:none;" alt="Aperçu" />
+            <label class="justif-label-upload" for="justifInput">📷 Prendre une photo ou choisir un fichier</label>
+            <input type="file" id="justifInput" class="justif-input" accept="image/*" />
+          </div>
+        </div>
+
+        <!-- MATIN -->
+        <div class="emarg-bloc" id="blocMatin">
+          <div class="emarg-titre">🌅 Matin · 8h00 – 12h00</div>
+          <div class="emarg-row"><span class="emarg-label">Stagiaire</span><span class="emarg-status status-attente" id="statusMatinAlt">En attente</span></div>
+          <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="statusMatinForm">En attente</span></div>
+          <div class="sign-zone" id="zoneMatinAlt">
+            <div class="sign-label">Votre signature</div>
+            <canvas class="sign-canvas" id="canvasMatinAlt"></canvas>
+            <div class="sign-actions">
+              <button class="btn-sign btn-effacer" data-canvas="canvasMatinAlt">Effacer</button>
+              <button class="btn-sign btn-valider" data-slot="matin_alt">✅ Valider</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- APRÈS-MIDI -->
+        <div class="emarg-bloc" id="blocAM">
+          <div class="emarg-titre">🌇 Après-midi · 13h30 – 16h00</div>
+          <div class="emarg-row"><span class="emarg-label">Stagiaire</span><span class="emarg-status status-attente" id="statusAMAlt">En attente</span></div>
+          <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="statusAMForm">En attente</span></div>
+          <div id="verouAM" style="display:none;background:var(--or-pale);border:1px solid var(--or-clair);border-radius:10px;padding:12px;margin-top:8px;text-align:center;font-size:12px;color:#744210;">
+            ⏰ La signature de l'après-midi sera disponible à partir de <strong>12h00</strong>
+          </div>
+          <div class="sign-zone" id="zoneAMAlt">
+            <div class="sign-label">Votre signature</div>
+            <canvas class="sign-canvas" id="canvasAMAlt"></canvas>
+            <div class="sign-actions">
+              <button class="btn-sign btn-effacer" data-canvas="canvasAMAlt">Effacer</button>
+              <button class="btn-sign btn-valider" data-slot="am_alt">✅ Valider</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACTS -->
+  <div class="section" id="contacts">
+    <div class="card">
+      <div class="card-title">👥 L'équipe JTCF</div>
+      <div class="contact-card"><div class="contact-avatar">TJ</div><div style="flex:1"><div class="contact-name">Tibère Julien</div><div class="contact-role">Gérant</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692242157">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692242157" target="_blank">💬 WhatsApp</a></div></div></div>
+      <div class="contact-card"><div class="contact-avatar">AB</div><div style="flex:1"><div class="contact-name">Alexandre Blard</div><div class="contact-role">CIP / Assistant de Direction</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692334788">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692334788" target="_blank">💬 WhatsApp</a></div></div></div>
+      <div class="contact-card"><div class="contact-avatar">MG</div><div style="flex:1"><div class="contact-name">Marine Grondin</div><div class="contact-role">CIP / Assistant Commercial</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692027421">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692027421" target="_blank">💬 WhatsApp</a></div></div></div>
+      <div class="contact-card"><div class="contact-avatar">EF</div><div style="flex:1"><div class="contact-name">Emilie Fontaine</div><div class="contact-role">Formatrice</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692813812">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692813812" target="_blank">💬 WhatsApp</a></div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🚨 Absences</div>
+      <div class="info-row"><span class="info-label">Signaler avant</span><span class="info-value">8h00</span></div>
+      <div class="info-row"><span class="info-label">Contacter</span><span class="info-value">Alexandre Blard</span></div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">contact@tbrgroup.fr</span></div>
+    </div>
+  </div>
+
+  <!-- RÈGLEMENT -->
+  <div class="section" id="reglement">
+    <div class="card">
+      <div class="card-title">📋 Règlement intérieur</div>
+      <div class="rule-item"><span class="rule-num">1.</span>La ponctualité est obligatoire. Tout retard doit être signalé avant 8h00.</div>
+      <div class="rule-item"><span class="rule-num">2.</span>Les absences doivent être justifiées dans les 48h avec un document officiel.</div>
+      <div class="rule-item"><span class="rule-num">3.</span>L'utilisation du téléphone est interdite pendant les séances de formation.</div>
+      <div class="rule-item"><span class="rule-num">4.</span>Le respect des locaux, du matériel et de l'équipe est exigé de tous.</div>
+      <div class="rule-item"><span class="rule-num">5.</span>Tout comportement irrespectueux pourra entraîner une exclusion.</div>
+      <div class="rule-item"><span class="rule-num">6.</span>La tenue vestimentaire doit être adaptée au contexte professionnel.</div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const userId = sessionStorage.getItem('jtcf_fc_user');
+if (!userId) { window.location.href = 'index.html'; }
+
+let user = null;
+let joursFormation = [];
+let jourIdx = 0;
+let semainePlanIdx = 0;
+
+// JOURS DE FORMATION FC — lundi à jeudi depuis le 13/07/2026
+function getJoursFC() {
+  const jours = [];
+  const debut = new Date(2026, 6, 13); // 13 juillet 2026
+  const fin = new Date(2027, 5, 30);
+  let d = new Date(debut);
+  while (d <= fin) {
+    const j = d.getDay();
+    if (j >= 1 && j <= 4) { // lundi=1, mardi=2, mercredi=3, jeudi=4
+      jours.push(new Date(d));
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return jours;
+}
+
+function formatDate(d) {
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return jours[d.getDay()] + ' ' + d.getDate() + ' ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function getKey(d) {
+  return userId + '_fc_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+}
+
+async function chargerUser() {
+  const snap = await get(ref(db, 'stagiairesFC/' + userId));
+  if (!snap.exists()) { window.location.href = 'index.html'; return; }
+  user = snap.val();
+
+  document.getElementById('headerNom').textContent = '👋 Bonjour, ' + user.nom;
+  document.getElementById('headerFormation').textContent = user.formation;
+  document.getElementById('infoNom').textContent = user.nom;
+  document.getElementById('infoFormation').textContent = user.formation;
+  document.getElementById('infoDebut').textContent = user.debut;
+  document.getElementById('infoHeures').textContent = user.heures;
+
+  joursFormation = getJoursFC();
+
+  // Trouver le jour le plus proche d'aujourd'hui
+  const today = new Date(); today.setHours(0,0,0,0);
+  jourIdx = 0;
+  for (let i = 0; i < joursFormation.length; i++) {
+    const j = new Date(joursFormation[i]); j.setHours(0,0,0,0);
+    if (j <= today) { jourIdx = i; } else { break; }
+  }
+
+  const jourActuel = joursFormation[jourIdx];
+  document.getElementById('alertProchaine').innerHTML = '📢 Prochaine séance : <strong>' + formatDate(jourActuel) + '</strong>';
+
+  updateEmargement();
+  updatePlanning();
+}
+
+// PLANNING SEMAINE
+function getSemaines() {
+  const semaines = [];
+  if (joursFormation.length === 0) return semaines;
+  let i = 0;
+  while (i < joursFormation.length) {
+    const semaine = [];
+    const lundi = new Date(joursFormation[i]);
+    while (i < joursFormation.length) {
+      const diff = (joursFormation[i] - lundi) / (1000*60*60*24);
+      if (diff < 7) { semaine.push(joursFormation[i]); i++; }
+      else break;
+    }
+    semaines.push(semaine);
+  }
+  return semaines;
+}
+
+function updatePlanning() {
+  const semaines = getSemaines();
+  if (semaines.length === 0) return;
+  if (semainePlanIdx >= semaines.length) semainePlanIdx = semaines.length - 1;
+
+  const semaine = semaines[semainePlanIdx];
+  const moisNoms = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  const debut = semaine[0]; const fin = semaine[semaine.length-1];
+  document.getElementById('semaineTitrePlan').textContent = 'Sem. du ' + debut.getDate() + ' ' + moisNoms[debut.getMonth()] + ' au ' + fin.getDate() + ' ' + moisNoms[fin.getMonth()];
+  document.getElementById('btnSemPrev').disabled = semainePlanIdx === 0;
+  document.getElementById('btnSemNext').disabled = semainePlanIdx === semaines.length - 1;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const jours = document.getElementById('planningJours');
+  jours.innerHTML = '';
+
+  semaine.forEach(function(d) {
+    const dd = new Date(d); dd.setHours(0,0,0,0);
+    const isToday = dd.getTime() === today.getTime();
+    const row = document.createElement('div');
+    row.className = 'jour-row ' + (isToday ? 'today' : 'formation');
+    const nomJour = ['','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][d.getDay()];
+    row.innerHTML = '<div class="jour-nom">' + nomJour + ' ' + d.getDate() + '</div>'
+      + '<div class="jour-info">8h00 – 16h00</div>'
+      + '<div class="jour-badge ' + (isToday ? 'badge-today' : 'badge-formation') + '">' + (isToday ? 'Aujourd\'hui' : 'Formation') + '</div>';
+    jours.appendChild(row);
+  });
+}
+
+// ÉMARGEMENT
+async function updateEmargement() {
+  const d = joursFormation[jourIdx];
+  document.getElementById('emargDate').textContent = formatDate(d);
+  document.getElementById('btnPrev').disabled = jourIdx === 0;
+  document.getElementById('btnNext').disabled = jourIdx === joursFormation.length - 1;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const jourD = new Date(d); jourD.setHours(0,0,0,0);
+  const estJourFormation = jourD.getTime() === today.getTime();
+
+  const verouJour = document.getElementById('verouJour');
+  const zoneEmarg = document.getElementById('zoneEmarg');
+
+  if (!estJourFormation) {
+    verouJour.style.display = 'block';
+    zoneEmarg.style.display = 'none';
+    return;
+  }
+  verouJour.style.display = 'none';
+  zoneEmarg.style.display = 'block';
+
+  const key = getKey(d);
+  const snap = await get(ref(db, 'emargementsFC/' + key));
+  const data = snap.exists() ? snap.val() : {};
+
+  const modeActuel = data.mode || null;
+  const presenceActuelle = data.presence || null;
+
+  document.getElementById('btnPresentiel').className = 'mode-btn' + (modeActuel==='presentiel'?' active-presentiel':'');
+  document.getElementById('btnDistanciel').className = 'mode-btn' + (modeActuel==='distanciel'?' active-distanciel':'');
+  document.getElementById('btnPresent').className = 'presence-btn' + (presenceActuelle==='present'?' active-present':'');
+  document.getElementById('btnAbsent').className = 'presence-btn' + (presenceActuelle==='absent'?' active-absent':'');
+  document.getElementById('motifZone').style.display = presenceActuelle==='absent' ? 'block' : 'none';
+  if (data.motif) document.getElementById('motifSelect').value = data.motif;
+
+  // Justificatif
+  const justifDeja = document.getElementById('justifDeja');
+  const justifPreview = document.getElementById('justifPreview');
+  if (data.justificatif) {
+    justifDeja.style.display = 'flex';
+    justifPreview.src = data.justificatif;
+    justifPreview.style.display = 'block';
+  } else {
+    justifDeja.style.display = 'none';
+    justifPreview.style.display = 'none';
+  }
+
+  const absent = presenceActuelle === 'absent';
+  const maintenant = new Date();
+  const apremDispo = maintenant.getHours() >= 12;
+
+  // Verrou 12h
+  const verouAM = document.getElementById('verouAM');
+  const zoneAMAlt = document.getElementById('zoneAMAlt');
+  if (!apremDispo && !data.am_alt && !absent) {
+    verouAM.style.display = 'block';
+    if (zoneAMAlt) zoneAMAlt.style.display = 'none';
+  } else {
+    verouAM.style.display = 'none';
+  }
+
+  const slots = [
+    {alt:'matin_alt',form:'matin_form',altEl:'statusMatinAlt',formEl:'statusMatinForm',zone:'zoneMatinAlt',bloc:'blocMatin'},
+    {alt:'am_alt',form:'am_form',altEl:'statusAMAlt',formEl:'statusAMForm',zone:'zoneAMAlt',bloc:'blocAM'}
+  ];
+
+  slots.forEach(function(s) {
+    const altSigne = data[s.alt]; const formSigne = data[s.form];
+    const altEl = document.getElementById(s.altEl);
+    if (absent) { altEl.textContent='❌ Absent(e)'; altEl.className='emarg-status status-attente'; }
+    else { altEl.textContent=altSigne?'✅ Signé':'En attente'; altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente'); }
+    const formEl = document.getElementById(s.formEl);
+    formEl.textContent=formSigne?'✅ Signé':'En attente';
+    formEl.className='emarg-status '+(formSigne?'status-signe':'status-attente');
+    const zone = document.getElementById(s.zone);
+    if (zone) zone.style.display=(altSigne||absent)?'none':'block';
+    const bloc = document.getElementById(s.bloc);
+    bloc.className='emarg-bloc'+(absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
+  });
+
+  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id) {
+    const c = document.getElementById(id);
+    if (c) { c.width=c.offsetWidth; c.height=80; c.getContext('2d').clearRect(0,0,c.width,c.height); }
+  });
+  initCanvases();
+}
+
+function initCanvases() {
+  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth; canvas.height = 80;
+    let drawing = false;
+    function getPos(e) { const r=canvas.getBoundingClientRect(); if(e.touches) return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}; return{x:e.clientX-r.left,y:e.clientY-r.top}; }
+    function start(e) { e.preventDefault(); drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+    function draw(e) { e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#2a3f4e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke(); }
+    function stop() { drawing=false; }
+    canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',draw); canvas.addEventListener('mouseup',stop);
+    canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',draw,{passive:false}); canvas.addEventListener('touchend',stop);
+  });
+}
+
+// MODE
+['btnPresentiel','btnDistanciel'].forEach(function(id) {
+  async function setMode(e) { e.preventDefault(); await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/mode'),document.getElementById(id).getAttribute('data-mode')); await updateEmargement(); }
+  document.getElementById(id).addEventListener('touchend',setMode,{passive:false}); document.getElementById(id).addEventListener('click',setMode);
+});
+
+// PRÉSENCE
+['btnPresent','btnAbsent'].forEach(function(id) {
+  async function setPresence(e) { e.preventDefault(); await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/presence'),document.getElementById(id).getAttribute('data-presence')); await updateEmargement(); }
+  document.getElementById(id).addEventListener('touchend',setPresence,{passive:false}); document.getElementById(id).addEventListener('click',setPresence);
+});
+
+// MOTIF
+async function validerMotif(e) {
+  e.preventDefault();
+  const motif = document.getElementById('motifSelect').value;
+  if (!motif) { alert('Veuillez choisir un motif.'); return; }
+  await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/motif'), motif);
+  document.getElementById('btnMotifValider').textContent = '✅ Motif enregistré';
+  setTimeout(function(){ document.getElementById('btnMotifValider').textContent='Enregistrer le motif'; }, 2000);
+}
+document.getElementById('btnMotifValider').addEventListener('touchend',validerMotif,{passive:false});
+document.getElementById('btnMotifValider').addEventListener('click',validerMotif);
+
+// UPLOAD JUSTIFICATIF
+document.getElementById('justifInput').addEventListener('change', async function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    const img = new Image();
+    img.onload = async function() {
+      const canvas = document.createElement('canvas');
+      const MAX=800; let w=img.width; let h=img.height;
+      if(w>MAX){h=Math.round(h*(MAX/w));w=MAX;} if(h>MAX){w=Math.round(w*(MAX/h));h=MAX;}
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed = canvas.toDataURL('image/jpeg',0.6);
+      await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/justificatif'), compressed);
+      document.getElementById('justifPreview').src=compressed;
+      document.getElementById('justifPreview').style.display='block';
+      document.getElementById('justifDeja').style.display='flex';
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// SIGNATURE
+document.querySelectorAll('.btn-valider').forEach(function(btn) {
+  async function valider(e) {
+    e.preventDefault();
+    const slot=btn.getAttribute('data-slot');
+    const canvasMap={'matin_alt':'canvasMatinAlt','am_alt':'canvasAMAlt'};
+    const canvas=document.getElementById(canvasMap[slot]);
+    if(!canvas) return;
+    const imageData=canvas.toDataURL();
+    const blank=document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
+    if(imageData===blank.toDataURL()){alert('Veuillez signer avant de valider.');return;}
+    await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/'+slot),imageData);
+    await updateEmargement();
+  }
+  btn.addEventListener('touchend',valider,{passive:false}); btn.addEventListener('click',valider);
+});
+
+// EFFACER
+document.querySelectorAll('.btn-effacer').forEach(function(btn) {
+  function effacer(e){e.preventDefault();const c=document.getElementById(btn.getAttribute('data-canvas'));if(c){c.getContext('2d').clearRect(0,0,c.width,c.height);}}
+  btn.addEventListener('touchend',effacer,{passive:false}); btn.addEventListener('click',effacer);
+});
+
+// NAV JOURS ÉMARGEMENT
+document.getElementById('btnPrev').addEventListener('touchend',function(e){e.preventDefault();if(jourIdx>0){jourIdx--;updateEmargement();}},{passive:false});
+document.getElementById('btnPrev').addEventListener('click',function(){if(jourIdx>0){jourIdx--;updateEmargement();}});
+document.getElementById('btnNext').addEventListener('touchend',function(e){e.preventDefault();if(jourIdx<joursFormation.length-1){jourIdx++;updateEmargement();}},{passive:false});
+document.getElementById('btnNext').addEventListener('click',function(){if(jourIdx<joursFormation.length-1){jourIdx++;updateEmargement();}});
+
+// NAV PLANNING
+const semaines = [];
+document.getElementById('btnSemPrev').addEventListener('touchend',function(e){e.preventDefault();if(semainePlanIdx>0){semainePlanIdx--;updatePlanning();}},{passive:false});
+document.getElementById('btnSemPrev').addEventListener('click',function(){if(semainePlanIdx>0){semainePlanIdx--;updatePlanning();}});
+document.getElementById('btnSemNext').addEventListener('touchend',function(e){e.preventDefault();semainePlanIdx++;updatePlanning();},{passive:false});
+document.getElementById('btnSemNext').addEventListener('click',function(){semainePlanIdx++;updatePlanning();});
+
+// NAV ONGLETS
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  function activate(e) {
+    e.preventDefault();
+    var target=btn.getAttribute('data-target');
+    document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+    document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+    document.getElementById(target).classList.add('active');
+    btn.classList.add('active');
+    if(target==='emargement') updateEmargement();
+    if(target==='planning') updatePlanning();
+  }
+  btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
+});
+
+// DÉCONNEXION
+document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_fc_user');window.location.href='index.html';},{passive:false});
+document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_fc_user');window.location.href='index.html';});
+
+chargerUser();
+</script>
+</body>
+</html>
