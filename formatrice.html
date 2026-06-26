@@ -136,8 +136,10 @@
 
 <div class="nav" id="mainNav">
   <a class="nav-btn active" data-target="lundi">📅 Lundi</a>
+  <a class="nav-btn" data-target="mardi">📅 Mardi</a>
   <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
-  <a class="nav-btn" data-target="fc">🎓 Formation Continue</a>
+  <a class="nav-btn" data-target="jeudi">📅 Jeudi</a>
+  <a class="nav-btn" data-target="fc">🎓 FC</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📊 Récap heures</a>
 </div>
@@ -152,12 +154,24 @@
     <div id="listeLundi"><div class="loading">Chargement...</div></div>
   </div>
 
+  <!-- MARDI -->
+  <div class="section" id="mardi">
+    <div class="jour-titre">Alternants du Mardi</div>
+    <div id="listeMardi"><div class="loading">Aucun alternant pour l'instant.</div></div>
+  </div>
+
   <!-- MERCREDI -->
   <div class="section" id="mercredi">
     <button class="btn-global" id="btnSignGlobalMatinMercredi">✍️ Signer MATIN — Tous les mercredis</button>
     <button class="btn-global" id="btnSignGlobalAMMercredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les mercredis</button>
     <div class="jour-titre">Alternants du Mercredi</div>
     <div id="listeMercredi"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- JEUDI -->
+  <div class="section" id="jeudi">
+    <div class="jour-titre">Alternants du Jeudi</div>
+    <div id="listeJeudi"><div class="loading">Aucun alternant pour l'instant.</div></div>
   </div>
 
   <!-- FORMATION CONTINUE -->
@@ -170,18 +184,22 @@
 
   <!-- GROUPES -->
   <div class="section" id="groupes">
+
+    <!-- ALTERNANTS PAR JOUR -->
     <div class="card">
-      <div class="card-title">🗂️ Capacité d'accueil</div>
+      <div class="card-title">🔄 Groupes Alternance</div>
       <div id="formCapaciteGroupe"><div class="loading">Chargement...</div></div>
     </div>
-    <div style="background:var(--or-pale);border:1px solid var(--or-clair);border-radius:12px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--bleu);margin-bottom:10px;">📋 Prévisionnel Région Réunion</div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--or-clair);font-size:12px;"><span style="color:var(--gris);">Financement par titre / période</span><span style="font-weight:700;color:var(--bleu-fonce);">4 dossiers</span></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--or-clair);font-size:12px;"><span style="color:var(--gris);">Durée période</span><span style="font-weight:700;color:var(--bleu-fonce);">6 mois</span></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;"><span style="color:var(--gris);">Statut</span><span style="font-weight:700;" id="formPrevStatut">—</span></div>
-    </div>
+
+    <!-- STAGIAIRES FC -->
     <div class="card">
-      <div class="card-title">📅 Répartition par formation</div>
+      <div class="card-title">🎓 Formation Continue</div>
+      <div id="formGroupeFC"><div class="loading">Chargement...</div></div>
+    </div>
+
+    <!-- RÉPARTITION -->
+    <div class="card">
+      <div class="card-title">📊 Répartition par formation</div>
       <div id="formRepartition"><div class="loading">Chargement...</div></div>
     </div>
   </div>
@@ -320,7 +338,9 @@ async function chargerAlternants() {
     });
   }
   afficherListe('listeLundi', allAlternants.filter(a => a.jourCentre === 'Lundi'));
+  afficherListe('listeMardi', allAlternants.filter(a => a.jourCentre === 'Mardi'));
   afficherListe('listeMercredi', allAlternants.filter(a => a.jourCentre === 'Mercredi'));
+  afficherListe('listeJeudi', allAlternants.filter(a => a.jourCentre === 'Jeudi'));
 
   // Stagiaires FC
   const fcSnap = await get(ref(db, 'stagiairesFC'));
@@ -1145,61 +1165,63 @@ async function exporterPDF() {
 <script>
 // GESTION GROUPES FORMATRICE
 function chargerGroupesForm() {
-  // Récupérer allAlternants depuis la variable globale du module
-  // On recharge depuis Firebase pour être sûr
   (async function() {
     const {getDatabase, ref, get} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
     const {getApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
     const db = getDatabase(getApp());
+
+    // Charger alternants
     const snap = await get(ref(db, 'alternants'));
     const alts = [];
     if (snap.exists()) { snap.forEach(function(c){ const a=c.val(); a.id=c.key; alts.push(a); }); }
 
-    const lundis = alts.filter(function(a){ return a.jourCentre==='Lundi'; });
-    const mercredis = alts.filter(function(a){ return a.jourCentre==='Mercredi'; });
+    // Charger FC
+    const fcSnap = await get(ref(db, 'stagiairesFC'));
+    const fcs = [];
+    if (fcSnap.exists()) { fcSnap.forEach(function(c){ const a=c.val(); a.id=c.key; fcs.push(a); }); }
+
+    // Groupes alternance par jour
     const container = document.getElementById('formCapaciteGroupe');
     container.innerHTML = '';
 
     const groupes = [
-      {jour:'Lundi', list:lundis, bg:'#eaf0f4', color:'#3d5a6e'},
-      {jour:'Mercredi', list:mercredis, bg:'#faf5ff', color:'#6b46c1'}
+      {jour:'Lundi', color:'#3d5a6e', bg:'#eaf0f4'},
+      {jour:'Mardi', color:'#6b46c1', bg:'#faf5ff'},
+      {jour:'Mercredi', color:'#2f855a', bg:'#f0fff4'},
+      {jour:'Jeudi', color:'#c05621', bg:'#fffaf0'}
     ];
 
     groupes.forEach(function(g) {
-      const pct = Math.min((g.list.length/8)*100, 100);
+      const list = alts.filter(function(a){ return a.jourCentre === g.jour; });
       const div = document.createElement('div');
-      div.style.cssText = 'background:'+g.bg+';border-left:4px solid '+g.color+';border-radius:12px;padding:14px;margin-bottom:10px;';
-      const altRows = g.list.map(function(a) {
-        return '<div style="font-size:12px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;">'
-          +'<span>👤 '+a.nom+'</span>'
-          +'<span style="font-size:11px;color:#718096;">'+a.formation.replace('TP ','')+'</span></div>';
-      }).join('');
-      div.innerHTML = '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:8px;">'+g.jour+' — '+g.list.length+' alternant'+(g.list.length>1?'s':'')+'</div>'
-        +'<div style="background:#e2e8f0;border-radius:20px;height:10px;margin:6px 0;">'
-        +'<div style="height:10px;border-radius:20px;background:#C9A227;width:'+pct+'%;"></div></div>'
-        +'<div style="display:flex;justify-content:space-between;font-size:11px;color:#718096;margin-bottom:10px;">'
-        +'<span>'+g.list.length+' / 8 places</span>'
-        +'<span>'+(8-g.list.length)+' libre'+(8-g.list.length>1?'s':'')+'</span></div>'
-        + altRows;
+      div.style.cssText = 'background:'+g.bg+';border-left:4px solid '+g.color+';border-radius:12px;padding:12px;margin-bottom:10px;';
+      const rows = list.length > 0
+        ? list.map(function(a){ return '<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;"><span>👤 '+a.nom+'</span><span style="font-size:11px;color:#718096;">'+a.formation.replace('TP ','')+'</span></div>'; }).join('')
+        : '<div style="font-size:12px;color:#a0aec0;padding:4px 0;">Aucun alternant pour ce jour</div>';
+      div.innerHTML = '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">'+g.jour+' — '+list.length+' alternant'+(list.length>1?'s':'')+'</div>'+rows;
       container.appendChild(div);
     });
 
-    // Prévisionnel
-    const total = alts.length;
-    const restantes = Math.max(0, (4*2) - total);
-    const statutEl = document.getElementById('formPrevStatut');
-    if (restantes === 0) { statutEl.textContent='🔴 Capacité atteinte'; statutEl.style.color='#e53e3e'; }
-    else if (restantes <= 2) { statutEl.textContent='🟡 Presque complet ('+restantes+' place'+(restantes>1?'s':'')+')'; statutEl.style.color='#dd6b20'; }
-    else { statutEl.textContent='🟢 '+restantes+' place'+(restantes>1?'s':'')+' disponible'+(restantes>1?'s':''); statutEl.style.color='#38a169'; }
+    // Groupe FC
+    const containerFC = document.getElementById('formGroupeFC');
+    if (containerFC) {
+      containerFC.innerHTML = '';
+      const divFC = document.createElement('div');
+      divFC.style.cssText = 'background:#fdf6e3;border-left:4px solid #C9A227;border-radius:12px;padding:12px;';
+      const rowsFC = fcs.length > 0
+        ? fcs.map(function(f){ return '<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;"><span>🎓 '+f.nom+'</span><span style="font-size:11px;color:#718096;">'+f.formation+'</span></div>'; }).join('')
+        : '<div style="font-size:12px;color:#a0aec0;padding:4px 0;">Aucun stagiaire FC</div>';
+      divFC.innerHTML = '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Lundi au Jeudi — '+fcs.length+' stagiaire'+(fcs.length>1?'s':'')+'</div>'+rowsFC;
+      containerFC.appendChild(divFC);
+    }
 
-    // Répartition
+    // Répartition par formation
     const parFormation = {};
     alts.forEach(function(a){ parFormation[a.formation]=(parFormation[a.formation]||0)+1; });
+    fcs.forEach(function(f){ const k=f.formation+' (FC)'; parFormation[k]=(parFormation[k]||0)+1; });
     const repartition = document.getElementById('formRepartition');
     repartition.innerHTML = Object.entries(parFormation).map(function(e){
-      return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:13px;">'
-        +'<span style="color:#718096;font-size:12px;">'+e[0]+'</span>'
-        +'<span style="font-weight:600;color:#2a3f4e;">'+e[1]+' alternant'+(e[1]>1?'s':'')+'</span></div>';
+      return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:13px;"><span style="color:#718096;font-size:12px;">'+e[0]+'</span><span style="font-weight:600;color:#2a3f4e;">'+e[1]+' personne'+(e[1]>1?'s':'')+'</span></div>';
     }).join('') || '<div style="color:#718096;font-size:13px;padding:10px 0;">Aucune donnée.</div>';
   })();
 }
