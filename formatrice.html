@@ -137,6 +137,7 @@
 <div class="nav" id="mainNav">
   <a class="nav-btn active" data-target="lundi">📅 Lundi</a>
   <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
+  <a class="nav-btn" data-target="fc">🎓 Formation Continue</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📊 Récap heures</a>
 </div>
@@ -157,6 +158,14 @@
     <button class="btn-global" id="btnSignGlobalAMMercredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les mercredis</button>
     <div class="jour-titre">Alternants du Mercredi</div>
     <div id="listeMercredi"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- FORMATION CONTINUE -->
+  <div class="section" id="fc">
+    <button class="btn-global" id="btnSignGlobalMatinFC">✍️ Signer MATIN — Tous les stagiaires FC</button>
+    <button class="btn-global" id="btnSignGlobalAMFC" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les stagiaires FC</button>
+    <div class="jour-titre">Stagiaires Formation Continue</div>
+    <div id="listeFC"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- GROUPES -->
@@ -289,7 +298,9 @@ const userId = sessionStorage.getItem('jtcf_form_user');
 if (!userId) { window.location.href = 'index.html'; }
 
 let allAlternants = [];
+let allFC = [];
 let currentAlt = null;
+let currentFC = null;
 let seances = [];
 let semIdx = 0;
 let filterMode = 'mois';
@@ -297,19 +308,51 @@ let filterMode = 'mois';
 const MATIN_H = 4;
 const AM_H = 3.5;
 
-// CHARGER ALTERNANTS
+// CHARGER ALTERNANTS + FC
 async function chargerAlternants() {
+  // Alternants
   const snap = await get(ref(db, 'alternants'));
-  if (!snap.exists()) return;
-  allAlternants = [];
-  snap.forEach(function(child) {
-    const alt = child.val(); alt.id = child.key;
-    allAlternants.push(alt);
-  });
+  if (snap.exists()) {
+    allAlternants = [];
+    snap.forEach(function(child) {
+      const alt = child.val(); alt.id = child.key;
+      allAlternants.push(alt);
+    });
+  }
   afficherListe('listeLundi', allAlternants.filter(a => a.jourCentre === 'Lundi'));
   afficherListe('listeMercredi', allAlternants.filter(a => a.jourCentre === 'Mercredi'));
+
+  // Stagiaires FC
+  const fcSnap = await get(ref(db, 'stagiairesFC'));
+  if (fcSnap.exists()) {
+    allFC = [];
+    fcSnap.forEach(function(child) {
+      const fc = child.val(); fc.id = child.key;
+      allFC.push(fc);
+    });
+  }
+  afficherListeFC('listeFC', allFC);
+
   remplirMoisSelect();
   chargerRecap();
+}
+
+function afficherListeFC(containerId, fcs) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (fcs.length === 0) { container.innerHTML = '<div class="loading">Aucun stagiaire FC.</div>'; return; }
+  container.innerHTML = '';
+  fcs.forEach(function(fc) {
+    const initiales = fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    const card = document.createElement('div');
+    card.className = 'alternant-card';
+    card.style.borderLeft = '3px solid #C9A227';
+    card.innerHTML = '<div class="alternant-avatar" style="border-color:#C9A227;">'+initiales+'</div><div style="flex:1"><div class="alternant-nom">'+fc.nom+'</div><div class="alternant-formation">'+fc.formation+'</div><div style="font-size:10px;color:#C9A227;font-weight:700;margin-top:2px;">🎓 Formation Continue</div></div><div class="alternant-arrow">›</div>';
+    function open(e) { e.preventDefault(); ouvrirFicheFC(fc); }
+    card.addEventListener('touchend', open, {passive:false});
+    card.addEventListener('click', open);
+    container.appendChild(card);
+  });
 }
 
 function afficherListe(containerId, alts) {
@@ -485,9 +528,12 @@ function ouvrirFiche(alt) {
 
   seances = getSeances(alt);
   const today = new Date();
+  today.setHours(0,0,0,0);
   semIdx = 0;
   for (let i = 0; i < seances.length; i++) {
-    if (seances[i] >= today) { semIdx = i; break; }
+    const s = new Date(seances[i]); s.setHours(0,0,0,0);
+    if (s <= today) { semIdx = i; }
+    else { break; }
   }
   updateFicheEmarg();
 }
@@ -629,6 +675,124 @@ document.getElementById('btnLogout').addEventListener('touchend',function(e){e.p
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 
 chargerAlternants();
+
+// OUVRIR FICHE FC
+function ouvrirFicheFC(fc) {
+  currentFC = fc;
+  currentAlt = null;
+  document.getElementById('mainNav').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('ficheView').style.display = 'block';
+
+  document.getElementById('ficheNom').textContent = fc.nom;
+  document.getElementById('ficheFormation').textContent = fc.formation;
+  document.getElementById('ficheEntreprise').textContent = '—';
+  document.getElementById('ficheMaitre').textContent = '—';
+  document.getElementById('ficheContrat').textContent = 'Formation Continue · ' + fc.debut;
+  document.getElementById('ficheJour').textContent = 'Lundi au Jeudi · ' + fc.heures;
+
+  // Séances FC — jours de formation lundi à jeudi depuis le 13/07/2026
+  seances = [];
+  const debut = new Date(2026, 6, 13);
+  const fin = new Date(2027, 5, 30);
+  let d = new Date(debut);
+  while (d <= fin) {
+    const j = d.getDay();
+    if (j >= 1 && j <= 4) seances.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  semIdx = 0;
+  for (let i = 0; i < seances.length; i++) {
+    const s = new Date(seances[i]); s.setHours(0,0,0,0);
+    if (s <= today) { semIdx = i; } else { break; }
+  }
+  updateFicheEmargFC();
+}
+
+function getFCKey(d) {
+  return currentFC.id + '_fc_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+}
+
+async function updateFicheEmargFC() {
+  if (!currentFC) return;
+  const d = seances[semIdx];
+  document.getElementById('ficheSemaine').textContent = 'Séance n°' + (semIdx+1);
+  document.getElementById('ficheDate').textContent = formatDate(d);
+  document.getElementById('ficheBtnPrev').disabled = semIdx === 0;
+  document.getElementById('ficheBtnNext').disabled = semIdx === seances.length-1;
+
+  const key = getFCKey(d);
+  const snap = await get(ref(db, 'emargementsFC/'+key));
+  const data = snap.exists() ? snap.val() : {};
+  const absent = data.presence === 'absent';
+
+  const modeLabel = data.mode==='distanciel'?'💻 Distanciel':data.mode==='presentiel'?'🏫 Présentiel':'—';
+  const modeCls = data.mode==='distanciel'?'status-distanciel':'';
+
+  const slots = [
+    {alt:'matin_alt',form:'matin_form',altEl:'ficheStatusMatinAlt',formEl:'ficheStatusMatinForm',zone:'ficheZoneMatinForm',bloc:'ficheBlocMatin',modeEl:'ficheModeMatinStatus'},
+    {alt:'am_alt',form:'am_form',altEl:'ficheStatusAMAlt',formEl:'ficheStatusAMForm',zone:'ficheZoneAMForm',bloc:'ficheBlocAM',modeEl:'ficheModeAMStatus'}
+  ];
+
+  slots.forEach(function(s) {
+    document.getElementById(s.modeEl).textContent = modeLabel;
+    document.getElementById(s.modeEl).className = 'emarg-status ' + modeCls;
+    const altSigne = data[s.alt]; const formSigne = data[s.form];
+    const altEl = document.getElementById(s.altEl);
+    if (absent) { altEl.textContent='❌ Absent(e)'; altEl.className='emarg-status status-attente'; }
+    else { altEl.textContent=altSigne?'✅ Signé':'En attente'; altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente'); }
+    const formEl = document.getElementById(s.formEl);
+    formEl.textContent=formSigne?'✅ Signé':'En attente';
+    formEl.className='emarg-status '+(formSigne?'status-signe':'status-attente');
+    const zone = document.getElementById(s.zone);
+    zone.style.display=(formSigne||absent)?'none':'block';
+    const bloc = document.getElementById(s.bloc);
+    bloc.className='emarg-bloc'+(absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
+  });
+
+  ['ficheCanvasMatinForm','ficheCanvasAMForm'].forEach(function(id) {
+    const c=document.getElementById(id); c.width=c.offsetWidth; c.height=80;
+    c.getContext('2d').clearRect(0,0,c.width,c.height);
+  });
+  initCanvases();
+}
+
+// Override btn valider pour FC
+document.querySelectorAll('.btn-valider').forEach(function(btn) {
+  btn.addEventListener('touchend', async function(e) {
+    e.preventDefault();
+    if (!currentFC) return;
+    const slot = btn.getAttribute('data-slot');
+    const canvasMap = {'matin_form':'ficheCanvasMatinForm','am_form':'ficheCanvasAMForm'};
+    const canvas = document.getElementById(canvasMap[slot]);
+    if (!canvas) return;
+    const imageData = canvas.toDataURL();
+    const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
+    if (imageData===blank.toDataURL()) { alert('Veuillez signer avant de valider.'); return; }
+    const key = getFCKey(seances[semIdx]);
+    await set(ref(db,'emargementsFC/'+key+'/'+slot), imageData);
+    await updateFicheEmargFC();
+  }, {passive:false});
+});
+
+// Boutons signature globale FC
+if (document.getElementById('btnSignGlobalMatinFC')) {
+  async function signerGlobalFC(period) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    for (const fc of allFC) {
+      const jourFC = seances.find(function(s) { const d=new Date(s); d.setHours(0,0,0,0); return d.getTime()===today.getTime(); });
+      if (!jourFC) continue;
+      const key = fc.id + '_fc_' + jourFC.getFullYear()+'_'+(jourFC.getMonth()+1)+'_'+jourFC.getDate();
+      await set(ref(db,'emargementsFC/'+key+'/'+period+'_form'), 'global_sign_'+Date.now());
+    }
+    alert('✅ Signature globale FC enregistrée !');
+  }
+  document.getElementById('btnSignGlobalMatinFC').addEventListener('click', function(){ signerGlobalFC('matin'); });
+  document.getElementById('btnSignGlobalAMFC').addEventListener('click', function(){ signerGlobalFC('am'); });
+}
+
 </script>
 </body>
 </html>
