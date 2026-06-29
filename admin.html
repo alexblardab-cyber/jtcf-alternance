@@ -224,6 +224,23 @@
         <button class="btn-primary" id="btnSauvegarder">💾 Sauvegarder</button>
         <button class="btn-danger" id="btnSupprimer" style="display:none;">🗑️ Supprimer cet alternant</button>
         <div class="success-msg" id="formSuccess">✅ Alternant sauvegardé avec succès !</div>
+
+        <!-- SECTION DOCUMENTS -->
+        <div id="sectionDocs" style="display:none;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;">
+          <div style="font-size:13px;font-weight:700;color:#3d5a6e;margin-bottom:4px;">📁 Documents</div>
+          <div style="font-size:11px;color:#718096;margin-bottom:14px;">Collez les liens Google Drive pour chaque document.</div>
+          <div class="form-field"><label class="form-label">📋 Convocation officielle</label><input class="form-input" id="docConvocation" placeholder="Lien Google Drive..." /></div>
+          <div class="form-field"><label class="form-label">🎓 Attestation de formation</label><input class="form-input" id="docAttestation" placeholder="Lien Google Drive..." /></div>
+          <div class="form-field"><label class="form-label">📝 Convention de stage</label><input class="form-input" id="docConvention" placeholder="Lien Google Drive..." /></div>
+          <div class="form-field"><label class="form-label">📅 Planning de formation</label><input class="form-input" id="docPlanning" placeholder="Lien Google Drive..." /></div>
+          <div class="form-field"><label class="form-label">📄 Contrat en alternance</label><input class="form-input" id="docContrat" placeholder="Lien Google Drive..." /></div>
+          <div class="form-field"><label class="form-label">📎 Document complémentaire 1</label><input class="form-input" id="docAutre1" placeholder="Lien Google Drive..." /></div>
+          <div class="form-field"><label class="form-label">📎 Document complémentaire 2</label><input class="form-input" id="docAutre2" placeholder="Lien Google Drive..." /></div>
+          <div class="form-field"><label class="form-label">📎 Document complémentaire 3</label><input class="form-input" id="docAutre3" placeholder="Lien Google Drive..." /></div>
+          <button class="btn-primary" id="btnSauvegarderDocs">💾 Sauvegarder les documents</button>
+          <div class="success-msg" id="docsSuccess">✅ Documents sauvegardés !</div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -473,6 +490,27 @@ function ouvrirFormModif(alt) {
   document.getElementById('formSuccess').classList.remove('visible');
   document.getElementById('altListeView').style.display = 'none';
   document.getElementById('altFormView').style.display = 'block';
+
+  // Afficher section documents et remplir les liens
+  const sectionDocs = document.getElementById('sectionDocs');
+  if (sectionDocs) {
+    sectionDocs.style.display = 'block';
+    const docFields = {
+      'docConvocation': 'convocation',
+      'docAttestation': 'attestation',
+      'docConvention': 'convention',
+      'docPlanning': 'planning',
+      'docContrat': 'contrat',
+      'docAutre1': 'autre1',
+      'docAutre2': 'autre2',
+      'docAutre3': 'autre3'
+    };
+    const docs = alt.documents || {};
+    Object.entries(docFields).forEach(function([elId, key]) {
+      const el = document.getElementById(elId);
+      if (el) el.value = docs[key] || '';
+    });
+  }
 }
 
 // SAUVEGARDER
