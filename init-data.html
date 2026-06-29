@@ -28,7 +28,7 @@
 
   <div class="section-title">📅 Alternants — Contrat Pro (9)</div>
   <div class="item"><span>AB01 — Alexandre Blard</span><span class="badge alt">Lundi</span></div>
-  <div class="item"><span>LB01 — Léa Barret</span><span class="badge alt">Lundi</span></div>
+  <div class="item"><span>LB01 — Léa Baret</span><span class="badge alt">Lundi</span></div>
   <div class="item"><span>BD01 — Dourga Boqui Que Ni</span><span class="badge alt">Lundi</span></div>
   <div class="item"><span>BL01 — Loelia Brassac</span><span class="badge alt">Lundi</span></div>
   <div class="item"><span>SL01 — Loanne Salambeau</span><span class="badge alt">Lundi</span></div>
@@ -43,6 +43,7 @@
   <div class="item"><span>RE01 — Riviere Emmanuelle</span><span class="badge fc">Lun→Jeu</span></div>
   <div class="item"><span>HV01 — Hoarau Virginie</span><span class="badge fc">Lun→Jeu</span></div>
   <div class="item"><span>MJ01 — Morel Jean Sébastien</span><span class="badge fc">Lun→Jeu</span></div>
+  <div class="item"><span>GM01 — Grondin Marie Annick</span><span class="badge fc">Lun→Jeu</span></div>
 
   <div class="section-title">👥 Équipe JTCF</div>
   <div class="item"><span>FORM01 — Emilie Fontaine</span><span class="badge staff">Formatrice</span></div>
@@ -71,7 +72,7 @@ const db = getDatabase(app);
 
 const alternants = {
   "AB01": { nom: "Alexandre Blard", formation: "TP Assistant de Direction", entreprise: "JT Conseil Formation", maitre: "Tibère Julien", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "15/06/2026", fin: "10/06/2028", type: "alternant" },
-  "LB01": { nom: "Léa Barret", formation: "TP Assistant de Direction", entreprise: "—", maitre: "—", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "16/02/2026", fin: "31/12/2026", type: "alternant" },
+  "LB01": { nom: "Léa Baret", formation: "TP Assistant de Direction", entreprise: "—", maitre: "—", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "16/02/2026", fin: "31/12/2026", type: "alternant" },
   "BD01": { nom: "Dourga Boqui Que Ni", formation: "TP Assistant de Direction", entreprise: "—", maitre: "—", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "01/12/2025", fin: "13/12/2027", type: "alternant" },
   "BL01": { nom: "Loelia Brassac", formation: "TP Manager d'Unité Marchande", entreprise: "—", maitre: "—", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "13/10/2025", fin: "31/01/2027", type: "alternant" },
   "SL01": { nom: "Loanne Salambeau", formation: "TP Conseiller de Vente", entreprise: "—", maitre: "—", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "15/06/2026", fin: "18/03/2027", type: "alternant" },
@@ -86,7 +87,8 @@ const stagiairesFC = {
   "BC01": { nom: "Begue Cindy", formation: "TP Assistant de Direction", debut: "13/07/2026", fin: "—", jours: ["Lundi","Mardi","Mercredi","Jeudi"], heures: "8h00 – 16h00", type: "fc" },
   "RE01": { nom: "Riviere Emmanuelle", formation: "TP Assistant de Direction", debut: "13/07/2026", fin: "—", jours: ["Lundi","Mardi","Mercredi","Jeudi"], heures: "8h00 – 16h00", type: "fc" },
   "HV01": { nom: "Hoarau Virginie", formation: "TP Conseiller de Vente", debut: "13/07/2026", fin: "—", jours: ["Lundi","Mardi","Mercredi","Jeudi"], heures: "8h00 – 16h00", type: "fc" },
-  "MJ01": { nom: "Morel Jean Sébastien", formation: "TP Conseiller de Vente", debut: "13/07/2026", fin: "—", jours: ["Lundi","Mardi","Mercredi","Jeudi"], heures: "8h00 – 16h00", type: "fc" }
+  "MJ01": { nom: "Morel Jean Sébastien", formation: "TP Conseiller de Vente", debut: "13/07/2026", fin: "—", jours: ["Lundi","Mardi","Mercredi","Jeudi"], heures: "8h00 – 16h00", type: "fc" },
+  "GM01": { nom: "Grondin Marie Annick", formation: "Assistant Comptabilité et Administration en TPE PME", debut: "13/07/2026", fin: "31/01/2027", jours: ["Lundi","Mardi","Mercredi","Jeudi"], heures: "8h00 – 16h00", type: "fc" }
 };
 
 async function initData(e) {
