@@ -266,6 +266,15 @@
         <button class="btn-primary" id="btnSauvegarderFC">💾 Sauvegarder</button>
         <button class="btn-danger" id="btnSupprimerFC" style="display:none;">🗑️ Supprimer</button>
         <div class="success-msg" id="fcFormSuccess">✅ Stagiaire FC sauvegardé !</div>
+
+        <!-- DOCUMENTS FC -->
+        <div id="sectionDocsFC" style="display:none;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;">
+          <div style="font-size:13px;font-weight:700;color:#3d5a6e;margin-bottom:4px;">📁 Dossier Documents</div>
+          <div style="font-size:11px;color:#718096;margin-bottom:14px;">Collez le lien du dossier Google Drive de ce stagiaire.</div>
+          <div class="form-field"><label class="form-label">🔗 Lien dossier Google Drive</label><input class="form-input" id="docDossierFC" placeholder="https://drive.google.com/drive/folders/..." /></div>
+          <button class="btn-primary" id="btnSauvegarderDocsFC">💾 Sauvegarder le lien</button>
+          <div class="success-msg" id="docsFCSuccess">✅ Lien sauvegardé !</div>
+        </div>
       </div>
     </div>
   </div>
@@ -755,6 +764,16 @@ function ouvrirFormFC(fc) {
   document.getElementById('listeFC').style.display = 'none';
   document.getElementById('fcFormView').style.display = 'block';
   document.querySelector('#stagiairesfc > div:first-child').style.display = 'none';
+
+  // Afficher section docs si stagiaire existant
+  const sectionDocsFC = document.getElementById('sectionDocsFC');
+  if (sectionDocsFC) {
+    sectionDocsFC.style.display = fc ? 'block' : 'none';
+    if (fc) {
+      const elDossier = document.getElementById('docDossierFC');
+      if (elDossier) elDossier.value = (fc.documents && fc.documents.dossier) ? fc.documents.dossier : '';
+    }
+  }
 }
 
 function retourListeFC() {
@@ -789,6 +808,21 @@ async function supprimerFC(e) {
   await remove(ref(db,'stagiairesFC/'+editingFC));
   await chargerTout();
   retourListeFC();
+}
+
+// SAUVEGARDER DOCUMENTS FC
+async function sauvegarderDocsFC(e) {
+  e.preventDefault();
+  if (!editingFC) return;
+  const lien = document.getElementById('docDossierFC').value.trim();
+  await set(ref(db, 'stagiairesFC/' + editingFC + '/documents/dossier'), lien || null);
+  document.getElementById('docsFCSuccess').classList.add('visible');
+  setTimeout(function(){ document.getElementById('docsFCSuccess').classList.remove('visible'); }, 2000);
+}
+
+if (document.getElementById('btnSauvegarderDocsFC')) {
+  document.getElementById('btnSauvegarderDocsFC').addEventListener('click', sauvegarderDocsFC);
+  document.getElementById('btnSauvegarderDocsFC').addEventListener('touchend', sauvegarderDocsFC, {passive:false});
 }
 
 // Événements FC
