@@ -679,59 +679,30 @@ async function chargerDocumentsFC() {
   const container = document.getElementById('listeDocumentsFC');
   if (!container) return;
 
-  const docsLabels = {
-    convocation: { label: 'Convocation officielle', icon: '📋' },
-    attestation: { label: 'Attestation de formation', icon: '🎓' },
-    convention: { label: 'Convention de stage', icon: '📝' },
-    planning: { label: 'Planning de formation', icon: '📅' },
-    passformation: { label: 'Notification Pass Formation', icon: '📄' },
-    reglement: { label: 'Règlement intérieur', icon: '📋' },
-    autre1: { label: 'Document complémentaire 1', icon: '📎' },
-    autre2: { label: 'Document complémentaire 2', icon: '📎' },
-    autre3: { label: 'Document complémentaire 3', icon: '📎' }
-  };
-
   const data = snap.exists() ? snap.val() : {};
-  const keys = Object.keys(docsLabels);
-  const disponibles = keys.filter(k => data[k]);
-  const indisponibles = keys.filter(k => !data[k]);
+  const lien = data.dossier || '';
 
   let html = '';
-
-  if (disponibles.length === 0) {
-    html += '<div style="text-align:center;padding:20px 0;">'
-      + '<div style="font-size:32px;margin-bottom:10px;">📭</div>'
+  if (!lien) {
+    html = '<div style="text-align:center;padding:24px 0;">'
+      + '<div style="font-size:36px;margin-bottom:10px;">📭</div>'
       + '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Aucun document disponible</div>'
-      + '<div style="font-size:12px;color:#718096;">Vos documents apparaîtront ici dès qu'ils seront mis en ligne par l'équipe JTCF.</div>'
+      + '<div style="font-size:12px;color:#718096;line-height:1.6;">Vos documents apparaîtront ici dès qu'ils seront mis en ligne par l'équipe JTCF.</div>'
       + '</div>';
   } else {
-    html += '<div style="font-size:11px;font-weight:700;color:#38a169;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">✅ Disponibles</div>';
-    disponibles.forEach(function(k) {
-      const doc = docsLabels[k];
-      const url = data[k];
-      html += '<a href="' + url + '" target="_blank" style="text-decoration:none;">'
-        + '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#f0fff4;border:1px solid #c6f6d5;border-radius:10px;margin-bottom:8px;">'
-        + '<div style="font-size:22px;">' + doc.icon + '</div>'
-        + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:#2a3f4e;">' + doc.label + '</div>'
-        + '<div style="font-size:11px;color:#38a169;margin-top:2px;">Appuyer pour ouvrir → télécharger depuis Drive</div></div>'
-        + '<div style="font-size:16px;color:#38a169;">↗</div>'
-        + '</div></a>';
-    });
+    html = '<div style="text-align:center;padding:10px 0 16px;">'
+      + '<div style="font-size:36px;margin-bottom:10px;">📂</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Votre dossier est disponible</div>'
+      + '<div style="font-size:12px;color:#718096;margin-bottom:16px;line-height:1.6;">Retrouvez tous vos documents dans votre espace Google Drive personnel.</div>'
+      + '</div>'
+      + '<a href="' + lien + '" target="_blank" style="text-decoration:none;">'
+      + '<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:linear-gradient(135deg,#2a3f4e,#3d5a6e);border-radius:12px;cursor:pointer;">'
+      + '<div style="font-size:20px;">📁</div>'
+      + '<div style="color:white;font-weight:700;font-size:14px;">Ouvrir mon dossier Drive</div>'
+      + '<div style="color:#C9A227;font-size:16px;">↗</div>'
+      + '</div></a>'
+      + '<div style="font-size:11px;color:#718096;text-align:center;margin-top:10px;">Vous pouvez télécharger chaque document depuis Google Drive</div>';
   }
-
-  if (indisponibles.length > 0 && disponibles.length > 0) {
-    html += '<div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 10px;">⏳ En attente</div>';
-    indisponibles.forEach(function(k) {
-      const doc = docsLabels[k];
-      html += '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#f0f2f5;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;opacity:0.7;">'
-        + '<div style="font-size:22px;">' + doc.icon + '</div>'
-        + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:#718096;">' + doc.label + '</div>'
-        + '<div style="font-size:11px;color:#a0aec0;margin-top:2px;">Pas encore disponible</div></div>'
-        + '<div style="font-size:12px;color:#a0aec0;">—</div>'
-        + '</div>';
-    });
-  }
-
   container.innerHTML = html;
 }
 

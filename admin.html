@@ -227,18 +227,11 @@
 
         <!-- SECTION DOCUMENTS -->
         <div id="sectionDocs" style="display:none;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;">
-          <div style="font-size:13px;font-weight:700;color:#3d5a6e;margin-bottom:4px;">📁 Documents</div>
-          <div style="font-size:11px;color:#718096;margin-bottom:14px;">Collez les liens Google Drive pour chaque document.</div>
-          <div class="form-field"><label class="form-label">📋 Convocation officielle</label><input class="form-input" id="docConvocation" placeholder="Lien Google Drive..." /></div>
-          <div class="form-field"><label class="form-label">🎓 Attestation de formation</label><input class="form-input" id="docAttestation" placeholder="Lien Google Drive..." /></div>
-          <div class="form-field"><label class="form-label">📝 Convention de stage</label><input class="form-input" id="docConvention" placeholder="Lien Google Drive..." /></div>
-          <div class="form-field"><label class="form-label">📅 Planning de formation</label><input class="form-input" id="docPlanning" placeholder="Lien Google Drive..." /></div>
-          <div class="form-field"><label class="form-label">📄 Contrat en alternance</label><input class="form-input" id="docContrat" placeholder="Lien Google Drive..." /></div>
-          <div class="form-field"><label class="form-label">📎 Document complémentaire 1</label><input class="form-input" id="docAutre1" placeholder="Lien Google Drive..." /></div>
-          <div class="form-field"><label class="form-label">📎 Document complémentaire 2</label><input class="form-input" id="docAutre2" placeholder="Lien Google Drive..." /></div>
-          <div class="form-field"><label class="form-label">📎 Document complémentaire 3</label><input class="form-input" id="docAutre3" placeholder="Lien Google Drive..." /></div>
-          <button class="btn-primary" id="btnSauvegarderDocs">💾 Sauvegarder les documents</button>
-          <div class="success-msg" id="docsSuccess">✅ Documents sauvegardés !</div>
+          <div style="font-size:13px;font-weight:700;color:#3d5a6e;margin-bottom:4px;">📁 Dossier Documents</div>
+          <div style="font-size:11px;color:#718096;margin-bottom:14px;">Collez le lien du dossier Google Drive de cet alternant.</div>
+          <div class="form-field"><label class="form-label">🔗 Lien dossier Google Drive</label><input class="form-input" id="docDossier" placeholder="https://drive.google.com/drive/folders/..." /></div>
+          <button class="btn-primary" id="btnSauvegarderDocs">💾 Sauvegarder le lien</button>
+          <div class="success-msg" id="docsSuccess">✅ Lien sauvegardé !</div>
         </div>
 
       </div>
@@ -495,21 +488,9 @@ function ouvrirFormModif(alt) {
   const sectionDocs = document.getElementById('sectionDocs');
   if (sectionDocs) {
     sectionDocs.style.display = 'block';
-    const docFields = {
-      'docConvocation': 'convocation',
-      'docAttestation': 'attestation',
-      'docConvention': 'convention',
-      'docPlanning': 'planning',
-      'docContrat': 'contrat',
-      'docAutre1': 'autre1',
-      'docAutre2': 'autre2',
-      'docAutre3': 'autre3'
-    };
     const docs = alt.documents || {};
-    Object.entries(docFields).forEach(function([elId, key]) {
-      const el = document.getElementById(elId);
-      if (el) el.value = docs[key] || '';
-    });
+    const elDossier = document.getElementById('docDossier');
+    if (elDossier) elDossier.value = docs.dossier || '';
   }
 }
 
@@ -731,19 +712,8 @@ chargerTout();
 async function sauvegarderDocs(e) {
   e.preventDefault();
   if (!editingId) return;
-  const docs = {};
-  const champs = {
-    convocation: document.getElementById('docConvocation').value.trim(),
-    attestation: document.getElementById('docAttestation').value.trim(),
-    convention: document.getElementById('docConvention').value.trim(),
-    planning: document.getElementById('docPlanning').value.trim(),
-    contrat: document.getElementById('docContrat').value.trim(),
-    autre1: document.getElementById('docAutre1').value.trim(),
-    autre2: document.getElementById('docAutre2').value.trim(),
-    autre3: document.getElementById('docAutre3').value.trim()
-  };
-  Object.entries(champs).forEach(function([k,v]) { if (v) docs[k] = v; });
-  await set(ref(db, 'alternants/' + editingId + '/documents'), docs);
+  const lien = document.getElementById('docDossier').value.trim();
+  await set(ref(db, 'alternants/' + editingId + '/documents/dossier'), lien || null);
   document.getElementById('docsSuccess').classList.add('visible');
   setTimeout(function(){ document.getElementById('docsSuccess').classList.remove('visible'); }, 2000);
 }
