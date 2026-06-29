@@ -148,6 +148,7 @@
   <a class="nav-btn active" data-target="accueil">🏠 Accueil</a>
   <a class="nav-btn" data-target="planning">📅 Planning</a>
   <a class="nav-btn" data-target="emargement">✍️ Émargement</a>
+  <a class="nav-btn" data-target="documents">📁 Documents</a>
   <a class="nav-btn" data-target="contacts">📞 Contacts</a>
   <a class="nav-btn" data-target="reglement">📋 Règlement</a>
 </div>
@@ -287,6 +288,20 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENTS -->
+  <div class="section" id="documents">
+    <div class="card">
+      <div class="card-title">📁 Mes documents</div>
+      <div id="listeDocumentsFC"><div class="loading">Chargement...</div></div>
+    </div>
+    <div style="background:#eaf0f4;border-radius:12px;padding:12px;margin-top:4px;">
+      <div style="font-size:11px;color:#718096;text-align:center;line-height:1.6;">
+        📌 Les documents s'ouvrent dans votre navigateur.<br>
+        Vous pouvez les télécharger depuis Google Drive.
       </div>
     </div>
   </div>
@@ -658,6 +673,74 @@ document.getElementById('btnLogout').addEventListener('touchend',function(e){e.p
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_fc_user');window.location.href='index.html';});
 
 chargerUser();
+
+async function chargerDocumentsFC() {
+  const snap = await get(ref(db, 'stagiairesFC/' + userId + '/documents'));
+  const container = document.getElementById('listeDocumentsFC');
+  if (!container) return;
+
+  const docsLabels = {
+    convocation: { label: 'Convocation officielle', icon: '📋' },
+    attestation: { label: 'Attestation de formation', icon: '🎓' },
+    convention: { label: 'Convention de stage', icon: '📝' },
+    planning: { label: 'Planning de formation', icon: '📅' },
+    passformation: { label: 'Notification Pass Formation', icon: '📄' },
+    reglement: { label: 'Règlement intérieur', icon: '📋' },
+    autre1: { label: 'Document complémentaire 1', icon: '📎' },
+    autre2: { label: 'Document complémentaire 2', icon: '📎' },
+    autre3: { label: 'Document complémentaire 3', icon: '📎' }
+  };
+
+  const data = snap.exists() ? snap.val() : {};
+  const keys = Object.keys(docsLabels);
+  const disponibles = keys.filter(k => data[k]);
+  const indisponibles = keys.filter(k => !data[k]);
+
+  let html = '';
+
+  if (disponibles.length === 0) {
+    html += '<div style="text-align:center;padding:20px 0;">'
+      + '<div style="font-size:32px;margin-bottom:10px;">📭</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Aucun document disponible</div>'
+      + '<div style="font-size:12px;color:#718096;">Vos documents apparaîtront ici dès qu'ils seront mis en ligne par l'équipe JTCF.</div>'
+      + '</div>';
+  } else {
+    html += '<div style="font-size:11px;font-weight:700;color:#38a169;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">✅ Disponibles</div>';
+    disponibles.forEach(function(k) {
+      const doc = docsLabels[k];
+      const url = data[k];
+      html += '<a href="' + url + '" target="_blank" style="text-decoration:none;">'
+        + '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#f0fff4;border:1px solid #c6f6d5;border-radius:10px;margin-bottom:8px;">'
+        + '<div style="font-size:22px;">' + doc.icon + '</div>'
+        + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:#2a3f4e;">' + doc.label + '</div>'
+        + '<div style="font-size:11px;color:#38a169;margin-top:2px;">Appuyer pour ouvrir → télécharger depuis Drive</div></div>'
+        + '<div style="font-size:16px;color:#38a169;">↗</div>'
+        + '</div></a>';
+    });
+  }
+
+  if (indisponibles.length > 0 && disponibles.length > 0) {
+    html += '<div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 10px;">⏳ En attente</div>';
+    indisponibles.forEach(function(k) {
+      const doc = docsLabels[k];
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#f0f2f5;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;opacity:0.7;">'
+        + '<div style="font-size:22px;">' + doc.icon + '</div>'
+        + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:#718096;">' + doc.label + '</div>'
+        + '<div style="font-size:11px;color:#a0aec0;margin-top:2px;">Pas encore disponible</div></div>'
+        + '<div style="font-size:12px;color:#a0aec0;">—</div>'
+        + '</div>';
+    });
+  }
+
+  container.innerHTML = html;
+}
+
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  if (btn.getAttribute('data-target') === 'documents') {
+    btn.addEventListener('click', chargerDocumentsFC);
+    btn.addEventListener('touchend', function(e){ e.preventDefault(); chargerDocumentsFC(); }, {passive:false});
+  }
+});
 </script>
 </body>
 </html>

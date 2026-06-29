@@ -689,6 +689,32 @@ document.getElementById('btnLogout').addEventListener('click',function(){session
 
 chargerTout();
 
+// SAUVEGARDER DOCUMENTS ALTERNANT
+async function sauvegarderDocs(e) {
+  e.preventDefault();
+  if (!editingId) return;
+  const docs = {};
+  const champs = {
+    convocation: document.getElementById('docConvocation').value.trim(),
+    attestation: document.getElementById('docAttestation').value.trim(),
+    convention: document.getElementById('docConvention').value.trim(),
+    planning: document.getElementById('docPlanning').value.trim(),
+    contrat: document.getElementById('docContrat').value.trim(),
+    autre1: document.getElementById('docAutre1').value.trim(),
+    autre2: document.getElementById('docAutre2').value.trim(),
+    autre3: document.getElementById('docAutre3').value.trim()
+  };
+  Object.entries(champs).forEach(function([k,v]) { if (v) docs[k] = v; });
+  await set(ref(db, 'alternants/' + editingId + '/documents'), docs);
+  document.getElementById('docsSuccess').classList.add('visible');
+  setTimeout(function(){ document.getElementById('docsSuccess').classList.remove('visible'); }, 2000);
+}
+
+if (document.getElementById('btnSauvegarderDocs')) {
+  document.getElementById('btnSauvegarderDocs').addEventListener('click', sauvegarderDocs);
+  document.getElementById('btnSauvegarderDocs').addEventListener('touchend', sauvegarderDocs, {passive:false});
+}
+
 // GESTION STAGIAIRES FC
 function afficherListeFC() {
   const container = document.getElementById('listeFC');
