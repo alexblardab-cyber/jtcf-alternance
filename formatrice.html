@@ -298,6 +298,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
@@ -311,9 +312,40 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
 
 const userId = sessionStorage.getItem('jtcf_form_user');
 if (!userId) { window.location.href = 'index.html'; }
+
+// --- Auth gate Firebase (obligatoire depuis le passage en règles sécurisées) ---
+await new Promise((resolve) => {
+  onAuthStateChanged(auth, (user) => {
+    if (user) { resolve(); return; }
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:#1a2530;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:sans-serif;';
+    overlay.innerHTML = `
+      <div style="background:white;border-radius:14px;padding:28px;max-width:340px;width:90%;">
+        <h2 style="color:#1a2530;margin:0 0 6px;">🔐 Connexion formatrice</h2>
+        <p style="font-size:13px;color:#718096;margin:0 0 16px;">Accès sécurisé requis.</p>
+        <input id="fbEmail" type="email" placeholder="email" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
+        <input id="fbPass" type="password" placeholder="mot de passe" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
+        <button id="fbLoginBtn" style="width:100%;padding:12px;background:#C9A227;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Se connecter</button>
+        <div id="fbLoginErr" style="color:#e53e3e;font-size:12px;margin-top:8px;"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#fbLoginBtn').addEventListener('click', async () => {
+      const email = overlay.querySelector('#fbEmail').value;
+      const pass = overlay.querySelector('#fbPass').value;
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        overlay.remove();
+        resolve();
+      } catch (err) {
+        overlay.querySelector('#fbLoginErr').textContent = 'Identifiants incorrects.';
+      }
+    });
+  });
+});
 
 let allAlternants = [];
 let allFC = [];
