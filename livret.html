@@ -348,7 +348,7 @@ async function chargerUser() {
   document.getElementById('infoEntreprise').textContent = user.entreprise;
   document.getElementById('infoMaitre').textContent = user.maitre;
 
-  const jourMap = {'Lundi':1,'Mercredi':3};
+  const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   const jourNum = jourMap[user.jourCentre] || 1;
   const debut = new Date(2026,5,10); const fin = new Date(2028,5,10);
   let d = new Date(debut);
@@ -422,7 +422,7 @@ async function updateEmargement() {
   // Verrou jour + heure
   const maintenant = new Date();
   const apremDisponible = maintenant.getHours() >= 12;
-  const jourMap2 = {'Lundi':1,'Mercredi':3};
+  const jourMap2 = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   const jourCentreNum = jourMap2[user.jourCentre] || 1;
   const estJourCentre = maintenant.getDay() === jourCentreNum;
 

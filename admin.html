@@ -647,7 +647,7 @@ function remplirMoisSelect() {
 }
 
 function getSeances(alt) {
-  const jourMap={'Lundi':1,'Mercredi':3};
+  const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   const jourNum=jourMap[alt.jourCentre]||1;
   const debut=new Date(2026,5,10); const fin=new Date(2028,5,10);
   let d=new Date(debut);
@@ -905,7 +905,7 @@ async function exporterPDFAdmin() {
 
   const OR=[201,162,39], BLEU=[61,90,110], BLEU_FONCE=[42,63,78], GRIS=[113,128,150], VERT=[56,161,105], ROUGE=[229,62,62];
   const MATIN_H=4, AM_H=3.5;
-  const jourMap={'Lundi':1,'Mercredi':3};
+  const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   let pageNum=1;
 
   function addHeader(titre){

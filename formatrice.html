@@ -425,7 +425,7 @@ function afficherListe(containerId, alts) {
 
 // CALCUL SÉANCES
 function getSeances(alt) {
-  const jourMap = {'Lundi':1,'Mercredi':3};
+  const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   const jourNum = jourMap[alt.jourCentre] || 1;
   const debut = new Date(2026,5,10);
   const fin = new Date(2028,5,10);
@@ -879,7 +879,7 @@ async function exporterPDF() {
 
   const MATIN_H = 4;
   const AM_H = 3.5;
-  const jourMap = {'Lundi':1,'Mercredi':3};
+  const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
 
   // Couleurs JTCF
   const OR = [201, 162, 39];
@@ -1367,7 +1367,7 @@ async function signerTousLeGroupe(jour, periode) {
 
     for (const alt of alts) {
       // Trouver la séance du jour actuel pour cet alternant
-      const jourMap = {'Lundi':1,'Mercredi':3};
+      const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
       const jourNum = jourMap[alt.jourCentre] || 1;
       // Trouver le lundi/mercredi le plus proche passé ou aujourd'hui
       let d = new Date(today);
