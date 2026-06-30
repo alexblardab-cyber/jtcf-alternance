@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import planning individuel — JTCF</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  body { font-family: sans-serif; padding: 30px; background: #f0f2f5; }
+  .card { background: white; border-radius: 14px; padding: 24px; max-width: 640px; margin: 0 auto 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  h2 { color: #2a3f4e; margin-bottom: 8px; }
+  p { font-size: 13px; color: #718096; margin-bottom: 16px; }
+  .btn { padding: 12px 24px; background: #C9A227; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px; }
+  .btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+  .result { margin-top: 16px; font-size: 13px; font-weight: 600; line-height: 1.7; max-height: 300px; overflow-y: auto; }
+  .ok { color: #38a169; }
+  .err { color: #e53e3e; }
+  input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+  .preview { background: #f7fafc; border-radius: 8px; padding: 12px; font-size: 13px; margin-top: 12px; line-height: 1.8; }
+  .preview b { color: #2a3f4e; }
+  label { font-size: 12px; font-weight: 700; color: #4a5568; display: block; margin-bottom: 4px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>🔐 Connexion admin</h2>
+  <input type="email" id="email" placeholder="email" />
+  <input type="password" id="pass" placeholder="mot de passe" />
+  <button class="btn" id="btnLogin">Se connecter</button>
+  <div class="result" id="loginResult"></div>
+</div>
+
+<div class="card" id="cardImport" style="display:none;">
+  <h2>📅 Import planning individuel (xlsx)</h2>
+  <p>Importe un fichier "Planning_individuel_formation" (créé par la formatrice) et le lie à un bénéficiaire de l'appli.</p>
+
+  <label>Fichier Excel (.xlsx)</label>
+  <input type="file" id="fileInput" accept=".xlsx" />
+
+  <div id="preview" class="preview" style="display:none;"></div>
+
+  <label>Lier à ce bénéficiaire</label>
+  <select id="selectBenef"><option value="">— Charger d'abord un fichier —</option></select>
+
+  <button class="btn" id="btnSave" disabled>💾 Enregistrer le planning</button>
+  <div class="result" id="result"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+let parsedPlanning = null;
+
+document.getElementById('btnLogin').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const loginResult = document.getElementById('loginResult');
+  try {
+    await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value);
+    loginResult.innerHTML = '<div class="ok">✅ Connecté</div>';
+    document.getElementById('cardImport').style.display = 'block';
+    await chargerBeneficiaires();
+  } catch (err) {
+    loginResult.innerHTML = '<div class="err">❌ ' + err.message + '</div>';
+  }
+});
+
+async function chargerBeneficiaires() {
+  const select = document.getElementById('selectBenef');
+  select.innerHTML = '<option value="">— Choisir —</option>';
+  const [snapAlt, snapFC] = await Promise.all([
+    get(ref(db, 'alternants')),
+    get(ref(db, 'stagiairesFC'))
+  ]);
+  if (snapAlt.exists()) {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = 'Alternants';
+    Object.entries(snapAlt.val()).forEach(([id, d]) => {
+      const opt = document.createElement('option');
+      opt.value = 'alt:' + id;
+      opt.textContent = id + ' — ' + d.nom;
+      optgroup.appendChild(opt);
+    });
+    select.appendChild(optgroup);
+  }
+  if (snapFC.exists()) {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = 'Stagiaires FC';
+    Object.entries(snapFC.val()).forEach(([id, d]) => {
+      const opt = document.createElement('option');
+      opt.value = 'fc:' + id;
+      opt.textContent = id + ' — ' + (d.nom || '?');
+      optgroup.appendChild(opt);
+    });
+    select.appendChild(optgroup);
+  }
+}
+
+const MOIS_NUM = {'janv':1,'févr':2,'fevr':2,'mars':3,'avr':4,'mai':5,'juin':6,'juil':7,'août':8,'aout':8,'sept':9,'oct':10,'nov':11,'déc':12,'dec':12};
+
+function excelDateToISO(serial) {
+  if (serial instanceof Date) {
+    return serial.toISOString().split('T')[0];
+  }
+  if (typeof serial === 'number') {
+    const d = XLSX.SSF.parse_date_code(serial);
+    return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  return null;
+}
+
+function parseWorkbook(wb) {
+  const wsParam = wb.Sheets['Paramètres'];
+  const wsCal = wb.Sheets['Calendrier'];
+  if (!wsParam || !wsCal) throw new Error("Le fichier ne contient pas les feuilles 'Paramètres' et 'Calendrier' attendues.");
+
+  const getCell = (ws, addr) => ws[addr] ? ws[addr].v : null;
+
+  const stagiaire = getCell(wsParam, 'C3');
+  const titreCode = getCell(wsParam, 'C4');
+  const titreLibelle = getCell(wsParam, 'C5');
+  const heuresReferentiel = getCell(wsParam, 'C6');
+  const heuresRetenues = getCell(wsParam, 'C8');
+  const horaires = getCell(wsParam, 'C9');
+  const debutRaw = getCell(wsParam, 'C12');
+  const finRaw = getCell(wsParam, 'C18');
+
+  const range = XLSX.utils.decode_range(wsCal['!ref']);
+  const monthBlocks = [];
+  for (let col = 1; col <= range.e.c; col++) {
+    const yearCell = wsCal[XLSX.utils.encode_cell({r:3, c:col})]; // ligne 4 (index 3)
+    const labelCell = wsCal[XLSX.utils.encode_cell({r:5, c:col})]; // ligne 6 (index 5)
+    if (yearCell && typeof yearCell.v === 'number' && yearCell.v > 2000 && labelCell && labelCell.v) {
+      monthBlocks.push({ col, year: yearCell.v, label: String(labelCell.v) });
+    }
+  }
+
+  const seances = [];
+  for (const { col, year, label } of monthBlocks) {
+    const moisTxt = label.toLowerCase().match(/[a-zéû]+/);
+    const moisNum = moisTxt ? MOIS_NUM[moisTxt[0]] : null;
+    if (!moisNum) continue;
+    for (let row = 7; row <= 111; row++) { // lignes 8 à 112 (index 7 à 111)
+      const dateCell = wsCal[XLSX.utils.encode_cell({r:row, c:col})];
+      if (!dateCell || typeof dateCell.v !== 'string') continue;
+      const dm = dateCell.v.match(/^(\d+)\s/);
+      if (!dm) continue;
+      const day = parseInt(dm[1], 10);
+      const markerCell = wsCal[XLSX.utils.encode_cell({r:row, c:col+1})];
+      const heuresCell = wsCal[XLSX.utils.encode_cell({r:row, c:col+2})];
+      const marker = markerCell ? markerCell.v : null;
+      const heures = heuresCell ? heuresCell.v : null;
+      if (marker || heures) {
+        seances.push({
+          date: `${year}-${String(moisNum).padStart(2,'0')}-${String(day).padStart(2,'0')}`,
+          cp: (typeof heures === 'number' || heures === undefined) ? (marker || null) : null,
+          special: (typeof heures !== 'number') ? heures : null,
+          heures: (typeof heures === 'number') ? heures : 0
+        });
+      }
+    }
+  }
+  seances.sort((a,b) => a.date.localeCompare(b.date));
+
+  return {
+    stagiaire, titreCode, titreLibelle, heuresReferentiel, heuresRetenues, horaires,
+    debut: excelDateToISO(debutRaw),
+    fin: excelDateToISO(finRaw),
+    seances
+  };
+}
+
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const preview = document.getElementById('preview');
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    parsedPlanning = parseWorkbook(wb);
+    preview.style.display = 'block';
+    preview.innerHTML = `
+      <div><b>Stagiaire (fichier) :</b> ${parsedPlanning.stagiaire || '—'}</div>
+      <div><b>Titre :</b> ${parsedPlanning.titreLibelle || '—'} (${parsedPlanning.titreCode || '—'})</div>
+      <div><b>Heures retenues :</b> ${parsedPlanning.heuresRetenues || '—'} h</div>
+      <div><b>Horaires :</b> ${parsedPlanning.horaires || '—'}</div>
+      <div><b>Début → Fin :</b> ${parsedPlanning.debut || '—'} → ${parsedPlanning.fin || '—'}</div>
+      <div><b>Séances détectées :</b> ${parsedPlanning.seances.length}</div>
+    `;
+    document.getElementById('btnSave').disabled = false;
+  } catch (err) {
+    preview.style.display = 'block';
+    preview.innerHTML = `<div class="err">❌ Erreur de lecture : ${err.message}</div>`;
+    document.getElementById('btnSave').disabled = true;
+  }
+});
+
+document.getElementById('btnSave').addEventListener('click', async () => {
+  const result = document.getElementById('result');
+  const select = document.getElementById('selectBenef');
+  const choice = select.value;
+  if (!choice || !parsedPlanning) {
+    result.innerHTML = '<div class="err">❌ Choisis un bénéficiaire avant d\'enregistrer.</div>';
+    return;
+  }
+  const [type, id] = choice.split(':');
+  const node = type === 'alt' ? 'plannings' : 'planningsFC';
+  result.innerHTML = '⏳ Enregistrement...';
+  try {
+    await set(ref(db, node + '/' + id), parsedPlanning);
+    result.innerHTML = `<div class="ok">✅ Planning enregistré pour ${id} (${parsedPlanning.seances.length} séances).</div>`;
+  } catch (err) {
+    result.innerHTML = `<div class="err">❌ ${err.message}</div>`;
+  }
+});
+</script>
+</body>
+</html>

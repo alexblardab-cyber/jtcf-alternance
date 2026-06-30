@@ -153,6 +153,16 @@
       <div class="info-row"><span class="info-label">Jour en centre</span><span class="info-value" id="infoJour">—</span></div>
       <div class="info-row"><span class="info-label">Horaires</span><span class="info-value" id="infoHeures">—</span></div>
     </div>
+    <div class="card" id="planningCard" style="display:none;">
+      <div class="card-title">📅 Mon planning de formation</div>
+      <div id="planningResume" style="font-size:13px;color:#718096;margin-bottom:10px;"></div>
+      <div id="planningBarreWrap" style="background:#edf2f7;border-radius:8px;height:10px;overflow:hidden;margin-bottom:14px;">
+        <div id="planningBarre" style="background:#C9A227;height:100%;width:0%;transition:width .4s;"></div>
+      </div>
+      <div id="planningProchaines"></div>
+      <button id="btnVoirToutPlanning" style="background:none;border:none;color:#2a3f4e;font-weight:700;font-size:12px;cursor:pointer;margin-top:8px;padding:0;">Voir tout le planning ▾</button>
+      <div id="planningComplet" style="display:none;margin-top:10px;max-height:320px;overflow-y:auto;"></div>
+    </div>
     <div class="card">
       <div class="card-title">🏢 Mon entreprise</div>
       <div class="info-row"><span class="info-label">Entreprise</span><span class="info-value" id="infoEntreprise">—</span></div>
@@ -365,7 +375,56 @@ async function chargerUser() {
     else { break; }
   }
   document.getElementById('alertProchaine').innerHTML = '📢 Prochain ' + user.jourCentre + ' en centre : <strong>' + formatDate(seances[semIdx]) + '</strong>';
+  await chargerPlanning();
 }
+
+const MOIS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+function formatDateISO(iso) {
+  const [y,m,d] = iso.split('-').map(Number);
+  return d + ' ' + MOIS_FR[m-1] + ' ' + y;
+}
+const SPECIAL_LABELS = { 'BIL':'Bilan mi-parcours', 'BF':'Bilan final', 'DP':'Conception Dossier Pro.', 'EXAM':"Session d'examen", 'STAGE':'Stage en entreprise' };
+
+async function chargerPlanning() {
+  const snap = await get(ref(db, 'plannings/' + userId));
+  if (!snap.exists()) return;
+  const planning = snap.val();
+  const card = document.getElementById('planningCard');
+  card.style.display = 'block';
+
+  const todayISO = new Date().toISOString().split('T')[0];
+  const seancesP = (planning.seances || []).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const passees = seancesP.filter(s => s.date <= todayISO);
+  const aVenir = seancesP.filter(s => s.date > todayISO);
+  const heuresFaites = passees.reduce((sum,s)=>sum+(s.heures||0),0);
+  const heuresTotal = planning.heuresRetenues || seancesP.reduce((sum,s)=>sum+(s.heures||0),0);
+  const pct = heuresTotal ? Math.min(100, Math.round(heuresFaites/heuresTotal*100)) : 0;
+
+  document.getElementById('planningResume').innerHTML =
+    `<b>${planning.titreLibelle || ''}</b> · ${heuresFaites} h réalisées sur ${heuresTotal} h (${pct}%)<br>Fin prévisionnelle : ${planning.fin ? formatDateISO(planning.fin) : '—'}`;
+  document.getElementById('planningBarre').style.width = pct + '%';
+
+  function renderSeance(s) {
+    const label = s.special ? (SPECIAL_LABELS[s.special] || s.special) : (s.cp ? 'Compétence ' + s.cp : 'Séance');
+    return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:13px;">
+      <span>${formatDateISO(s.date)}</span><span style="font-weight:600;color:#2a3f4e;">${label}</span></div>`;
+  }
+
+  const prochaines = aVenir.slice(0, 4);
+  document.getElementById('planningProchaines').innerHTML = prochaines.length
+    ? '<div style="font-size:12px;font-weight:700;color:#4a5568;margin-bottom:4px;">Prochaines séances</div>' + prochaines.map(renderSeance).join('')
+    : '<div style="font-size:13px;color:#a0aec0;">Aucune séance à venir programmée.</div>';
+
+  document.getElementById('planningComplet').innerHTML = seancesP.map(s =>
+    `<div style="opacity:${s.date<=todayISO?'0.5':'1'};">${renderSeance(s)}</div>`
+  ).join('');
+
+  document.getElementById('btnVoirToutPlanning').addEventListener('click', () => {
+    const el = document.getElementById('planningComplet');
+    const open = el.style.display !== 'none';
+    el.style.display = open ? 'none' : 'block';
+    document.getElementById('btnVoirToutPlanning').textContent = open ? 'Voir tout le planning ▾' : 'Masquer ▴';
+  });
 
 function formatDate(d) {
   const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
