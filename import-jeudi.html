@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import groupe Jeudi — JTCF</title>
+<style>
+  body { font-family: sans-serif; padding: 30px; background: #f0f2f5; }
+  .card { background: white; border-radius: 14px; padding: 24px; max-width: 560px; margin: 0 auto 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  h2 { color: #2a3f4e; margin-bottom: 8px; }
+  p { font-size: 13px; color: #718096; margin-bottom: 16px; }
+  .btn { padding: 12px 24px; background: #C9A227; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px; }
+  .result { margin-top: 16px; font-size: 13px; font-weight: 600; line-height: 1.8; }
+  .ok { color: #38a169; }
+  .err { color: #e53e3e; }
+  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin: 16px 0 8px; padding-left: 8px; border-left: 3px solid #C9A227; }
+  input { width: 100%; padding: 10px; margin-bottom: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>🔐 Connexion admin</h2>
+  <p>Connecte-toi avec le compte admin créé dans Firebase Authentication.</p>
+  <input type="email" id="email" placeholder="email" />
+  <input type="password" id="pass" placeholder="mot de passe" />
+  <button class="btn" id="btnLogin">Se connecter</button>
+  <div class="result" id="loginResult"></div>
+</div>
+
+<div class="card" id="cardImport" style="display:none;">
+  <h2>📅 Import groupe Jeudi</h2>
+  <p>Crée les 3 nouveaux alternants, corrige jourCentre → Jeudi pour le groupe concerné, et déplace Loanne au 16/07/2026.</p>
+
+  <div class="section-title">Nouveaux profils à créer</div>
+  <div>DB01 — Benjamin De Fondaumiere</div>
+  <div>RE02 — Euriel Rakotoasimbola</div>
+  <div>MA01 — Anne-Laure Malet</div>
+  <div>SAM01 — Meredithe Leichnig</div>
+  <div>DN01 — Manelle Dennemont</div>
+
+  <div class="section-title">jourCentre → Jeudi</div>
+  <div>AB01, LB01, BD01, CA01 (immédiat) · SL01 (à partir du 16/07/2026)</div>
+
+  <button class="btn" id="btnImport">🚀 Lancer l'import</button>
+  <div class="result" id="result"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+document.getElementById('btnLogin').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const loginResult = document.getElementById('loginResult');
+  try {
+    await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value);
+    loginResult.innerHTML = '<div class="ok">✅ Connecté</div>';
+    document.getElementById('cardImport').style.display = 'block';
+  } catch (err) {
+    loginResult.innerHTML = '<div class="err">❌ ' + err.message + '</div>';
+  }
+});
+
+// NOTE : schéma minimal — pas de date de naissance / adresse / salaire / représentant légal
+// (à ajouter plus tard si besoin, une fois un module dédié RH avec accès restreint)
+const nouveaux = {
+  "DB01": { nom: "Benjamin De Fondaumiere", formation: "TP Assistant Manager des Unités Marchandes", entreprise: "LGM", maitre: "Martine Grondin", jourCentre: "Jeudi", heures: "8h00 – 16h00", debut: "27/05/2026", fin: "30/09/2027", type: "alternant" },
+  "RE02": { nom: "Euriel Rakotoasimbola", formation: "TP Assistant Manager des Unités Marchandes", entreprise: "SIOM", maitre: "Samuel Derfla", jourCentre: "Jeudi", heures: "8h00 – 16h00", debut: "18/05/2026", fin: "30/09/2027", type: "alternant" },
+  "MA01": { nom: "Anne-Laure Malet", formation: "TP Conseiller de Vente", entreprise: "Société d'Exploitation de Glaces", maitre: "Lanto Nirina Noellah", jourCentre: "Jeudi", heures: "8h00 – 16h00", debut: "20/04/2026", fin: "30/09/2027", type: "alternant" },
+  "SAM01": { nom: "Meredithe Leichnig", formation: "TP Secrétaire Assistant(e) Médico-Administratif", entreprise: "SELARL Formella et Associés", maitre: "Aleksandra Formella", jourCentre: "Jeudi", heures: "8h00 – 16h00", debut: "25/06/2026", fin: "31/07/2027", type: "alternant" },
+  "DN01": { nom: "Manelle Dennemont", formation: "TP Secrétaire Assistante", entreprise: "Dr Horri Jamila", maitre: "Nelly Gauliris", jourCentre: "Jeudi", heures: "8h00 – 16h00", debut: "15/06/2026", fin: "15/09/2027", type: "alternant" }
+};
+
+async function lancerImport(e) {
+  e.preventDefault();
+  const result = document.getElementById('result');
+  result.innerHTML = '⏳ Import en cours...';
+
+  try {
+    for (const [id, data] of Object.entries(nouveaux)) {
+      await set(ref(db, 'alternants/' + id), data);
+      result.innerHTML += '<div class="ok">✅ ' + id + ' — ' + data.nom + ' créé</div>';
+    }
+
+    // Correction jourCentre pour le groupe Jeudi déjà existant
+    for (const id of ['AB01','LB01','BD01','CA01']) {
+      await update(ref(db, 'alternants/' + id), { jourCentre: 'Jeudi' });
+      result.innerHTML += '<div class="ok">✅ ' + id + ' → jourCentre = Jeudi</div>';
+    }
+
+    // Loanne : à corriger manuellement le 16/07/2026 (pas avant, elle est encore Lundi jusque-là)
+    result.innerHTML += '<div style="margin-top:10px;padding:10px;background:#fdf6e3;border-radius:8px;color:#744210;font-weight:600;">⏰ SL01 (Loanne Salambeau) : jourCentre reste "Lundi" jusqu\'au 16/07/2026 inclus, puis à basculer manuellement en "Jeudi" — pense à revenir ici ce jour-là, ou dis-le-moi pour que je te prépare un rappel.</div>';
+
+    result.innerHTML += '<div style="margin-top:12px;padding:10px;background:#f0fff4;border-radius:8px;color:#276749;font-weight:700;">🎉 Import terminé !</div>';
+  } catch (err) {
+    result.innerHTML += '<div class="err">❌ Erreur : ' + err.message + '</div>';
+  }
+}
+
+document.getElementById('btnImport').addEventListener('click', lancerImport);
+</script>
+</body>
+</html>
