@@ -661,6 +661,44 @@ document.getElementById('btnNext').addEventListener('click',function(){if(semIdx
 
 // NAV ONGLETS
 document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  if (btn.getAttribute('data-target') === 'documents') {
+    btn.addEventListener('click', chargerDocuments);
+    btn.addEventListener('touchend', function(e){ e.preventDefault(); chargerDocuments(); }, {passive:false});
+  }
+});
+
+async function chargerDocuments() {
+  const snap = await get(ref(db, 'alternants/' + userId + '/documents'));
+  const container = document.getElementById('listeDocuments');
+  if (!container) return;
+
+  const data = snap.exists() ? snap.val() : {};
+  const lien = data.dossier || '';
+
+  let html = '';
+  if (!lien) {
+    html = '<div style="text-align:center;padding:24px 0;">'
+      + '<div style="font-size:36px;margin-bottom:10px;">📭</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Aucun document disponible</div>'
+      + '<div style="font-size:12px;color:#718096;line-height:1.6;">Vos documents apparaîtront ici dès qu\'ils seront mis en ligne par l\'équipe JTCF.</div>'
+      + '</div>';
+  } else {
+    html = '<div style="text-align:center;padding:10px 0 16px;">'
+      + '<div style="font-size:36px;margin-bottom:10px;">📂</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Votre dossier est disponible</div>'
+      + '<div style="font-size:12px;color:#718096;margin-bottom:16px;line-height:1.6;">Retrouvez tous vos documents dans votre espace Google Drive personnel.</div>'
+      + '</div>'
+      + '<a href="' + lien + '" target="_blank" style="text-decoration:none;">'
+      + '<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:linear-gradient(135deg,#2a3f4e,#3d5a6e);border-radius:12px;cursor:pointer;">'
+      + '<div style="font-size:20px;">📁</div>'
+      + '<div style="color:white;font-weight:700;font-size:14px;">Ouvrir mon dossier Drive</div>'
+      + '<div style="color:#C9A227;font-size:16px;">↗</div>'
+      + '</div></a>'
+      + '<div style="font-size:11px;color:#718096;text-align:center;margin-top:10px;">Vous pouvez télécharger chaque document depuis Google Drive</div>';
+  }
+  container.innerHTML = html;
+}
+</script>
   function activate(e) {
     e.preventDefault();
     var target = btn.getAttribute('data-target');
