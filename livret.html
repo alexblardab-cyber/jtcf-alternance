@@ -660,13 +660,6 @@ document.getElementById('btnNext').addEventListener('touchend',function(e){e.pre
 document.getElementById('btnNext').addEventListener('click',function(){if(semIdx<seances.length-1){semIdx++;updateEmargement();}});
 
 // NAV ONGLETS
-document.querySelectorAll('.nav-btn').forEach(function(btn) {
-  if (btn.getAttribute('data-target') === 'documents') {
-    btn.addEventListener('click', chargerDocuments);
-    btn.addEventListener('touchend', function(e){ e.preventDefault(); chargerDocuments(); }, {passive:false});
-  }
-});
-
 async function chargerDocuments() {
   const snap = await get(ref(db, 'alternants/' + userId + '/documents'));
   const container = document.getElementById('listeDocuments');
@@ -698,7 +691,8 @@ async function chargerDocuments() {
   }
   container.innerHTML = html;
 }
-</script>
+
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
   function activate(e) {
     e.preventDefault();
     var target = btn.getAttribute('data-target');
@@ -707,6 +701,7 @@ async function chargerDocuments() {
     document.getElementById(target).classList.add('active');
     btn.classList.add('active');
     if (target==='emargement') updateEmargement();
+    if (target==='documents') chargerDocuments();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
