@@ -202,9 +202,11 @@
       <div id="planningBarreWrap" style="background:#edf2f7;border-radius:8px;height:10px;overflow:hidden;margin-bottom:14px;">
         <div id="planningBarre" style="background:#C9A227;height:100%;width:0%;transition:width .4s;"></div>
       </div>
+      <div id="planningEtapes" style="margin-bottom:14px;"></div>
       <div id="planningProchaines"></div>
       <button id="btnVoirToutPlanning" style="background:none;border:none;color:#2a3f4e;font-weight:700;font-size:12px;cursor:pointer;margin-top:8px;padding:0;">Voir tout le planning ▾</button>
       <div id="planningComplet" style="display:none;margin-top:10px;max-height:320px;overflow-y:auto;"></div>
+      <button id="btnTelechargerPlanning" style="margin-top:14px;padding:11px;background:#2a3f4e;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;width:100%;">⬇️ Télécharger mon planning (PDF)</button>
     </div>
   </div>
 
@@ -459,8 +461,24 @@ async function chargerPlanningIndividuel() {
     `<b>${planning.titreLibelle || ''}</b> · ${heuresFaites} h réalisées sur ${heuresTotal} h (${pct}%)<br>Fin prévisionnelle : ${planning.fin ? formatDateISO(planning.fin) : '—'}`;
   document.getElementById('planningBarre').style.width = pct + '%';
 
+  // Vue synthétique : étapes clés (Stage, ECF par AT, DP, Bilan final, Examen)
+  const ICONES_ETAPE = { STAGE:'🏢', ECF:'📝', DP:'📁', BILAN_FINAL:'🏁', EXAMEN:'🎓' };
+  const etapesHtml = (planning.etapes || []).map(e => {
+    const icone = ICONES_ETAPE[e.type] || '•';
+    const dateTxt = e.date ? formatDateISO(e.date) : `${formatDateISO(e.dateDebut)} → ${formatDateISO(e.dateFin)}`;
+    const passee = (e.date || e.dateFin) <= todayISO;
+    return `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;opacity:${passee?'0.55':'1'};">
+      <span>${icone}</span>
+      <div><div style="font-weight:700;font-size:13px;color:#2a3f4e;">${e.label}</div>
+      <div style="font-size:12px;color:#718096;">${dateTxt}</div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('planningEtapes').innerHTML = etapesHtml
+    ? '<div style="font-size:12px;font-weight:700;color:#4a5568;margin-bottom:4px;">Étapes clés du parcours</div>' + etapesHtml
+    : '';
+
   function renderSeance(s) {
-    const label = s.special ? (SPECIAL_LABELS[s.special] || s.special) : (s.cp ? 'Compétence ' + s.cp : 'Séance');
+    const label = s.special ? (SPECIAL_LABELS[s.special] || s.special) : (s.cp ? (s.at ? s.at+' · '+s.cp : s.cp) : 'Séance');
     return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:13px;">
       <span>${formatDateISO(s.date)}</span><span style="font-weight:600;color:#2a3f4e;">${label}</span></div>`;
   }
@@ -480,6 +498,64 @@ async function chargerPlanningIndividuel() {
     el.style.display = open ? 'none' : 'block';
     document.getElementById('btnVoirToutPlanning').textContent = open ? 'Voir tout le planning ▾' : 'Masquer ▴';
   });
+
+  document.getElementById('btnTelechargerPlanning').addEventListener('click', () => telechargerPlanningPDF(planning, user));
+}
+
+async function telechargerPlanningPDF(planning, user) {
+  const btn = document.getElementById('btnTelechargerPlanning');
+  btn.textContent = '⏳ Génération...'; btn.disabled = true;
+
+  if (!window.jspdf) {
+    await new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = resolve;
+      document.head.appendChild(s);
+    });
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const OR=[201,162,39], BLEU_FONCE=[42,63,78], GRIS=[113,128,150], BLEU=[61,90,110];
+
+  doc.setFillColor(...BLEU_FONCE); doc.rect(0,0,210,30,'F');
+  doc.setTextColor(...OR); doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text('JT CONSEIL FORMATION',15,12);
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.text('Saint-Joseph · La Réunion',15,18);
+  doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text('PLANNING INDIVIDUEL DE FORMATION',15,25);
+  doc.setFillColor(...OR); doc.rect(0,30,210,2,'F');
+
+  let y = 45;
+  doc.setTextColor(...BLEU_FONCE); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text(user.nom || planning.stagiaire || '', 15, y); y += 8;
+  doc.setFontSize(11); doc.setTextColor(...BLEU); doc.setFont('helvetica','normal');
+  doc.text(planning.titreLibelle || '', 15, y); y += 7;
+  doc.setFontSize(9); doc.setTextColor(...GRIS);
+  doc.text(`${planning.heuresRetenues || ''} h · du ${planning.debut ? formatDateISO(planning.debut) : '—'} au ${planning.fin ? formatDateISO(planning.fin) : '—'}`, 15, y); y += 12;
+
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...BLEU_FONCE);
+  doc.text('Étapes clés du parcours', 15, y); y += 6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(50,50,50);
+  (planning.etapes || []).forEach(e => {
+    const dateTxt = e.date ? formatDateISO(e.date) : `${formatDateISO(e.dateDebut)} → ${formatDateISO(e.dateFin)}`;
+    doc.text(`• ${e.label} — ${dateTxt}`, 18, y);
+    y += 6;
+  });
+  y += 6;
+
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...BLEU_FONCE);
+  doc.text('Détail des séances', 15, y); y += 6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(50,50,50);
+  const seancesP = (planning.seances || []).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  for (const s of seancesP) {
+    if (y > 280) { doc.addPage(); y = 20; }
+    const label = s.special ? (SPECIAL_LABELS[s.special] || s.special) : (s.cp ? (s.at ? s.at+' · '+s.cp : s.cp) : 'Séance');
+    doc.text(formatDateISO(s.date), 18, y);
+    doc.text(label, 90, y);
+    y += 5.5;
+  }
+
+  doc.save('Planning_' + (user.nom || 'formation').replace(/\s+/g,'_') + '.pdf');
+  btn.textContent = '⬇️ Télécharger mon planning (PDF)'; btn.disabled = false;
 }
 
 // PLANNING SEMAINE
@@ -750,7 +826,7 @@ async function chargerDocumentsFC() {
     html = '<div style="text-align:center;padding:24px 0;">'
       + '<div style="font-size:36px;margin-bottom:10px;">📭</div>'
       + '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Aucun document disponible</div>'
-      + '<div style="font-size:12px;color:#718096;line-height:1.6;">Vos documents apparaîtront ici dès qu'ils seront mis en ligne par l'équipe JTCF.</div>'
+      + '<div style="font-size:12px;color:#718096;line-height:1.6;">Vos documents apparaîtront ici dès qu\'ils seront mis en ligne par l\'équipe JTCF.</div>'
       + '</div>';
   } else {
     html = '<div style="text-align:center;padding:10px 0 16px;">'
