@@ -542,11 +542,30 @@ async function chargerRecapAdmin(){
       if(filterMode==='mois'&&(d.getFullYear()!==filterYear||d.getMonth()!==filterMonth)) continue;
       if(d>new Date()) continue;
       const key=alt.id+'_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+d.getDate();
-      const snap=await get(ref(db,'emargements/'+key));
-      const data=snap.exists()?snap.val():{};
+      const yyyy=d.getFullYear();
+      const mm=String(d.getMonth()+1).padStart(2,'0');
+      const dd2=String(d.getDate()).padStart(2,'0');
+      const keyRetro=`emargements/${alt.id}/${yyyy}-${mm}-${dd2}`;
+      const [snapNormal,snapMatin,snapAM]=await Promise.all([
+        get(ref(db,'emargements/'+key)),
+        get(ref(db,keyRetro+'/matin')),
+        get(ref(db,keyRetro+'/apres-midi')),
+      ]);
+      const dataNormal=snapNormal.exists()?snapNormal.val():null;
+      const dataMatinRetro=snapMatin.exists()?snapMatin.val():null;
+      const dataAMRetro=snapAM.exists()?snapAM.val():null;
+      const isRetro=!dataNormal&&(dataMatinRetro||dataAMRetro);
       sCount++;
-      if(data.presence==='absent'){hA+=(MATIN_H+AM_H);const m=data.motif||'Non renseigné';motifsCount[m]=(motifsCount[m]||0)+1;}
-      else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
+      if(isRetro){
+        if(dataMatinRetro&&dataMatinRetro.statut==='absent'){hA+=MATIN_H;}
+        else if(dataMatinRetro&&dataMatinRetro.statut==='present'){hP+=MATIN_H;}
+        if(dataAMRetro&&dataAMRetro.statut==='absent'){hA+=AM_H;}
+        else if(dataAMRetro&&dataAMRetro.statut==='present'){hP+=AM_H;}
+      }else{
+        const data=dataNormal||{};
+        if(data.presence==='absent'){hA+=(MATIN_H+AM_H);const m=data.motif||'Non renseigné';motifsCount[m]=(motifsCount[m]||0)+1;}
+        else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
+      }
     }
     totalH+=hP;totalA+=hA;totalS+=sCount;
     if(sCount===0) continue;

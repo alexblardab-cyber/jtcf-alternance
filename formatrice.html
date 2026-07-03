@@ -452,18 +452,41 @@ async function chargerRecap() {
     for (const d of altSeances) {
       if (filterMode === 'mois' && (d.getFullYear() !== filterYear || d.getMonth() !== filterMonth)) continue;
       if (d > new Date()) continue;
+      // Lire émargement : format normal (alt_y_m_d) OU rétroactif (alt/yyyy-mm-dd)
       const key = getKey(alt.id, d);
-      const snap = await get(ref(db, 'emargements/'+key));
-      const data = snap.exists() ? snap.val() : {};
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      const keyRetro = `emargements/${alt.id}/${yyyy}-${mm}-${dd}`;
+      const [snapNormal, snapMatin, snapAM] = await Promise.all([
+        get(ref(db, 'emargements/'+key)),
+        get(ref(db, keyRetro+'/matin')),
+        get(ref(db, keyRetro+'/apres-midi')),
+      ]);
+      const dataNormal = snapNormal.exists() ? snapNormal.val() : null;
+      const dataMatinRetro = snapMatin.exists() ? snapMatin.val() : null;
+      const dataAMRetro = snapAM.exists() ? snapAM.val() : null;
+      const isRetro = !dataNormal && (dataMatinRetro || dataAMRetro);
       seancesCount++;
-      const absent = data.presence === 'absent';
-      if (absent) {
-        heuresAbsence += (MATIN_H + AM_H);
-        const motif = data.motif || 'Non renseigné';
-        motifsCount[motif] = (motifsCount[motif] || 0) + 1;
+      if (isRetro) {
+        // Format rétroactif : chaque demi-journée est un objet séparé
+        const absentMatin = dataMatinRetro && dataMatinRetro.statut === 'absent';
+        const absentAM = dataAMRetro && dataAMRetro.statut === 'absent';
+        if (absentMatin) { heuresAbsence += MATIN_H; }
+        else if (dataMatinRetro && dataMatinRetro.statut === 'present') { heuresPresence += MATIN_H; }
+        if (absentAM) { heuresAbsence += AM_H; }
+        else if (dataAMRetro && dataAMRetro.statut === 'present') { heuresPresence += AM_H; }
       } else {
-        if (data.matin_alt) heuresPresence += MATIN_H;
-        if (data.am_alt) heuresPresence += AM_H;
+        const data = dataNormal || {};
+        const absent = data.presence === 'absent';
+        if (absent) {
+          heuresAbsence += (MATIN_H + AM_H);
+          const motif = data.motif || 'Non renseigné';
+          motifsCount[motif] = (motifsCount[motif] || 0) + 1;
+        } else {
+          if (data.matin_alt) heuresPresence += MATIN_H;
+          if (data.am_alt) heuresPresence += AM_H;
+        }
       }
     }
 
