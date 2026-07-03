@@ -397,7 +397,8 @@ function afficherListe(containerId, alts) {
 function getSeances(alt) {
   const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   const jourNum = jourMap[alt.jourCentre] || 1;
-  const debut = new Date(2026,5,10);
+  const parts = alt.debut ? alt.debut.split('/') : ['10','06','2026'];
+  const debut = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
   const fin = new Date(2028,5,10);
   let d = new Date(debut);
   while (d.getDay() !== jourNum) d.setDate(d.getDate()+1);
