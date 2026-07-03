@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import Rétroactif — JTCF</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #2a3f4e; min-height: 100vh; }
+
+  header {
+    background: #2a3f4e;
+    color: #C9A227;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  header h1 { font-size: 1.2rem; font-weight: 700; color: #fff; }
+  header span { font-size: 0.85rem; color: #C9A227; }
+
+  .container { max-width: 860px; margin: 32px auto; padding: 0 16px; }
+
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .card-header {
+    background: #2a3f4e;
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-header h2 { font-size: 1rem; font-weight: 600; }
+  .badge {
+    background: #C9A227;
+    color: #fff;
+    border-radius: 20px;
+    padding: 2px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .card-body { padding: 20px; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .info-item label { font-size: 0.75rem; color: #6b7a8a; display: block; margin-bottom: 2px; }
+  .info-item span { font-size: 0.92rem; font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th {
+    background: #f0f2f5;
+    color: #2a3f4e;
+    font-weight: 700;
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td { padding: 9px 12px; border-bottom: 1px solid #f0f2f5; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8f9fa; }
+
+  .statut-present { color: #38a169; font-weight: 700; }
+  .statut-absent { color: #e53e3e; font-weight: 700; }
+  .statut-distanciel { color: #3d5a6e; font-weight: 700; }
+
+  .mode-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .mode-presentiel { background: #e6f4ee; color: #38a169; }
+  .mode-distanciel { background: #e8f0f5; color: #3d5a6e; }
+  .mode-absent { background: #fdecea; color: #e53e3e; }
+
+  .actions { padding: 20px; border-top: 1px solid #f0f2f5; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+  button {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-primary { background: #C9A227; color: #fff; }
+  .btn-danger  { background: #e53e3e; color: #fff; }
+  .btn-secondary { background: #f0f2f5; color: #2a3f4e; }
+
+  #log {
+    background: #1a2732;
+    color: #a8d8a8;
+    font-family: monospace;
+    font-size: 0.82rem;
+    padding: 16px;
+    border-radius: 8px;
+    max-height: 260px;
+    overflow-y: auto;
+    margin-top: 16px;
+    display: none;
+  }
+  #log.visible { display: block; }
+  .log-ok    { color: #68d391; }
+  .log-err   { color: #fc8181; }
+  .log-info  { color: #90cdf4; }
+  .log-warn  { color: #f6e05e; }
+
+  .progress-bar-wrap { background: #f0f2f5; border-radius: 6px; height: 8px; margin: 12px 0; }
+  .progress-bar { background: #C9A227; height: 8px; border-radius: 6px; width: 0%; transition: width 0.3s; }
+
+  .stat-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip { background: #f0f2f5; border-radius: 20px; padding: 5px 14px; font-size: 0.82rem; font-weight: 600; }
+  .chip strong { color: #C9A227; }
+
+  .warning-box {
+    background: #fffbeb;
+    border-left: 4px solid #C9A227;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⬆️ Import Rétroactif — JTCF</h1>
+    <span>Séances passées avant le 29 juin 2026 — Mise en circulation appli</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="warning-box">
+    ⚠️ Cet outil écrit directement dans Firebase. Les données existantes pour les mêmes clés seront <strong>écrasées</strong>. Vérifier avant de lancer.
+  </div>
+
+  <!-- BL01 — BRASSAC Loelia -->
+  <div class="card">
+    <div class="card-header">
+      <h2>BL01 — BRASSAC Loelia</h2>
+      <span class="badge">TP MUM SUD</span>
+    </div>
+    <div class="card-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Formation</label><span>TP Manager d'Unité Marchande</span></div>
+        <div class="info-item"><label>Jour de centre</label><span>Lundi</span></div>
+        <div class="info-item"><label>Début contrat</label><span>13/10/2025</span></div>
+        <div class="info-item"><label>1ère séance importée</label><span>04/05/2026</span></div>
+        <div class="info-item"><label>Dernière séance importée</label><span>22/06/2026</span></div>
+        <div class="info-item"><label>Formatrice</label><span>Robert Emilie</span></div>
+      </div>
+
+      <div class="stat-chips">
+        <div class="chip">16 séances <strong>total</strong></div>
+        <div class="chip"><strong>13</strong> présences présentiel</div>
+        <div class="chip"><strong>1</strong> présence distanciel</div>
+        <div class="chip"><strong>2</strong> absences</div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Période</th>
+            <th>Statut</th>
+            <th>Mode</th>
+          </tr>
+        </thead>
+        <tbody id="table-BL01"></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" onclick="importAlternant('BL01')">⬆️ Importer BL01 dans Firebase</button>
+      <button class="btn-danger" onclick="effacerAlternant('BL01')">🗑️ Effacer BL01 de Firebase</button>
+      <span id="status-BL01" style="font-size:0.85rem; color:#6b7a8a;"></span>
+    </div>
+    <div class="progress-bar-wrap" style="margin: 0 20px 16px;">
+      <div class="progress-bar" id="progress-BL01"></div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div id="log"></div>
+
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611939:web:ae8be337575ab1295f62ba"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ─── DONNÉES BL01 ───────────────────────────────────────────────
+const SEANCES = {
+  BL01: [
+    { date: "2026-05-04", periode: "matin",       statut: "present", mode: "presentiel" },
+    { date: "2026-05-04", periode: "apres-midi",  statut: "present", mode: "presentiel" },
+    { date: "2026-05-11", periode: "matin",       statut: "present", mode: "presentiel" },
+    { date: "2026-05-11", periode: "apres-midi",  statut: "present", mode: "presentiel" },
+    { date: "2026-05-18", periode: "matin",       statut: "present", mode: "presentiel" },
+    { date: "2026-05-18", periode: "apres-midi",  statut: "present", mode: "presentiel" },
+    { date: "2026-05-25", periode: "matin",       statut: "absent",  mode: null         },
+    { date: "2026-05-25", periode: "apres-midi",  statut: "absent",  mode: null         },
+    { date: "2026-06-01", periode: "matin",       statut: "present", mode: "presentiel" },
+    { date: "2026-06-01", periode: "apres-midi",  statut: "present", mode: "presentiel" },
+    { date: "2026-06-08", periode: "matin",       statut: "present", mode: "presentiel" },
+    { date: "2026-06-08", periode: "apres-midi",  statut: "present", mode: "presentiel" },
+    { date: "2026-06-15", periode: "matin",       statut: "present", mode: "presentiel" },
+    { date: "2026-06-15", periode: "apres-midi",  statut: "present", mode: "presentiel" },
+    { date: "2026-06-22", periode: "matin",       statut: "present", mode: "presentiel" },
+    { date: "2026-06-22", periode: "apres-midi",  statut: "present", mode: "distanciel" },
+  ]
+};
+
+// ─── RENDU TABLE ────────────────────────────────────────────────
+function renderTable(code) {
+  const tbody = document.getElementById(`table-${code}`);
+  tbody.innerHTML = '';
+  SEANCES[code].forEach(s => {
+    const modeLabel = s.statut === 'absent' ? '—'
+      : s.mode === 'presentiel' ? '🏫 Présentiel'
+      : '🏠 Distanciel';
+    const modeClass = s.statut === 'absent' ? 'mode-absent'
+      : s.mode === 'presentiel' ? 'mode-presentiel'
+      : 'mode-distanciel';
+    const statutClass = s.statut === 'present' ? 'statut-present' : 'statut-absent';
+    const statutLabel = s.statut === 'present' ? '✅ Présente' : '❌ Absente';
+    const periodeLabel = s.periode === 'matin' ? '☀️ Matin' : '🌤 Après-midi';
+    const dateLabel = new Date(s.date).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+    tbody.innerHTML += `
+      <tr>
+        <td>${dateLabel}</td>
+        <td>${periodeLabel}</td>
+        <td class="${statutClass}">${statutLabel}</td>
+        <td><span class="mode-tag ${modeClass}">${modeLabel}</span></td>
+      </tr>`;
+  });
+}
+
+// ─── LOG ────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const div = document.getElementById('log');
+  div.classList.add('visible');
+  const line = document.createElement('div');
+  line.className = `log-${type}`;
+  line.textContent = `[${new Date().toLocaleTimeString('fr-FR')}] ${msg}`;
+  div.appendChild(line);
+  div.scrollTop = div.scrollHeight;
+}
+
+// ─── IMPORT ─────────────────────────────────────────────────────
+async function importAlternant(code) {
+  const seances = SEANCES[code];
+  const btn = document.querySelector(`button[onclick="importAlternant('${code}')"]`);
+  const statusEl = document.getElementById(`status-${code}`);
+  const progressEl = document.getElementById(`progress-${code}`);
+  btn.disabled = true;
+  statusEl.textContent = 'Import en cours…';
+  log(`▶ Début import ${code} — ${seances.length} séances`, 'info');
+
+  let ok = 0, err = 0;
+  for (let i = 0; i < seances.length; i++) {
+    const s = seances[i];
+    const key = `emargements/${code}/${s.date}/${s.periode}`;
+    const payload = {
+      statut: s.statut,
+      retroactif: true,
+      importedAt: new Date().toISOString(),
+      ...(s.mode ? { mode: s.mode } : {})
+    };
+    try {
+      await db.ref(key).set(payload);
+      log(`✔ ${s.date} ${s.periode} → ${s.statut}${s.mode ? ' / ' + s.mode : ''}`, 'ok');
+      ok++;
+    } catch (e) {
+      log(`✘ ${s.date} ${s.periode} → ERREUR : ${e.message}`, 'err');
+      err++;
+    }
+    progressEl.style.width = `${Math.round(((i+1)/seances.length)*100)}%`;
+  }
+
+  log(`✅ Import terminé : ${ok} écrits, ${err} erreurs`, err > 0 ? 'warn' : 'ok');
+  statusEl.textContent = `✅ ${ok}/${seances.length} séances importées`;
+  btn.disabled = false;
+}
+
+// ─── EFFACER ────────────────────────────────────────────────────
+async function effacerAlternant(code) {
+  if (!confirm(`Supprimer TOUTES les séances rétroactives de ${code} dans Firebase ?\n\nCette action est irréversible.`)) return;
+  try {
+    await db.ref(`emargements/${code}`).remove();
+    log(`🗑 ${code} — tous les émargements supprimés`, 'warn');
+    document.getElementById(`status-${code}`).textContent = '🗑 Émargements effacés';
+    document.getElementById(`progress-${code}`).style.width = '0%';
+  } catch(e) {
+    log(`✘ Erreur suppression ${code} : ${e.message}`, 'err');
+  }
+}
+
+// ─── INIT ───────────────────────────────────────────────────────
+renderTable('BL01');
+</script>
+</body>
+</html>
