@@ -96,6 +96,11 @@
   .success-msg { background: var(--vert-clair); border: 1px solid #c6f6d5; color: var(--vert); font-size: 12px; font-weight: 600; padding: 10px 14px; border-radius: 8px; margin-top: 8px; display: none; }
   .success-msg.visible { display: block; }
   .loading { text-align: center; color: var(--gris); font-size: 13px; padding: 20px; }
+  @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+  .badge-notif { display: inline-flex; align-items: center; justify-content: center;
+    background: #e53e3e; color: white; border-radius: 50%; width: 18px; height: 18px;
+    font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
   .spacer { height: 20px; }
 </style>
 </head>
@@ -448,6 +453,132 @@ async function sauvegarder(e){
   await set(ref(db,'alternants/'+id),data);
   document.getElementById('formSuccess').classList.add('visible');
   await chargerTout();
+
+// ── NOTIFICATIONS ADMIN ───────────────────────────────────────
+
+// ============================================================
+// JTCF — Module Notifications & Badges v1.0
+// À injecter dans formatrice.html, admin.html, livret.html
+// ============================================================
+
+// ── Enregistrement Service Worker ────────────────────────────
+async function enregistrerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/jtcf-alternance/sw.js');
+    return reg;
+  } catch(e) { console.warn('SW non enregistré:', e); }
+}
+
+// ── Demande permission notifications ─────────────────────────
+async function demanderPermissionNotifs() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+// ── Programmer rappels via SW ─────────────────────────────────
+async function programmerRappels(jourCentre, nom) {
+  const ok = await demanderPermissionNotifs();
+  if (!ok) return;
+  const reg = await navigator.serviceWorker.ready;
+  if (reg && reg.active) {
+    reg.active.postMessage({ type: 'PROGRAMMER_NOTIFS', jourCentre, nom });
+  }
+}
+
+// ── Bannière rappel ───────────────────────────────────────────
+function afficherBanniereRappel(manquants, role) {
+  const existant = document.getElementById('banniereRappel');
+  if (existant) existant.remove();
+  if (manquants === 0) return;
+
+  const banniere = document.createElement('div');
+  banniere.id = 'banniereRappel';
+  banniere.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+    color: white; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    animation: slideDown 0.3s ease;
+  `;
+
+  const msg = role === 'formatrice'
+    ? `⚠️ ${manquants} alternant${manquants > 1 ? 's' : ''} n'ont pas encore signé aujourd'hui`
+    : `⚠️ Vous n'avez pas encore signé votre émargement d'aujourd'hui`;
+
+  banniere.innerHTML = `
+    <span>${msg}</span>
+    <button onclick="this.parentElement.remove()" style="
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-weight: 700;
+    ">✕</button>
+  `;
+
+  // Ajouter l'animation CSS
+  if (!document.getElementById('notifStyle')) {
+    const style = document.createElement('style');
+    style.id = 'notifStyle';
+    style.textContent = `
+      @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+      @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+      .badge-notif { display: inline-flex; align-items: center; justify-content: center;
+        background: #e53e3e; color: white; border-radius: 50%; width: 18px; height: 18px;
+        font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.prepend(banniere);
+  // Auto-fermeture après 8 secondes
+  setTimeout(function() { if (banniere.parentElement) banniere.remove(); }, 8000);
+}
+
+// ── Badge sur onglet ──────────────────────────────────────────
+function ajouterBadgeOnglet(target, count) {
+  const btn = document.querySelector(`.nav-btn[data-target="${target}"]`);
+  if (!btn) return;
+  const existant = btn.querySelector('.badge-notif');
+  if (existant) existant.remove();
+  if (count <= 0) return;
+  const badge = document.createElement('span');
+  badge.className = 'badge-notif';
+  badge.textContent = count;
+  btn.appendChild(badge);
+}
+
+
+(async function() {
+  await enregistrerServiceWorker();
+  await demanderPermissionNotifs();
+  setTimeout(async function() {
+    const today = new Date();
+    const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today.getDay()];
+    const altAujourdhui = allAlternants.filter(a => a.jourCentre === jourNom);
+    if (altAujourdhui.length === 0) return;
+
+    const { getDatabase: gdb, ref: gref, get: gget } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { getApp: gapp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const dbN = gdb(gapp());
+
+    let manquants = 0;
+    for (const alt of altAujourdhui) {
+      const key = alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap = await gget(gref(dbN,'emargements/'+key));
+      const data = snap.exists() ? snap.val() : {};
+      if (!data.matin_alt || !data.am_alt) manquants++;
+    }
+    if (manquants > 0) {
+      afficherBanniereRappel(manquants, 'admin');
+      ajouterBadgeOnglet('dashboard', manquants);
+      await programmerRappels(jourNom, 'Admin JTCF');
+    }
+  }, 3000);
+})();
   setTimeout(function(){retourListe();},1500);
 }
 document.getElementById('btnSauvegarder').addEventListener('touchend',sauvegarder,{passive:false});
@@ -458,7 +589,133 @@ async function supprimer(e){
   if(!editingId)return;
   if(!confirm('Supprimer '+editingId+' ? Cette action est irréversible.'))return;
   await remove(ref(db,'alternants/'+editingId));
-  await chargerTout(); retourListe();
+  await chargerTout();
+
+// ── NOTIFICATIONS ADMIN ───────────────────────────────────────
+
+// ============================================================
+// JTCF — Module Notifications & Badges v1.0
+// À injecter dans formatrice.html, admin.html, livret.html
+// ============================================================
+
+// ── Enregistrement Service Worker ────────────────────────────
+async function enregistrerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/jtcf-alternance/sw.js');
+    return reg;
+  } catch(e) { console.warn('SW non enregistré:', e); }
+}
+
+// ── Demande permission notifications ─────────────────────────
+async function demanderPermissionNotifs() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+// ── Programmer rappels via SW ─────────────────────────────────
+async function programmerRappels(jourCentre, nom) {
+  const ok = await demanderPermissionNotifs();
+  if (!ok) return;
+  const reg = await navigator.serviceWorker.ready;
+  if (reg && reg.active) {
+    reg.active.postMessage({ type: 'PROGRAMMER_NOTIFS', jourCentre, nom });
+  }
+}
+
+// ── Bannière rappel ───────────────────────────────────────────
+function afficherBanniereRappel(manquants, role) {
+  const existant = document.getElementById('banniereRappel');
+  if (existant) existant.remove();
+  if (manquants === 0) return;
+
+  const banniere = document.createElement('div');
+  banniere.id = 'banniereRappel';
+  banniere.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+    color: white; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    animation: slideDown 0.3s ease;
+  `;
+
+  const msg = role === 'formatrice'
+    ? `⚠️ ${manquants} alternant${manquants > 1 ? 's' : ''} n'ont pas encore signé aujourd'hui`
+    : `⚠️ Vous n'avez pas encore signé votre émargement d'aujourd'hui`;
+
+  banniere.innerHTML = `
+    <span>${msg}</span>
+    <button onclick="this.parentElement.remove()" style="
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-weight: 700;
+    ">✕</button>
+  `;
+
+  // Ajouter l'animation CSS
+  if (!document.getElementById('notifStyle')) {
+    const style = document.createElement('style');
+    style.id = 'notifStyle';
+    style.textContent = `
+      @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+      @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+      .badge-notif { display: inline-flex; align-items: center; justify-content: center;
+        background: #e53e3e; color: white; border-radius: 50%; width: 18px; height: 18px;
+        font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.prepend(banniere);
+  // Auto-fermeture après 8 secondes
+  setTimeout(function() { if (banniere.parentElement) banniere.remove(); }, 8000);
+}
+
+// ── Badge sur onglet ──────────────────────────────────────────
+function ajouterBadgeOnglet(target, count) {
+  const btn = document.querySelector(`.nav-btn[data-target="${target}"]`);
+  if (!btn) return;
+  const existant = btn.querySelector('.badge-notif');
+  if (existant) existant.remove();
+  if (count <= 0) return;
+  const badge = document.createElement('span');
+  badge.className = 'badge-notif';
+  badge.textContent = count;
+  btn.appendChild(badge);
+}
+
+
+(async function() {
+  await enregistrerServiceWorker();
+  await demanderPermissionNotifs();
+  setTimeout(async function() {
+    const today = new Date();
+    const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today.getDay()];
+    const altAujourdhui = allAlternants.filter(a => a.jourCentre === jourNom);
+    if (altAujourdhui.length === 0) return;
+
+    const { getDatabase: gdb, ref: gref, get: gget } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { getApp: gapp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const dbN = gdb(gapp());
+
+    let manquants = 0;
+    for (const alt of altAujourdhui) {
+      const key = alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap = await gget(gref(dbN,'emargements/'+key));
+      const data = snap.exists() ? snap.val() : {};
+      if (!data.matin_alt || !data.am_alt) manquants++;
+    }
+    if (manquants > 0) {
+      afficherBanniereRappel(manquants, 'admin');
+      ajouterBadgeOnglet('dashboard', manquants);
+      await programmerRappels(jourNom, 'Admin JTCF');
+    }
+  }, 3000);
+})(); retourListe();
 }
 document.getElementById('btnSupprimer').addEventListener('touchend',supprimer,{passive:false});
 document.getElementById('btnSupprimer').addEventListener('click',supprimer);
@@ -629,6 +886,132 @@ document.getElementById('btnLogout').addEventListener('click',function(){session
 
 chargerTout();
 
+// ── NOTIFICATIONS ADMIN ───────────────────────────────────────
+
+// ============================================================
+// JTCF — Module Notifications & Badges v1.0
+// À injecter dans formatrice.html, admin.html, livret.html
+// ============================================================
+
+// ── Enregistrement Service Worker ────────────────────────────
+async function enregistrerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/jtcf-alternance/sw.js');
+    return reg;
+  } catch(e) { console.warn('SW non enregistré:', e); }
+}
+
+// ── Demande permission notifications ─────────────────────────
+async function demanderPermissionNotifs() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+// ── Programmer rappels via SW ─────────────────────────────────
+async function programmerRappels(jourCentre, nom) {
+  const ok = await demanderPermissionNotifs();
+  if (!ok) return;
+  const reg = await navigator.serviceWorker.ready;
+  if (reg && reg.active) {
+    reg.active.postMessage({ type: 'PROGRAMMER_NOTIFS', jourCentre, nom });
+  }
+}
+
+// ── Bannière rappel ───────────────────────────────────────────
+function afficherBanniereRappel(manquants, role) {
+  const existant = document.getElementById('banniereRappel');
+  if (existant) existant.remove();
+  if (manquants === 0) return;
+
+  const banniere = document.createElement('div');
+  banniere.id = 'banniereRappel';
+  banniere.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+    color: white; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    animation: slideDown 0.3s ease;
+  `;
+
+  const msg = role === 'formatrice'
+    ? `⚠️ ${manquants} alternant${manquants > 1 ? 's' : ''} n'ont pas encore signé aujourd'hui`
+    : `⚠️ Vous n'avez pas encore signé votre émargement d'aujourd'hui`;
+
+  banniere.innerHTML = `
+    <span>${msg}</span>
+    <button onclick="this.parentElement.remove()" style="
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-weight: 700;
+    ">✕</button>
+  `;
+
+  // Ajouter l'animation CSS
+  if (!document.getElementById('notifStyle')) {
+    const style = document.createElement('style');
+    style.id = 'notifStyle';
+    style.textContent = `
+      @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+      @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+      .badge-notif { display: inline-flex; align-items: center; justify-content: center;
+        background: #e53e3e; color: white; border-radius: 50%; width: 18px; height: 18px;
+        font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.prepend(banniere);
+  // Auto-fermeture après 8 secondes
+  setTimeout(function() { if (banniere.parentElement) banniere.remove(); }, 8000);
+}
+
+// ── Badge sur onglet ──────────────────────────────────────────
+function ajouterBadgeOnglet(target, count) {
+  const btn = document.querySelector(`.nav-btn[data-target="${target}"]`);
+  if (!btn) return;
+  const existant = btn.querySelector('.badge-notif');
+  if (existant) existant.remove();
+  if (count <= 0) return;
+  const badge = document.createElement('span');
+  badge.className = 'badge-notif';
+  badge.textContent = count;
+  btn.appendChild(badge);
+}
+
+
+(async function() {
+  await enregistrerServiceWorker();
+  await demanderPermissionNotifs();
+  setTimeout(async function() {
+    const today = new Date();
+    const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today.getDay()];
+    const altAujourdhui = allAlternants.filter(a => a.jourCentre === jourNom);
+    if (altAujourdhui.length === 0) return;
+
+    const { getDatabase: gdb, ref: gref, get: gget } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { getApp: gapp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const dbN = gdb(gapp());
+
+    let manquants = 0;
+    for (const alt of altAujourdhui) {
+      const key = alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap = await gget(gref(dbN,'emargements/'+key));
+      const data = snap.exists() ? snap.val() : {};
+      if (!data.matin_alt || !data.am_alt) manquants++;
+    }
+    if (manquants > 0) {
+      afficherBanniereRappel(manquants, 'admin');
+      ajouterBadgeOnglet('dashboard', manquants);
+      await programmerRappels(jourNom, 'Admin JTCF');
+    }
+  }, 3000);
+})();
+
 async function sauvegarderDocs(e){
   e.preventDefault(); if(!editingId)return;
   await set(ref(db,'alternants/'+editingId+'/documents/dossier'),document.getElementById('docDossier').value.trim()||null);
@@ -691,6 +1074,132 @@ async function sauvegarderFC(e){
   });
   document.getElementById('fcFormSuccess').classList.add('visible');
   await chargerTout();
+
+// ── NOTIFICATIONS ADMIN ───────────────────────────────────────
+
+// ============================================================
+// JTCF — Module Notifications & Badges v1.0
+// À injecter dans formatrice.html, admin.html, livret.html
+// ============================================================
+
+// ── Enregistrement Service Worker ────────────────────────────
+async function enregistrerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/jtcf-alternance/sw.js');
+    return reg;
+  } catch(e) { console.warn('SW non enregistré:', e); }
+}
+
+// ── Demande permission notifications ─────────────────────────
+async function demanderPermissionNotifs() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+// ── Programmer rappels via SW ─────────────────────────────────
+async function programmerRappels(jourCentre, nom) {
+  const ok = await demanderPermissionNotifs();
+  if (!ok) return;
+  const reg = await navigator.serviceWorker.ready;
+  if (reg && reg.active) {
+    reg.active.postMessage({ type: 'PROGRAMMER_NOTIFS', jourCentre, nom });
+  }
+}
+
+// ── Bannière rappel ───────────────────────────────────────────
+function afficherBanniereRappel(manquants, role) {
+  const existant = document.getElementById('banniereRappel');
+  if (existant) existant.remove();
+  if (manquants === 0) return;
+
+  const banniere = document.createElement('div');
+  banniere.id = 'banniereRappel';
+  banniere.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+    color: white; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    animation: slideDown 0.3s ease;
+  `;
+
+  const msg = role === 'formatrice'
+    ? `⚠️ ${manquants} alternant${manquants > 1 ? 's' : ''} n'ont pas encore signé aujourd'hui`
+    : `⚠️ Vous n'avez pas encore signé votre émargement d'aujourd'hui`;
+
+  banniere.innerHTML = `
+    <span>${msg}</span>
+    <button onclick="this.parentElement.remove()" style="
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-weight: 700;
+    ">✕</button>
+  `;
+
+  // Ajouter l'animation CSS
+  if (!document.getElementById('notifStyle')) {
+    const style = document.createElement('style');
+    style.id = 'notifStyle';
+    style.textContent = `
+      @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+      @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+      .badge-notif { display: inline-flex; align-items: center; justify-content: center;
+        background: #e53e3e; color: white; border-radius: 50%; width: 18px; height: 18px;
+        font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.prepend(banniere);
+  // Auto-fermeture après 8 secondes
+  setTimeout(function() { if (banniere.parentElement) banniere.remove(); }, 8000);
+}
+
+// ── Badge sur onglet ──────────────────────────────────────────
+function ajouterBadgeOnglet(target, count) {
+  const btn = document.querySelector(`.nav-btn[data-target="${target}"]`);
+  if (!btn) return;
+  const existant = btn.querySelector('.badge-notif');
+  if (existant) existant.remove();
+  if (count <= 0) return;
+  const badge = document.createElement('span');
+  badge.className = 'badge-notif';
+  badge.textContent = count;
+  btn.appendChild(badge);
+}
+
+
+(async function() {
+  await enregistrerServiceWorker();
+  await demanderPermissionNotifs();
+  setTimeout(async function() {
+    const today = new Date();
+    const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today.getDay()];
+    const altAujourdhui = allAlternants.filter(a => a.jourCentre === jourNom);
+    if (altAujourdhui.length === 0) return;
+
+    const { getDatabase: gdb, ref: gref, get: gget } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { getApp: gapp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const dbN = gdb(gapp());
+
+    let manquants = 0;
+    for (const alt of altAujourdhui) {
+      const key = alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap = await gget(gref(dbN,'emargements/'+key));
+      const data = snap.exists() ? snap.val() : {};
+      if (!data.matin_alt || !data.am_alt) manquants++;
+    }
+    if (manquants > 0) {
+      afficherBanniereRappel(manquants, 'admin');
+      ajouterBadgeOnglet('dashboard', manquants);
+      await programmerRappels(jourNom, 'Admin JTCF');
+    }
+  }, 3000);
+})();
   setTimeout(retourListeFC,1500);
 }
 
@@ -698,7 +1207,133 @@ async function supprimerFC(e){
   e.preventDefault(); if(!editingFC)return;
   if(!confirm('Supprimer ce stagiaire FC ?'))return;
   await remove(ref(db,'stagiairesFC/'+editingFC));
-  await chargerTout(); retourListeFC();
+  await chargerTout();
+
+// ── NOTIFICATIONS ADMIN ───────────────────────────────────────
+
+// ============================================================
+// JTCF — Module Notifications & Badges v1.0
+// À injecter dans formatrice.html, admin.html, livret.html
+// ============================================================
+
+// ── Enregistrement Service Worker ────────────────────────────
+async function enregistrerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/jtcf-alternance/sw.js');
+    return reg;
+  } catch(e) { console.warn('SW non enregistré:', e); }
+}
+
+// ── Demande permission notifications ─────────────────────────
+async function demanderPermissionNotifs() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+// ── Programmer rappels via SW ─────────────────────────────────
+async function programmerRappels(jourCentre, nom) {
+  const ok = await demanderPermissionNotifs();
+  if (!ok) return;
+  const reg = await navigator.serviceWorker.ready;
+  if (reg && reg.active) {
+    reg.active.postMessage({ type: 'PROGRAMMER_NOTIFS', jourCentre, nom });
+  }
+}
+
+// ── Bannière rappel ───────────────────────────────────────────
+function afficherBanniereRappel(manquants, role) {
+  const existant = document.getElementById('banniereRappel');
+  if (existant) existant.remove();
+  if (manquants === 0) return;
+
+  const banniere = document.createElement('div');
+  banniere.id = 'banniereRappel';
+  banniere.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+    color: white; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    animation: slideDown 0.3s ease;
+  `;
+
+  const msg = role === 'formatrice'
+    ? `⚠️ ${manquants} alternant${manquants > 1 ? 's' : ''} n'ont pas encore signé aujourd'hui`
+    : `⚠️ Vous n'avez pas encore signé votre émargement d'aujourd'hui`;
+
+  banniere.innerHTML = `
+    <span>${msg}</span>
+    <button onclick="this.parentElement.remove()" style="
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-weight: 700;
+    ">✕</button>
+  `;
+
+  // Ajouter l'animation CSS
+  if (!document.getElementById('notifStyle')) {
+    const style = document.createElement('style');
+    style.id = 'notifStyle';
+    style.textContent = `
+      @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+      @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+      .badge-notif { display: inline-flex; align-items: center; justify-content: center;
+        background: #e53e3e; color: white; border-radius: 50%; width: 18px; height: 18px;
+        font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.prepend(banniere);
+  // Auto-fermeture après 8 secondes
+  setTimeout(function() { if (banniere.parentElement) banniere.remove(); }, 8000);
+}
+
+// ── Badge sur onglet ──────────────────────────────────────────
+function ajouterBadgeOnglet(target, count) {
+  const btn = document.querySelector(`.nav-btn[data-target="${target}"]`);
+  if (!btn) return;
+  const existant = btn.querySelector('.badge-notif');
+  if (existant) existant.remove();
+  if (count <= 0) return;
+  const badge = document.createElement('span');
+  badge.className = 'badge-notif';
+  badge.textContent = count;
+  btn.appendChild(badge);
+}
+
+
+(async function() {
+  await enregistrerServiceWorker();
+  await demanderPermissionNotifs();
+  setTimeout(async function() {
+    const today = new Date();
+    const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today.getDay()];
+    const altAujourdhui = allAlternants.filter(a => a.jourCentre === jourNom);
+    if (altAujourdhui.length === 0) return;
+
+    const { getDatabase: gdb, ref: gref, get: gget } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const { getApp: gapp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const dbN = gdb(gapp());
+
+    let manquants = 0;
+    for (const alt of altAujourdhui) {
+      const key = alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap = await gget(gref(dbN,'emargements/'+key));
+      const data = snap.exists() ? snap.val() : {};
+      if (!data.matin_alt || !data.am_alt) manquants++;
+    }
+    if (manquants > 0) {
+      afficherBanniereRappel(manquants, 'admin');
+      ajouterBadgeOnglet('dashboard', manquants);
+      await programmerRappels(jourNom, 'Admin JTCF');
+    }
+  }, 3000);
+})(); retourListeFC();
 }
 
 async function sauvegarderDocsFC(e){

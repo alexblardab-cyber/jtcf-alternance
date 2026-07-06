@@ -41,26 +41,18 @@
   .slogan-card { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border-radius: 14px; padding: 16px; margin-bottom: 14px; text-align: center; color: var(--blanc); }
   .slogan-card .slogan { font-size: 14px; font-weight: 800; color: var(--or); }
   .slogan-card .sub { font-size: 11px; opacity: 0.8; margin-top: 4px; }
-
-  /* MODE TOGGLE */
   .mode-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
   .mode-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 12px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; transition: all 0.2s; }
   .mode-btn.active-presentiel { border-color: var(--vert); background: var(--vert-clair); color: var(--vert); }
   .mode-btn.active-distanciel { border-color: var(--violet); background: var(--violet-clair); color: var(--violet); }
-
-  /* PRÉSENCE */
   .presence-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
   .presence-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 12px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; }
   .presence-btn.active-present { border-color: var(--vert); background: var(--vert-clair); color: var(--vert); }
   .presence-btn.active-absent { border-color: var(--rouge); background: var(--rouge-clair); color: var(--rouge); }
-
-  /* MOTIF ABSENCE */
   .motif-zone { background: var(--rouge-clair); border: 1px solid #fed7d7; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
   .motif-label { font-size: 11px; font-weight: 700; color: var(--rouge); margin-bottom: 8px; text-transform: uppercase; }
   .motif-select { width: 100%; padding: 10px; border: 1px solid #fed7d7; border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--bleu-fonce); background: white; -webkit-appearance: none; outline: none; margin-bottom: 10px; }
   .btn-motif-valider { width: 100%; padding: 10px; background: var(--rouge); color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; margin-bottom: 10px; }
-
-  /* UPLOAD JUSTIFICATIF */
   .justif-zone { background: #f0fff4; border: 2px dashed #68d391; border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; }
   .justif-titre { font-size: 11px; font-weight: 700; color: var(--vert); margin-bottom: 8px; text-transform: uppercase; }
   .justif-preview { width: 100%; max-height: 150px; object-fit: contain; border-radius: 8px; margin-bottom: 8px; display: none; }
@@ -68,8 +60,6 @@
   .justif-input { display: none; }
   .justif-status { font-size: 11px; color: var(--vert); font-weight: 600; }
   .justif-deja { background: var(--vert-clair); border: 1px solid #c6f6d5; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--vert); font-weight: 600; display: flex; align-items: center; gap: 6px; margin-top: 8px; }
-
-  /* ÉMARGEMENT */
   .emarg-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .btn-nav { padding: 8px 14px; border: 2px solid var(--or); border-radius: 8px; background: none; color: var(--or); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
   .btn-nav:disabled { opacity: 0.3; }
@@ -93,13 +83,11 @@
   .btn-valider { background: var(--vert); color: white; }
   .btn-effacer { background: #e2e8f0; color: var(--bleu-fonce); }
   .sign-label { font-size: 11px; color: var(--gris); margin-bottom: 6px; }
-
   .contact-card { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gris-clair); }
   .contact-card:last-child { border-bottom: none; }
   .contact-avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
   .contact-name { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); }
   .contact-role { font-size: 11px; color: var(--gris); }
-  .contact-tel { font-size: 12px; color: var(--or); margin-top: 2px; font-weight: 600; }
   .contact-btns { display: flex; gap: 6px; margin-top: 6px; }
   .btn-contact { padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
   .btn-tel { background: var(--bleu-clair); color: var(--bleu); }
@@ -108,6 +96,11 @@
   .rule-item:last-child { border-bottom: none; }
   .rule-num { font-weight: 800; color: var(--or); flex-shrink: 0; width: 20px; }
   .spacer { height: 20px; }
+  @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+  .badge-notif { display: inline-flex; align-items: center; justify-content: center;
+    background: #e53e3e; color: white; border-radius: 50%; width: 18px; height: 18px;
+    font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
 </style>
 </head>
 <body>
@@ -181,15 +174,12 @@
   <div class="section" id="emargement">
     <div class="card">
       <div class="card-title">✍️ Feuille d'émargement</div>
-
       <div class="emarg-nav">
         <button class="btn-nav" id="btnPrev">◀ Préc.</button>
         <div class="emarg-semaine" id="semaineTitre">Séance —</div>
         <button class="btn-nav" id="btnNext">Suiv. ▶</button>
       </div>
       <div class="emarg-date" id="emargDate">—</div>
-
-      <!-- MODE -->
       <div style="margin-bottom:12px;">
         <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Mode de la séance</div>
         <div class="mode-toggle">
@@ -197,8 +187,6 @@
           <button class="mode-btn" id="btnDistanciel" data-mode="distanciel">💻 Distanciel</button>
         </div>
       </div>
-
-      <!-- PRÉSENCE -->
       <div style="margin-bottom:12px;">
         <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Ma présence</div>
         <div class="presence-toggle">
@@ -206,8 +194,6 @@
           <button class="presence-btn" id="btnAbsent" data-presence="absent">❌ Absent(e)</button>
         </div>
       </div>
-
-      <!-- MOTIF + JUSTIFICATIF -->
       <div class="motif-zone" id="motifZone" style="display:none;">
         <div class="motif-label">⚠️ Motif d'absence</div>
         <select class="motif-select" id="motifSelect">
@@ -219,8 +205,6 @@
           <option value="Autre">📝 Autre</option>
         </select>
         <button class="btn-motif-valider" id="btnMotifValider">Enregistrer le motif</button>
-
-        <!-- UPLOAD JUSTIFICATIF -->
         <div class="justif-zone" id="justifZone">
           <div class="justif-titre">📎 Justificatif d'absence</div>
           <div id="justifDeja" class="justif-deja" style="display:none;">✅ Justificatif déjà envoyé</div>
@@ -230,8 +214,6 @@
           <div class="justif-status" id="justifStatus"></div>
         </div>
       </div>
-
-      <!-- MATIN -->
       <div class="emarg-bloc" id="blocMatin">
         <div class="emarg-titre">🌅 Matin · 8h00 – 12h00</div>
         <div class="emarg-row"><span class="emarg-label">Mode</span><span class="emarg-status" id="modeMatinStatus">—</span></div>
@@ -246,8 +228,6 @@
           </div>
         </div>
       </div>
-
-      <!-- APRÈS-MIDI -->
       <div class="emarg-bloc" id="blocAM">
         <div class="emarg-titre">🌇 Après-midi · 13h30 – 16h00</div>
         <div class="emarg-row"><span class="emarg-label">Mode</span><span class="emarg-status" id="modeAMStatus">—</span></div>
@@ -272,7 +252,7 @@
   <div class="section" id="documents">
     <div class="card">
       <div class="card-title">📁 Mes documents</div>
-      <div id="listeDocuments"><div class="loading">Chargement...</div></div>
+      <div id="listeDocuments"><div style="text-align:center;padding:20px;color:#718096;">Chargement...</div></div>
     </div>
     <div style="background:#eaf0f4;border-radius:12px;padding:12px;margin-top:4px;">
       <div style="font-size:11px;color:#718096;text-align:center;line-height:1.6;">
@@ -300,42 +280,36 @@
   </div>
 
   <!-- RÈGLEMENT -->
-<div class="section" id="reglement">
+  <div class="section" id="reglement">
     <div class="card">
       <div class="card-title">📋 Règlement intérieur</div>
       <div style="font-size:11px;color:#718096;margin-bottom:12px;">JT Conseil Formation · Session 2026 · Conforme au Code du Travail art. L6352-3 et suivants</div>
-
       <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🏫 Hygiène & Sécurité</div>
       <div class="rule-item"><span class="rule-num">1.</span>Respectez les consignes incendie affichées. Repérez les extincteurs et issues de secours dès le premier jour.</div>
       <div class="rule-item"><span class="rule-num">2.</span>Alcool, drogues et stupéfiants sont strictement interdits dans les locaux. Tout manquement entraîne une exclusion immédiate.</div>
       <div class="rule-item"><span class="rule-num">3.</span>Il est interdit de fumer ou vapoter à l'intérieur. Un espace extérieur est prévu pendant les pauses.</div>
       <div class="rule-item"><span class="rule-num">4.</span>Tout accident (formation ou trajet) doit être signalé immédiatement à la direction.</div>
-
       <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🕐 Assiduité & Ponctualité</div>
       <div class="rule-item"><span class="rule-num">5.</span>Les horaires de formation sont obligatoires. Tout retard ou absence doit être signalé avant le début de la séance.</div>
-      <div class="rule-item"><span class="rule-num">6.</span>Les absences non justifiées peuvent entraîner une retenue sur rémunération (stagiaires PASS FORMATION / France Travail).</div>
+      <div class="rule-item"><span class="rule-num">6.</span>Les absences non justifiées peuvent entraîner une retenue sur rémunération.</div>
       <div class="rule-item"><span class="rule-num">7.</span>La feuille d'émargement (matin et après-midi) est un document officiel transmis aux financeurs. Toute falsification est une fraude grave.</div>
       <div class="rule-item"><span class="rule-num">8.</span>Un trop grand nombre d'absences peut interdire la présentation à la certification finale.</div>
-
       <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🤝 Comportement & Tenue</div>
-      <div class="rule-item"><span class="rule-num">9.</span>Un comportement respectueux est exigé envers tous : stagiaires, formateurs et personnel. Langage et attitude adaptés au contexte professionnel.</div>
+      <div class="rule-item"><span class="rule-num">9.</span>Un comportement respectueux est exigé envers tous : stagiaires, formateurs et personnel.</div>
       <div class="rule-item"><span class="rule-num">10.</span>Tout comportement harcelant, discriminatoire ou irrespectueux entraînera une exclusion immédiate.</div>
-      <div class="rule-item"><span class="rule-num">11.</span>Téléphone en mode silencieux pendant les séances. Les appels personnels se font à l'extérieur, pendant les pauses.</div>
-      <div class="rule-item"><span class="rule-num">12.</span>Aucun enregistrement audio, vidéo ou photo n'est autorisé sans accord explicite de la direction et des personnes concernées.</div>
-
+      <div class="rule-item"><span class="rule-num">11.</span>Téléphone en mode silencieux pendant les séances.</div>
+      <div class="rule-item"><span class="rule-num">12.</span>Aucun enregistrement audio, vidéo ou photo sans accord explicite.</div>
       <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">💻 Charte numérique & HADOPI</div>
       <div class="rule-item"><span class="rule-num">13.</span>Les équipements informatiques et la connexion Internet sont réservés exclusivement aux activités pédagogiques.</div>
-      <div class="rule-item"><span class="rule-num">14.</span>Il est interdit de télécharger, reproduire ou diffuser des œuvres protégées (musiques, films, logiciels…). C'est une infraction pénale passible de 3 ans d'emprisonnement et 300 000 € d'amende.</div>
-      <div class="rule-item"><span class="rule-num">15.</span>Les logiciels de peer-to-peer (BitTorrent, eMule…), les sites pornographiques, violents ou illicites sont bloqués et strictement interdits.</div>
-      <div class="rule-item"><span class="rule-num">16.</span>Les connexions au réseau JTCF sont journalisées et conservées 12 mois conformément à la loi. En cas d'infraction, l'utilisateur est identifiable et les autorités sont informées.</div>
-      <div class="rule-item"><span class="rule-num">17.</span>Aucune installation de logiciel non autorisé. Tout dommage volontaire au matériel engage la responsabilité civile du stagiaire.</div>
-
+      <div class="rule-item"><span class="rule-num">14.</span>Il est interdit de télécharger, reproduire ou diffuser des œuvres protégées. C'est une infraction pénale.</div>
+      <div class="rule-item"><span class="rule-num">15.</span>Les logiciels de peer-to-peer, les sites pornographiques, violents ou illicites sont strictement interdits.</div>
+      <div class="rule-item"><span class="rule-num">16.</span>Les connexions au réseau JTCF sont journalisées et conservées 12 mois conformément à la loi.</div>
+      <div class="rule-item"><span class="rule-num">17.</span>Aucune installation de logiciel non autorisé. Tout dommage volontaire au matériel engage la responsabilité civile.</div>
       <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">⚠️ Sanctions</div>
-      <div class="rule-item"><span class="rule-num">18.</span>Tout manquement peut entraîner : rappel à l'ordre oral, avertissement écrit, exclusion temporaire ou définitive. L'employeur et/ou le financeur en sera informé.</div>
-      <div class="rule-item"><span class="rule-num">19.</span>Aucune sanction sans entretien préalable (convocation écrite, droit à être assisté). La sanction intervient entre 1 et 15 jours après l'entretien.</div>
-
+      <div class="rule-item"><span class="rule-num">18.</span>Tout manquement peut entraîner : rappel à l'ordre oral, avertissement écrit, exclusion temporaire ou définitive.</div>
+      <div class="rule-item"><span class="rule-num">19.</span>Aucune sanction sans entretien préalable. La sanction intervient entre 1 et 15 jours après l'entretien.</div>
       <div style="margin-top:16px;padding:10px 12px;background:#f7fafc;border-radius:8px;font-size:11px;color:#718096;line-height:1.6;">
-        📄 Le règlement intérieur complet et la charte numérique vous sont remis au format PDF dans votre dossier Google Drive. Leur signature est obligatoire dès le premier jour de formation.
+        📄 Le règlement intérieur complet et la charte numérique vous sont remis au format PDF dans votre dossier Google Drive.
       </div>
     </div>
   </div>
@@ -389,19 +363,18 @@ async function chargerUser() {
 
   const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   const jourNum = jourMap[user.jourCentre] || 1;
-  const debut = new Date(2026,5,10); const fin = new Date(2028,5,10);
+  const parts = user.debut ? user.debut.split('/') : ['10','06','2026'];
+  const debut = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+  const fin = new Date(2028,5,10);
   let d = new Date(debut);
   while (d.getDay() !== jourNum) d.setDate(d.getDate()+1);
   while (d <= fin) { seances.push(new Date(d)); d.setDate(d.getDate()+7); }
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  // Trouver la séance la plus proche d'aujourd'hui (passée ou en cours)
+  const today = new Date(); today.setHours(0,0,0,0);
   semIdx = 0;
   for (let i = 0; i < seances.length; i++) {
     const s = new Date(seances[i]); s.setHours(0,0,0,0);
-    if (s <= today) { semIdx = i; }
-    else { break; }
+    if (s <= today) { semIdx = i; } else { break; }
   }
   document.getElementById('alertProchaine').innerHTML = '📢 Prochain ' + user.jourCentre + ' en centre : <strong>' + formatDate(seances[semIdx]) + '</strong>';
   await chargerPlanning();
@@ -412,15 +385,13 @@ function formatDateISO(iso) {
   const [y,m,d] = iso.split('-').map(Number);
   return d + ' ' + MOIS_FR[m-1] + ' ' + y;
 }
-const SPECIAL_LABELS = { 'BIL':'Bilan mi-parcours', 'BF':'Bilan final', 'DP':'Conception Dossier Pro.', 'EXAM':"Session d'examen", 'STAGE':'Stage en entreprise' };
+const SPECIAL_LABELS = { 'BIL':'Bilan mi-parcours','BF':'Bilan final','DP':'Conception Dossier Pro.','EXAM':"Session d'examen",'STAGE':'Stage en entreprise' };
 
 async function chargerPlanning() {
   const snap = await get(ref(db, 'plannings/' + userId));
   if (!snap.exists()) return;
   const planning = snap.val();
-  const card = document.getElementById('planningCard');
-  card.style.display = 'block';
-
+  document.getElementById('planningCard').style.display = 'block';
   const todayISO = new Date().toISOString().split('T')[0];
   const seancesP = (planning.seances || []).slice().sort((a,b)=>a.date.localeCompare(b.date));
   const passees = seancesP.filter(s => s.date <= todayISO);
@@ -428,318 +399,247 @@ async function chargerPlanning() {
   const heuresFaites = passees.reduce((sum,s)=>sum+(s.heures||0),0);
   const heuresTotal = planning.heuresRetenues || seancesP.reduce((sum,s)=>sum+(s.heures||0),0);
   const pct = heuresTotal ? Math.min(100, Math.round(heuresFaites/heuresTotal*100)) : 0;
-
-  document.getElementById('planningResume').innerHTML =
-    `<b>${planning.titreLibelle || ''}</b> · ${heuresFaites} h réalisées sur ${heuresTotal} h (${pct}%)<br>Fin prévisionnelle : ${planning.fin ? formatDateISO(planning.fin) : '—'}`;
+  document.getElementById('planningResume').innerHTML = `<b>${planning.titreLibelle||''}</b> · ${heuresFaites}h réalisées sur ${heuresTotal}h (${pct}%)<br>Fin prévisionnelle : ${planning.fin?formatDateISO(planning.fin):'—'}`;
   document.getElementById('planningBarre').style.width = pct + '%';
-
-  const ICONES_ETAPE = { STAGE:'🏢', ECF:'📝', DP:'📁', BILAN_FINAL:'🏁', EXAMEN:'🎓' };
-  const etapesHtml = (planning.etapes || []).map(e => {
-    const icone = ICONES_ETAPE[e.type] || '•';
-    const dateTxt = e.date ? formatDateISO(e.date) : `${formatDateISO(e.dateDebut)} → ${formatDateISO(e.dateFin)}`;
-    const passee = (e.date || e.dateFin) <= todayISO;
-    return `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;opacity:${passee?'0.55':'1'};">
-      <span>${icone}</span>
-      <div><div style="font-weight:700;font-size:13px;color:#2a3f4e;">${e.label}</div>
-      <div style="font-size:12px;color:#718096;">${dateTxt}</div></div>
-    </div>`;
-  }).join('');
-  document.getElementById('planningEtapes').innerHTML = etapesHtml
-    ? '<div style="font-size:12px;font-weight:700;color:#4a5568;margin-bottom:4px;">Étapes clés du parcours</div>' + etapesHtml
-    : '';
-
-  function renderSeance(s) {
-    const label = s.special ? (SPECIAL_LABELS[s.special] || s.special) : (s.cp ? (s.at ? s.at+' · '+s.cp : s.cp) : 'Séance');
-    return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:13px;">
-      <span>${formatDateISO(s.date)}</span><span style="font-weight:600;color:#2a3f4e;">${label}</span></div>`;
-  }
-
-  const prochaines = aVenir.slice(0, 4);
-  document.getElementById('planningProchaines').innerHTML = prochaines.length
-    ? '<div style="font-size:12px;font-weight:700;color:#4a5568;margin-bottom:4px;">Prochaines séances</div>' + prochaines.map(renderSeance).join('')
-    : '<div style="font-size:13px;color:#a0aec0;">Aucune séance à venir programmée.</div>';
-
-  document.getElementById('planningComplet').innerHTML = seancesP.map(s =>
-    `<div style="opacity:${s.date<=todayISO?'0.5':'1'};">${renderSeance(s)}</div>`
-  ).join('');
-
-  document.getElementById('btnVoirToutPlanning').addEventListener('click', () => {
-    const el = document.getElementById('planningComplet');
-    const open = el.style.display !== 'none';
-    el.style.display = open ? 'none' : 'block';
-    document.getElementById('btnVoirToutPlanning').textContent = open ? 'Voir tout le planning ▾' : 'Masquer ▴';
-  });
+  const ICONES = {STAGE:'🏢',ECF:'📝',DP:'📁',BILAN_FINAL:'🏁',EXAMEN:'🎓'};
+  document.getElementById('planningEtapes').innerHTML = (planning.etapes||[]).map(e=>{
+    const icone=ICONES[e.type]||'•'; const dateTxt=e.date?formatDateISO(e.date):`${formatDateISO(e.dateDebut)} → ${formatDateISO(e.dateFin)}`; const passee=(e.date||e.dateFin)<=todayISO;
+    return `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;opacity:${passee?'0.55':'1'};"><span>${icone}</span><div><div style="font-weight:700;font-size:13px;color:#2a3f4e;">${e.label}</div><div style="font-size:12px;color:#718096;">${dateTxt}</div></div></div>`;
+  }).join('') ? '<div style="font-size:12px;font-weight:700;color:#4a5568;margin-bottom:4px;">Étapes clés</div>'+(planning.etapes||[]).map(e=>{const icone=ICONES[e.type]||'•';const dateTxt=e.date?formatDateISO(e.date):`${formatDateISO(e.dateDebut)} → ${formatDateISO(e.dateFin)}`;const passee=(e.date||e.dateFin)<=todayISO;return `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;opacity:${passee?'0.55':'1'};"><span>${icone}</span><div><div style="font-weight:700;font-size:13px;color:#2a3f4e;">${e.label}</div><div style="font-size:12px;color:#718096;">${dateTxt}</div></div></div>`;}).join('') : '';
+  const prochaines = aVenir.slice(0,4);
+  function renderSeance(s){const label=s.special?(SPECIAL_LABELS[s.special]||s.special):(s.cp?(s.at?s.at+' · '+s.cp:s.cp):'Séance');return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:13px;"><span>${formatDateISO(s.date)}</span><span style="font-weight:600;color:#2a3f4e;">${label}</span></div>`;}
+  document.getElementById('planningProchaines').innerHTML = prochaines.length ? '<div style="font-size:12px;font-weight:700;color:#4a5568;margin-bottom:4px;">Prochaines séances</div>'+prochaines.map(renderSeance).join('') : '<div style="font-size:13px;color:#a0aec0;">Aucune séance à venir.</div>';
+  document.getElementById('planningComplet').innerHTML = seancesP.map(s=>`<div style="opacity:${s.date<=todayISO?'0.5':'1'};">${renderSeance(s)}</div>`).join('');
+  document.getElementById('btnVoirToutPlanning').addEventListener('click',()=>{const el=document.getElementById('planningComplet');const open=el.style.display!=='none';el.style.display=open?'none':'block';document.getElementById('btnVoirToutPlanning').textContent=open?'Voir tout le planning ▾':'Masquer ▴';});
 }
 
 function formatDate(d) {
-  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-  const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-  return jours[d.getDay()] + ' ' + d.getDate() + ' ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+  const jours=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return jours[d.getDay()]+' '+d.getDate()+' '+mois[d.getMonth()]+' '+d.getFullYear();
 }
 
 function getKey(idx) {
-  const d = seances[idx];
-  return userId + '_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+  const d=seances[idx];
+  return userId+'_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+d.getDate();
 }
 
 async function updateEmargement() {
-  const d = seances[semIdx];
-  document.getElementById('semaineTitre').textContent = 'Séance n°' + (semIdx+1);
-  document.getElementById('emargDate').textContent = formatDate(d);
-  document.getElementById('btnPrev').disabled = semIdx === 0;
-  document.getElementById('btnNext').disabled = semIdx === seances.length-1;
-
-  const key = getKey(semIdx);
-  const snap = await get(ref(db, 'emargements/'+key));
-  const data = snap.exists() ? snap.val() : {};
-
-  modeActuel = data.mode || null;
-  presenceActuelle = data.presence || null;
-
-  document.getElementById('btnPresentiel').className = 'mode-btn' + (modeActuel==='presentiel'?' active-presentiel':'');
-  document.getElementById('btnDistanciel').className = 'mode-btn' + (modeActuel==='distanciel'?' active-distanciel':'');
-  document.getElementById('btnPresent').className = 'presence-btn' + (presenceActuelle==='present'?' active-present':'');
-  document.getElementById('btnAbsent').className = 'presence-btn' + (presenceActuelle==='absent'?' active-absent':'');
-  document.getElementById('motifZone').style.display = presenceActuelle==='absent' ? 'block' : 'none';
-  if (data.motif) document.getElementById('motifSelect').value = data.motif;
-
-  // Justificatif
-  const justifDeja = document.getElementById('justifDeja');
-  const justifPreview = document.getElementById('justifPreview');
-  if (data.justificatif) {
-    justifDeja.style.display = 'flex';
-    justifPreview.src = data.justificatif;
-    justifPreview.style.display = 'block';
-    document.getElementById('justifStatus').textContent = '';
-  } else {
-    justifDeja.style.display = 'none';
-    justifPreview.style.display = 'none';
-    justifPreview.src = '';
-  }
-
-  const modeLabel = modeActuel==='distanciel'?'💻 Distanciel':modeActuel==='presentiel'?'🏫 Présentiel':'—';
-  document.getElementById('modeMatinStatus').textContent = modeLabel;
-  document.getElementById('modeAMStatus').textContent = modeLabel;
-  document.getElementById('modeMatinStatus').className = 'emarg-status'+(modeActuel==='distanciel'?' status-distanciel':'');
-  document.getElementById('modeAMStatus').className = 'emarg-status'+(modeActuel==='distanciel'?' status-distanciel':'');
-
-  // Verrou jour + heure
-  const maintenant = new Date();
-  const apremDisponible = maintenant.getHours() >= 12;
-  const jourMap2 = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
-  const jourCentreNum = jourMap2[user.jourCentre] || 1;
-  const estJourCentre = maintenant.getDay() === jourCentreNum;
-
-  // Verrou jour — si ce n'est pas le bon jour, bloquer les signatures
-  const zoneMatinAlt = document.getElementById('zoneMatinAlt');
-  const verouJour = document.getElementById('verouJour');
-  if (!estJourCentre && !data.matin_alt) {
-    if (verouJour) verouJour.style.display = 'block';
-    if (zoneMatinAlt) zoneMatinAlt.style.display = 'none';
-  } else {
-    if (verouJour) verouJour.style.display = 'none';
-  }
-  // Mettre à jour le message avec le bon jour
-  const jourMsg = document.getElementById('jourCentreMsg');
-  if (jourMsg) jourMsg.textContent = 'le ' + user.jourCentre.toLowerCase() + ' en centre';
-
-  // Verrou 12h après-midi
-  const verouAM = document.getElementById('verouAM');
-  const zoneAMAlt = document.getElementById('zoneAMAlt');
-  if ((!apremDisponible || !estJourCentre) && !data.am_alt && presenceActuelle !== 'absent') {
-    verouAM.style.display = 'block';
-    if (zoneAMAlt) zoneAMAlt.style.display = 'none';
-  } else {
-    verouAM.style.display = 'none';
-  }
-
-  const slots = [
+  const d=seances[semIdx];
+  document.getElementById('semaineTitre').textContent='Séance n°'+(semIdx+1);
+  document.getElementById('emargDate').textContent=formatDate(d);
+  document.getElementById('btnPrev').disabled=semIdx===0;
+  document.getElementById('btnNext').disabled=semIdx===seances.length-1;
+  const key=getKey(semIdx);
+  const snap=await get(ref(db,'emargements/'+key));
+  const data=snap.exists()?snap.val():{};
+  modeActuel=data.mode||null; presenceActuelle=data.presence||null;
+  document.getElementById('btnPresentiel').className='mode-btn'+(modeActuel==='presentiel'?' active-presentiel':'');
+  document.getElementById('btnDistanciel').className='mode-btn'+(modeActuel==='distanciel'?' active-distanciel':'');
+  document.getElementById('btnPresent').className='presence-btn'+(presenceActuelle==='present'?' active-present':'');
+  document.getElementById('btnAbsent').className='presence-btn'+(presenceActuelle==='absent'?' active-absent':'');
+  document.getElementById('motifZone').style.display=presenceActuelle==='absent'?'block':'none';
+  if(data.motif) document.getElementById('motifSelect').value=data.motif;
+  const justifDeja=document.getElementById('justifDeja'); const justifPreview=document.getElementById('justifPreview');
+  if(data.justificatif){justifDeja.style.display='flex';justifPreview.src=data.justificatif;justifPreview.style.display='block';document.getElementById('justifStatus').textContent='';}
+  else{justifDeja.style.display='none';justifPreview.style.display='none';justifPreview.src='';}
+  const modeLabel=modeActuel==='distanciel'?'💻 Distanciel':modeActuel==='presentiel'?'🏫 Présentiel':'—';
+  document.getElementById('modeMatinStatus').textContent=modeLabel;
+  document.getElementById('modeAMStatus').textContent=modeLabel;
+  document.getElementById('modeMatinStatus').className='emarg-status'+(modeActuel==='distanciel'?' status-distanciel':'');
+  document.getElementById('modeAMStatus').className='emarg-status'+(modeActuel==='distanciel'?' status-distanciel':'');
+  const maintenant=new Date(); const apremDisponible=maintenant.getHours()>=12;
+  const jourMap2={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  const estJourCentre=maintenant.getDay()===(jourMap2[user.jourCentre]||1);
+  const verouAM=document.getElementById('verouAM'); const zoneAMAlt=document.getElementById('zoneAMAlt');
+  if((!apremDisponible||!estJourCentre)&&!data.am_alt&&presenceActuelle!=='absent'){verouAM.style.display='block';if(zoneAMAlt)zoneAMAlt.style.display='none';}
+  else{verouAM.style.display='none';}
+  const slots=[
     {alt:'matin_alt',form:'matin_form',altEl:'statusMatinAlt',formEl:'statusMatinForm',zone:'zoneMatinAlt',bloc:'blocMatin'},
     {alt:'am_alt',form:'am_form',altEl:'statusAMAlt',formEl:'statusAMForm',zone:'zoneAMAlt',bloc:'blocAM'}
   ];
-
-  slots.forEach(function(s) {
-    const altSigne = data[s.alt];
-    const formSigne = data[s.form];
-    const absent = presenceActuelle === 'absent';
-
-    const altEl = document.getElementById(s.altEl);
-    if (absent) { altEl.textContent='❌ Absent(e)'; altEl.className='emarg-status status-absent'; }
-    else { altEl.textContent=altSigne?'✅ Signé':'En attente'; altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente'); }
-
-    const formEl = document.getElementById(s.formEl);
-    formEl.textContent = formSigne?'✅ Signé':'En attente';
-    formEl.className = 'emarg-status '+(formSigne?'status-signe':'status-attente');
-
-    const zone = document.getElementById(s.zone);
-    if (zone) zone.style.display = (altSigne||absent) ? 'none' : 'block';
-
-    const bloc = document.getElementById(s.bloc);
-    bloc.className = 'emarg-bloc'+(absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
+  slots.forEach(function(s){
+    const altSigne=data[s.alt]; const formSigne=data[s.form]; const absent=presenceActuelle==='absent';
+    const altEl=document.getElementById(s.altEl);
+    if(absent){altEl.textContent='❌ Absent(e)';altEl.className='emarg-status status-absent';}
+    else{altEl.textContent=altSigne?'✅ Signé':'En attente';altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente');}
+    const formEl=document.getElementById(s.formEl);
+    formEl.textContent=formSigne?'✅ Signé':'En attente';
+    formEl.className='emarg-status '+(formSigne?'status-signe':'status-attente');
+    const zone=document.getElementById(s.zone);
+    if(zone) zone.style.display=(altSigne||absent)?'none':'block';
+    document.getElementById(s.bloc).className='emarg-bloc'+(absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
   });
-
-  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id) {
-    const c = document.getElementById(id);
-    if (c) { c.width=c.offsetWidth; c.height=80; c.getContext('2d').clearRect(0,0,c.width,c.height); }
-  });
+  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id){const c=document.getElementById(id);if(c){c.width=c.offsetWidth;c.height=80;c.getContext('2d').clearRect(0,0,c.width,c.height);}});
   initCanvases();
 }
 
 function initCanvases() {
-  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id) {
-    const canvas = document.getElementById(id);
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth; canvas.height = 80;
-    let drawing = false;
-    function getPos(e) { const r=canvas.getBoundingClientRect(); if(e.touches) return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}; return{x:e.clientX-r.left,y:e.clientY-r.top}; }
-    function start(e) { e.preventDefault(); drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
-    function draw(e) { e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#2a3f4e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke(); }
-    function stop() { drawing=false; }
-    canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',draw); canvas.addEventListener('mouseup',stop);
-    canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',draw,{passive:false}); canvas.addEventListener('touchend',stop);
+  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id){
+    const canvas=document.getElementById(id); if(!canvas)return;
+    const ctx=canvas.getContext('2d'); canvas.width=canvas.offsetWidth; canvas.height=80;
+    let drawing=false;
+    function getPos(e){const r=canvas.getBoundingClientRect();if(e.touches)return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};return{x:e.clientX-r.left,y:e.clientY-r.top};}
+    function start(e){e.preventDefault();drawing=true;const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+    function draw(e){e.preventDefault();if(!drawing)return;const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#2a3f4e';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();}
+    function stop(){drawing=false;}
+    canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',draw);canvas.addEventListener('mouseup',stop);
+    canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',draw,{passive:false});canvas.addEventListener('touchend',stop);
   });
 }
 
-// UPLOAD JUSTIFICATIF
-document.getElementById('justifInput').addEventListener('change', async function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  document.getElementById('justifStatus').textContent = '⏳ Compression en cours...';
-
-  // Compresser l'image via canvas
-  const reader = new FileReader();
-  reader.onload = async function(ev) {
-    const img = new Image();
-    img.onload = async function() {
-      const canvas = document.createElement('canvas');
-      const MAX = 800;
-      let w = img.width; let h = img.height;
-      if (w > MAX) { h = Math.round(h*(MAX/w)); w = MAX; }
-      if (h > MAX) { w = Math.round(w*(MAX/h)); h = MAX; }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      const compressed = canvas.toDataURL('image/jpeg', 0.6);
-
-      // Sauvegarder dans Firebase
-      const key = getKey(semIdx);
-      await set(ref(db,'emargements/'+key+'/justificatif'), compressed);
-      document.getElementById('justifStatus').textContent = '✅ Justificatif envoyé !';
-      document.getElementById('justifPreview').src = compressed;
-      document.getElementById('justifPreview').style.display = 'block';
-      document.getElementById('justifDeja').style.display = 'flex';
+document.getElementById('justifInput').addEventListener('change',async function(e){
+  const file=e.target.files[0]; if(!file)return;
+  document.getElementById('justifStatus').textContent='⏳ Compression en cours...';
+  const reader=new FileReader();
+  reader.onload=async function(ev){
+    const img=new Image();
+    img.onload=async function(){
+      const canvas=document.createElement('canvas'); const MAX=800;
+      let w=img.width; let h=img.height;
+      if(w>MAX){h=Math.round(h*(MAX/w));w=MAX;} if(h>MAX){w=Math.round(w*(MAX/h));h=MAX;}
+      canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed=canvas.toDataURL('image/jpeg',0.6);
+      const key=getKey(semIdx);
+      await set(ref(db,'emargements/'+key+'/justificatif'),compressed);
+      document.getElementById('justifStatus').textContent='✅ Justificatif envoyé !';
+      document.getElementById('justifPreview').src=compressed;
+      document.getElementById('justifPreview').style.display='block';
+      document.getElementById('justifDeja').style.display='flex';
     };
-    img.src = ev.target.result;
+    img.src=ev.target.result;
   };
   reader.readAsDataURL(file);
 });
 
-// MODE
-['btnPresentiel','btnDistanciel'].forEach(function(id) {
-  async function setMode(e) { e.preventDefault(); await set(ref(db,'emargements/'+getKey(semIdx)+'/mode'),document.getElementById(id).getAttribute('data-mode')); await updateEmargement(); }
-  document.getElementById(id).addEventListener('touchend',setMode,{passive:false}); document.getElementById(id).addEventListener('click',setMode);
+['btnPresentiel','btnDistanciel'].forEach(function(id){
+  async function setMode(e){e.preventDefault();await set(ref(db,'emargements/'+getKey(semIdx)+'/mode'),document.getElementById(id).getAttribute('data-mode'));await updateEmargement();}
+  document.getElementById(id).addEventListener('touchend',setMode,{passive:false});document.getElementById(id).addEventListener('click',setMode);
 });
 
-// PRÉSENCE
-['btnPresent','btnAbsent'].forEach(function(id) {
-  async function setPresence(e) { e.preventDefault(); await set(ref(db,'emargements/'+getKey(semIdx)+'/presence'),document.getElementById(id).getAttribute('data-presence')); await updateEmargement(); }
-  document.getElementById(id).addEventListener('touchend',setPresence,{passive:false}); document.getElementById(id).addEventListener('click',setPresence);
+['btnPresent','btnAbsent'].forEach(function(id){
+  async function setPresence(e){e.preventDefault();await set(ref(db,'emargements/'+getKey(semIdx)+'/presence'),document.getElementById(id).getAttribute('data-presence'));await updateEmargement();}
+  document.getElementById(id).addEventListener('touchend',setPresence,{passive:false});document.getElementById(id).addEventListener('click',setPresence);
 });
 
-// MOTIF
-async function validerMotif(e) {
-  e.preventDefault();
-  const motif = document.getElementById('motifSelect').value;
-  if (!motif) { alert('Veuillez choisir un motif.'); return; }
-  await set(ref(db,'emargements/'+getKey(semIdx)+'/motif'), motif);
-  document.getElementById('btnMotifValider').textContent = '✅ Motif enregistré';
-  setTimeout(function(){ document.getElementById('btnMotifValider').textContent = 'Enregistrer le motif'; }, 2000);
+async function validerMotif(e){
+  e.preventDefault(); const motif=document.getElementById('motifSelect').value;
+  if(!motif){alert('Veuillez choisir un motif.');return;}
+  await set(ref(db,'emargements/'+getKey(semIdx)+'/motif'),motif);
+  document.getElementById('btnMotifValider').textContent='✅ Motif enregistré';
+  setTimeout(function(){document.getElementById('btnMotifValider').textContent='Enregistrer le motif';},2000);
 }
 document.getElementById('btnMotifValider').addEventListener('touchend',validerMotif,{passive:false});
 document.getElementById('btnMotifValider').addEventListener('click',validerMotif);
 
-// SIGNATURE
-document.querySelectorAll('.btn-valider').forEach(function(btn) {
-  async function valider(e) {
-    e.preventDefault();
-    const slot = btn.getAttribute('data-slot');
-    const canvasMap = {'matin_alt':'canvasMatinAlt','am_alt':'canvasAMAlt'};
-    const canvas = document.getElementById(canvasMap[slot]);
-    if (!canvas) return;
-    const imageData = canvas.toDataURL();
-    const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
-    if (imageData===blank.toDataURL()) { alert('Veuillez signer avant de valider.'); return; }
-    await set(ref(db,'emargements/'+getKey(semIdx)+'/'+slot), imageData);
+document.querySelectorAll('.btn-valider').forEach(function(btn){
+  async function valider(e){
+    e.preventDefault(); const slot=btn.getAttribute('data-slot');
+    const canvasMap={'matin_alt':'canvasMatinAlt','am_alt':'canvasAMAlt'};
+    const canvas=document.getElementById(canvasMap[slot]); if(!canvas)return;
+    const imageData=canvas.toDataURL();
+    const blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
+    if(imageData===blank.toDataURL()){alert('Veuillez signer avant de valider.');return;}
+    await set(ref(db,'emargements/'+getKey(semIdx)+'/'+slot),imageData);
     await updateEmargement();
   }
-  btn.addEventListener('touchend',valider,{passive:false}); btn.addEventListener('click',valider);
+  btn.addEventListener('touchend',valider,{passive:false});btn.addEventListener('click',valider);
 });
 
-// EFFACER
-document.querySelectorAll('.btn-effacer').forEach(function(btn) {
-  function effacer(e) { e.preventDefault(); const c=document.getElementById(btn.getAttribute('data-canvas')); if(c){c.getContext('2d').clearRect(0,0,c.width,c.height);} }
-  btn.addEventListener('touchend',effacer,{passive:false}); btn.addEventListener('click',effacer);
+document.querySelectorAll('.btn-effacer').forEach(function(btn){
+  function effacer(e){e.preventDefault();const c=document.getElementById(btn.getAttribute('data-canvas'));if(c){c.getContext('2d').clearRect(0,0,c.width,c.height);}}
+  btn.addEventListener('touchend',effacer,{passive:false});btn.addEventListener('click',effacer);
 });
 
-// NAV SEMAINES
 document.getElementById('btnPrev').addEventListener('touchend',function(e){e.preventDefault();if(semIdx>0){semIdx--;updateEmargement();}},{passive:false});
 document.getElementById('btnPrev').addEventListener('click',function(){if(semIdx>0){semIdx--;updateEmargement();}});
 document.getElementById('btnNext').addEventListener('touchend',function(e){e.preventDefault();if(semIdx<seances.length-1){semIdx++;updateEmargement();}},{passive:false});
 document.getElementById('btnNext').addEventListener('click',function(){if(semIdx<seances.length-1){semIdx++;updateEmargement();}});
 
-// NAV ONGLETS
 async function chargerDocuments() {
-  const snap = await get(ref(db, 'alternants/' + userId + '/documents'));
-  const container = document.getElementById('listeDocuments');
-  if (!container) return;
-
-  const data = snap.exists() ? snap.val() : {};
-  const lien = data.dossier || '';
-
-  let html = '';
-  if (!lien) {
-    html = '<div style="text-align:center;padding:24px 0;">'
-      + '<div style="font-size:36px;margin-bottom:10px;">📭</div>'
-      + '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Aucun document disponible</div>'
-      + '<div style="font-size:12px;color:#718096;line-height:1.6;">Vos documents apparaîtront ici dès qu\'ils seront mis en ligne par l\'équipe JTCF.</div>'
-      + '</div>';
-  } else {
-    html = '<div style="text-align:center;padding:10px 0 16px;">'
-      + '<div style="font-size:36px;margin-bottom:10px;">📂</div>'
-      + '<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Votre dossier est disponible</div>'
-      + '<div style="font-size:12px;color:#718096;margin-bottom:16px;line-height:1.6;">Retrouvez tous vos documents dans votre espace Google Drive personnel.</div>'
-      + '</div>'
-      + '<a href="' + lien + '" target="_blank" style="text-decoration:none;">'
-      + '<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:linear-gradient(135deg,#2a3f4e,#3d5a6e);border-radius:12px;cursor:pointer;">'
-      + '<div style="font-size:20px;">📁</div>'
-      + '<div style="color:white;font-weight:700;font-size:14px;">Ouvrir mon dossier Drive</div>'
-      + '<div style="color:#C9A227;font-size:16px;">↗</div>'
-      + '</div></a>'
-      + '<div style="font-size:11px;color:#718096;text-align:center;margin-top:10px;">Vous pouvez télécharger chaque document depuis Google Drive</div>';
-  }
-  container.innerHTML = html;
+  const snap=await get(ref(db,'alternants/'+userId+'/documents'));
+  const container=document.getElementById('listeDocuments'); if(!container)return;
+  const data=snap.exists()?snap.val():{};
+  const lien=data.dossier||'';
+  container.innerHTML=!lien
+    ?'<div style="text-align:center;padding:24px 0;"><div style="font-size:36px;margin-bottom:10px;">📭</div><div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Aucun document disponible</div><div style="font-size:12px;color:#718096;line-height:1.6;">Vos documents apparaîtront ici dès qu\'ils seront mis en ligne par l\'équipe JTCF.</div></div>'
+    :'<div style="text-align:center;padding:10px 0 16px;"><div style="font-size:36px;margin-bottom:10px;">📂</div><div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Votre dossier est disponible</div><div style="font-size:12px;color:#718096;margin-bottom:16px;line-height:1.6;">Retrouvez tous vos documents dans votre espace Google Drive personnel.</div></div><a href="'+lien+'" target="_blank" style="text-decoration:none;"><div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:linear-gradient(135deg,#2a3f4e,#3d5a6e);border-radius:12px;cursor:pointer;"><div style="font-size:20px;">📁</div><div style="color:white;font-weight:700;font-size:14px;">Ouvrir mon dossier Drive</div><div style="color:#C9A227;font-size:16px;">↗</div></div></a><div style="font-size:11px;color:#718096;text-align:center;margin-top:10px;">Vous pouvez télécharger chaque document depuis Google Drive</div>';
 }
 
-document.querySelectorAll('.nav-btn').forEach(function(btn) {
-  function activate(e) {
-    e.preventDefault();
-    var target = btn.getAttribute('data-target');
+document.querySelectorAll('.nav-btn').forEach(function(btn){
+  function activate(e){
+    e.preventDefault(); var target=btn.getAttribute('data-target');
     document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
     document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
-    document.getElementById(target).classList.add('active');
-    btn.classList.add('active');
-    if (target==='emargement') updateEmargement();
-    if (target==='documents') chargerDocuments();
+    document.getElementById(target).classList.add('active'); btn.classList.add('active');
+    if(target==='emargement') updateEmargement();
+    if(target==='documents') chargerDocuments();
   }
-  btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
+  btn.addEventListener('touchend',activate,{passive:false});btn.addEventListener('click',activate);
 });
 
-// DÉCONNEXION
 document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_alt_user');window.location.href='index.html';},{passive:false});
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_alt_user');window.location.href='index.html';});
 
 // INIT
 chargerUser().then(function(){ updateEmargement(); });
+
+// ── NOTIFICATIONS LIVRET ──────────────────────────────────────
+async function enregistrerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  try { return await navigator.serviceWorker.register('/jtcf-alternance/sw.js'); } catch(e) {}
+}
+async function demanderPermissionNotifs() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  return (await Notification.requestPermission()) === 'granted';
+}
+async function programmerRappels(jourCentre, nom) {
+  const ok = await demanderPermissionNotifs(); if (!ok) return;
+  const reg = await navigator.serviceWorker.ready;
+  if (reg && reg.active) reg.active.postMessage({ type: 'PROGRAMMER_NOTIFS', jourCentre, nom });
+}
+function afficherBanniereRappel(count, role) {
+  const existant = document.getElementById('banniereRappel'); if (existant) existant.remove();
+  if (count === 0) return;
+  const banniere = document.createElement('div');
+  banniere.id = 'banniereRappel';
+  banniere.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#e53e3e,#c53030);color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;font-family:Segoe UI,sans-serif;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.3);animation:slideDown 0.3s ease;';
+  banniere.innerHTML = `<span>⚠️ Pensez à signer votre émargement d'aujourd'hui !</span><button onclick="this.parentElement.remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:700;">✕</button>`;
+  document.body.prepend(banniere);
+  setTimeout(function(){ if(banniere.parentElement) banniere.remove(); }, 8000);
+}
+function ajouterBadgeOnglet(target, count) {
+  const btn = document.querySelector(`.nav-btn[data-target="${target}"]`); if (!btn) return;
+  const existant = btn.querySelector('.badge-notif'); if (existant) existant.remove();
+  if (count <= 0) return;
+  const badge = document.createElement('span');
+  badge.className = 'badge-notif'; badge.textContent = count; btn.appendChild(badge);
+}
+
+(async function() {
+  await enregistrerServiceWorker();
+  const granted = await demanderPermissionNotifs();
+  setTimeout(async function() {
+    if (!user) return;
+    const today = new Date();
+    const jourMap3 = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+    const estJourCentre = today.getDay() === (jourMap3[user.jourCentre]||1);
+    if (!estJourCentre) return;
+    const key = userId+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+    const snap = await get(ref(db,'emargements/'+key));
+    const data = snap.exists() ? snap.val() : {};
+    const heure = today.getHours();
+    const manque = (heure >= 8 && !data.matin_alt && data.presence !== 'absent') ||
+                   (heure >= 12 && !data.am_alt && data.presence !== 'absent');
+    if (manque) {
+      afficherBanniereRappel(1, 'alternant');
+      ajouterBadgeOnglet('emargement', 1);
+    }
+    if (granted) await programmerRappels(user.jourCentre, user.nom);
+  }, 2000);
+})();
 </script>
 </body>
 </html>
