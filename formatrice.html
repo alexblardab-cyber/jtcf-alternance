@@ -268,6 +268,7 @@
         </div>
         <button class="btn-annuler-sign" id="btnAnnulerMatin" style="display:none;" data-slot="matin_form">🗑️ Annuler ma signature matin</button>
         <button class="btn-annuler-sign" id="btnEffacerAltMatin" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant matin</button>
+        <button class="btn-annuler-sign" id="btnMarquerAbsentMatin" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent matin (efface sig. matin)</button>
       </div>
       <div class="emarg-bloc" id="ficheBlocAM">
         <div class="emarg-titre">🌇 Après-midi · 13h30 – 16h00</div>
@@ -284,7 +285,6 @@
         </div>
         <button class="btn-annuler-sign" id="btnAnnulerAM" style="display:none;" data-slot="am_form">🗑️ Annuler ma signature après-midi</button>
         <button class="btn-annuler-sign" id="btnEffacerAltAM" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant après-midi</button>
-        <button class="btn-annuler-sign" id="btnMarquerAbsentMatin" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent matin (efface sig. matin)</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentAM" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent après-midi (efface sig. AM)</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentJournee" style="display:none;background:#e53e3e;color:#fff;border-color:#e53e3e;font-size:13px;padding:11px;">❌ Absent toute la journée</button>
       </div>
@@ -402,7 +402,7 @@ function afficherListe(containerId, alts) {
     const card = document.createElement('div');
     card.className = 'alternant-card';
     card.innerHTML = `<div class="alternant-avatar">${initiales}</div><div style="flex:1"><div class="alternant-nom">${alt.nom}</div><div class="alternant-formation">${alt.formation}</div></div><div class="alternant-arrow">›</div>`;
-    function open(e) { e.preventDefault(); ouvrirFiche(alt); }
+    function open(e) { e.preventDefault(); ouvrirFiche(alt).catch(console.error); }
     card.addEventListener('touchend', open, {passive:false});
     card.addEventListener('click', open);
     container.appendChild(card);
@@ -627,14 +627,17 @@ async function updateFicheEmarg() {
   if (btnAnnAM) btnAnnAM.style.display = data.am_form ? 'block' : 'none';
   const btnEffAltMatin = document.getElementById('btnEffacerAltMatin');
   const btnEffAltAM = document.getElementById('btnEffacerAltAM');
-  const btnAbsent = document.getElementById('btnMarquerAbsent');
-  if (btnEffAltMatin) btnEffAltMatin.style.display = data.matin_alt && !absent ? 'block' : 'none';
-  if (btnEffAltAM) btnEffAltAM.style.display = data.am_alt && !absent ? 'block' : 'none';
   const btnAbsMatin = document.getElementById('btnMarquerAbsentMatin');
   const btnAbsAM = document.getElementById('btnMarquerAbsentAM');
   const btnAbsJournee = document.getElementById('btnMarquerAbsentJournee');
+  // Effacer sig alternant — visible si signé et pas déjà absent
+  if (btnEffAltMatin) btnEffAltMatin.style.display = (data.matin_alt && !absent) ? 'block' : 'none';
+  if (btnEffAltAM) btnEffAltAM.style.display = (data.am_alt && !absent) ? 'block' : 'none';
+  // Absent matin — visible si pas déjà absent
   if (btnAbsMatin) btnAbsMatin.style.display = !absent ? 'block' : 'none';
+  // Absent AM — visible si pas déjà absent
   if (btnAbsAM) btnAbsAM.style.display = !absent ? 'block' : 'none';
+  // Absent journée — visible si pas déjà absent
   if (btnAbsJournee) btnAbsJournee.style.display = !absent ? 'block' : 'none';
   ['ficheCanvasMatinForm','ficheCanvasAMForm'].forEach(function(id) {
     const c = document.getElementById(id); c.width = c.offsetWidth; c.height = 80;
