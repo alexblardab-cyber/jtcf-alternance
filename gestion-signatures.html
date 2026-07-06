@@ -17,7 +17,6 @@
   .field label { display: block; font-size: 0.78rem; font-weight: 700; color: #3d5a6e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
   select, input[type="date"] { width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-family: inherit; color: #2a3f4e; outline: none; -webkit-appearance: none; background: white; }
   select:focus, input:focus { border-color: #C9A227; }
-
   .statut-box { background: #f0f2f5; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
   .statut-titre { font-size: 0.78rem; font-weight: 700; color: #3d5a6e; text-transform: uppercase; margin-bottom: 10px; }
   .statut-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
@@ -27,22 +26,18 @@
   .badge-signe { background: #c6f6d5; color: #276749; }
   .badge-attente { background: #fed7d7; color: #c53030; }
   .badge-absent { background: #e2e8f0; color: #718096; }
-
   .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
   button { padding: 11px 14px; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; width: 100%; transition: opacity 0.15s; }
   button:hover { opacity: 0.85; }
   button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-danger { background: #e53e3e; color: #fff; }
+  .btn-danger  { background: #e53e3e; color: #fff; }
   .btn-warning { background: #dd6b20; color: #fff; }
-  .btn-primary { background: #C9A227; color: #fff; }
-  .btn-success { background: #38a169; color: #fff; }
+  .btn-success { background: #276749; color: #fff; }
+  .btn-absent  { background: #2a3f4e; color: #fff; }
   .btn-full { grid-column: 1 / -1; }
-  .btn-absent { background: #2a3f4e; color: #fff; }
-
   #log { background: #1a2732; color: #a8d8a8; font-family: monospace; font-size: 0.8rem; padding: 14px; border-radius: 8px; max-height: 200px; overflow-y: auto; display: none; margin-top: 8px; }
   #log.on { display: block; }
   .lok { color: #68d391; } .lerr { color: #fc8181; } .linf { color: #90cdf4; }
-
   .warn-box { background: #fffbeb; border-left: 4px solid #C9A227; padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 0.82rem; margin-bottom: 16px; }
   .loading { text-align: center; color: #718096; padding: 16px; font-size: 0.85rem; }
 </style>
@@ -56,22 +51,20 @@
 
 <div class="container">
 
-  <div class="warn-box">
-    ⚠️ Cet outil modifie directement Firebase. Utilisez-le uniquement pour corriger une erreur.
-  </div>
+  <div class="warn-box">⚠️ Cet outil modifie directement Firebase. À utiliser uniquement pour corriger une erreur.</div>
 
   <div class="card">
-    <h2>1️⃣ Sélectionner l'alternant / stagiaire</h2>
+    <h2>1️⃣ Sélectionner l'alternant</h2>
     <div class="field">
       <label>Type</label>
-      <select id="typeSelect" onchange="chargerListe()">
+      <select id="typeSelect">
         <option value="alternants">🔄 Alternant</option>
         <option value="stagiairesFC">🎓 Stagiaire FC</option>
       </select>
     </div>
     <div class="field">
       <label>Personne</label>
-      <select id="personneSelect" onchange="chargerStatut()">
+      <select id="personneSelect">
         <option value="">-- Chargement... --</option>
       </select>
     </div>
@@ -81,20 +74,17 @@
     <h2>2️⃣ Sélectionner la date</h2>
     <div class="field">
       <label>Date de la séance</label>
-      <input type="date" id="dateSelect" onchange="chargerStatut()" />
+      <input type="date" id="dateSelect" />
     </div>
+    <button onclick="chargerStatut()" style="background:#C9A227;color:#2a3f4e;font-weight:800;margin-bottom:0;">
+      🔍 Charger le statut
+    </button>
   </div>
 
   <div class="card" id="statutCard" style="display:none;">
-    <h2>3️⃣ Statut actuel de la séance</h2>
-    <div class="statut-box" id="statutBox">
-      <div class="loading">Chargement...</div>
-    </div>
-
-    <div class="actions-grid" id="actionsGrid" style="display:none;">
-      <!-- Boutons injectés dynamiquement -->
-    </div>
-
+    <h2>3️⃣ Statut et actions</h2>
+    <div class="statut-box" id="statutBox"><div class="loading">Chargement...</div></div>
+    <div class="actions-grid" id="actionsGrid" style="display:none;"></div>
     <div id="log"></div>
   </div>
 
@@ -114,23 +104,19 @@ firebase.initializeApp({
 });
 const db = firebase.database();
 
-let personnes = [];
-
-// ── Init date à aujourd'hui ────────────────────────────────────
+// Init date aujourd'hui
 document.getElementById('dateSelect').value = new Date().toISOString().split('T')[0];
 
-// ── Charger liste personnes ───────────────────────────────────
+// Charger liste au démarrage et au changement de type
 async function chargerListe() {
   const type = document.getElementById('typeSelect').value;
   const select = document.getElementById('personneSelect');
   select.innerHTML = '<option value="">Chargement...</option>';
   const snap = await db.ref(type).get();
-  personnes = [];
-  if (snap.exists()) {
-    snap.forEach(c => { const p = c.val(); p.id = c.key; personnes.push(p); });
-  }
+  const personnes = [];
+  if (snap.exists()) snap.forEach(c => { const p = c.val(); p.id = c.key; personnes.push(p); });
   select.innerHTML = '<option value="">-- Choisir --</option>';
-  personnes.forEach(p => {
+  personnes.sort((a,b) => a.nom.localeCompare(b.nom)).forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.id;
     opt.textContent = p.nom + ' (' + p.id + ')';
@@ -139,62 +125,63 @@ async function chargerListe() {
   document.getElementById('statutCard').style.display = 'none';
 }
 
-// ── Charger statut ────────────────────────────────────────────
+document.getElementById('typeSelect').addEventListener('change', chargerListe);
+chargerListe();
+
 async function chargerStatut() {
   const type = document.getElementById('typeSelect').value;
   const id = document.getElementById('personneSelect').value;
   const date = document.getElementById('dateSelect').value;
-  if (!id || !date) { document.getElementById('statutCard').style.display = 'none'; return; }
+  if (!id) { alert('Choisissez une personne.'); return; }
+  if (!date) { alert('Choisissez une date.'); return; }
 
   document.getElementById('statutCard').style.display = 'block';
   document.getElementById('statutBox').innerHTML = '<div class="loading">⏳ Chargement...</div>';
   document.getElementById('actionsGrid').style.display = 'none';
 
-  // Construire la clé Firebase
   const d = new Date(date);
   const y = d.getFullYear(), m = d.getMonth()+1, j = d.getDate();
   const mm = String(m).padStart(2,'0'), jj = String(j).padStart(2,'0');
-
   const node = type === 'stagiairesFC' ? 'emargementsFC' : 'emargements';
   const key = `${id}_${y}_${m}_${j}`;
   const keyRetro = `${node}/${id}/${y}-${mm}-${jj}`;
 
-  const [snapNormal, snapMatinRetro, snapAMRetro] = await Promise.all([
+  const [snapN, snapM, snapA] = await Promise.all([
     db.ref(`${node}/${key}`).get(),
     db.ref(`${keyRetro}/matin`).get(),
     db.ref(`${keyRetro}/apres-midi`).get(),
   ]);
 
-  const dataN = snapNormal.exists() ? snapNormal.val() : null;
-  const dataM = snapMatinRetro.exists() ? snapMatinRetro.val() : null;
-  const dataA = snapAMRetro.exists() ? snapAMRetro.val() : null;
+  const dataN = snapN.exists() ? snapN.val() : null;
+  const dataM = snapM.exists() ? snapM.val() : null;
+  const dataA = snapA.exists() ? snapA.val() : null;
   const isRetro = !dataN && (dataM || dataA);
 
   const dateLabel = d.toLocaleDateString('fr-FR', {weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-
   let html = `<div class="statut-titre">📅 ${dateLabel}</div>`;
 
   if (!dataN && !dataM && !dataA) {
     html += '<div style="color:#718096;font-size:0.85rem;text-align:center;padding:8px 0;">Aucune donnée pour cette date</div>';
     document.getElementById('statutBox').innerHTML = html;
-    document.getElementById('actionsGrid').style.display = 'none';
     return;
   }
 
-  if (isRetro) {
-    html += `<div class="statut-row"><span class="statut-label">Type</span><span class="badge badge-attente">Rétroactif</span></div>`;
-    html += `<div class="statut-row"><span class="statut-label">Matin</span><span class="badge ${dataM?.statut==='present'?'badge-signe':'badge-absent'}">${dataM?.statut==='present'?'✅ Présent':'❌ Absent'} · ${dataM?.mode||'—'}</span></div>`;
-    html += `<div class="statut-row"><span class="statut-label">Après-midi</span><span class="badge ${dataA?.statut==='present'?'badge-signe':'badge-absent'}">${dataA?.statut==='present'?'✅ Présent':'❌ Absent'} · ${dataA?.mode||'—'}</span></div>`;
-  } else {
-    const data = dataN || {};
-    const absent = data.presence === 'absent';
+  const data = dataN || {};
+  const absent = data.presence === 'absent';
+  const absMatin = absent || data.presence_matin === 'absent';
+  const absAM = absent || data.presence_am === 'absent';
+
+  if (!isRetro) {
     html += `<div class="statut-row"><span class="statut-label">Mode</span><span>${data.mode==='presentiel'?'🏫 Présentiel':data.mode==='distanciel'?'🏠 Distanciel':'—'}</span></div>`;
     html += `<div class="statut-row"><span class="statut-label">Présence</span><span class="badge ${absent?'badge-absent':'badge-signe'}">${absent?'❌ Absent':'✅ Présent'}</span></div>`;
-    html += `<div class="statut-row"><span class="statut-label">Sig. Alternant matin</span><span class="badge ${data.matin_alt?'badge-signe':'badge-attente'}">${data.matin_alt?'✅ Signé':'En attente'}</span></div>`;
-    html += `<div class="statut-row"><span class="statut-label">Sig. Formatrice matin</span><span class="badge ${data.matin_form?'badge-signe':'badge-attente'}">${data.matin_form?'✅ Signé':'En attente'}</span></div>`;
-    html += `<div class="statut-row"><span class="statut-label">Sig. Alternant AM</span><span class="badge ${data.am_alt?'badge-signe':'badge-attente'}">${data.am_alt?'✅ Signé':'En attente'}</span></div>`;
-    html += `<div class="statut-row"><span class="statut-label">Sig. Formatrice AM</span><span class="badge ${data.am_form?'badge-signe':'badge-attente'}">${data.am_form?'✅ Signé':'En attente'}</span></div>`;
-    if (data.motif) html += `<div class="statut-row"><span class="statut-label">Motif absence</span><span>${data.motif}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Sig. Alt. matin</span><span class="badge ${data.matin_alt?'badge-signe':'badge-attente'}">${data.matin_alt?'✅ Signé':'En attente'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Sig. Form. matin</span><span class="badge ${data.matin_form?'badge-signe':'badge-attente'}">${data.matin_form?'✅ Signé':'En attente'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Sig. Alt. AM</span><span class="badge ${data.am_alt?'badge-signe':'badge-attente'}">${data.am_alt?'✅ Signé':'En attente'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Sig. Form. AM</span><span class="badge ${data.am_form?'badge-signe':'badge-attente'}">${data.am_form?'✅ Signé':'En attente'}</span></div>`;
+  } else {
+    html += `<div class="statut-row"><span class="statut-label">Type</span><span class="badge badge-attente">Rétroactif</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Matin</span><span class="badge ${dataM?.statut==='present'?'badge-signe':'badge-absent'}">${dataM?.statut==='present'?'✅ Présent':'❌ Absent'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Après-midi</span><span class="badge ${dataA?.statut==='present'?'badge-signe':'badge-absent'}">${dataA?.statut==='present'?'✅ Présent':'❌ Absent'}</span></div>`;
   }
 
   document.getElementById('statutBox').innerHTML = html;
@@ -205,47 +192,61 @@ async function chargerStatut() {
   grid.innerHTML = '';
 
   if (!isRetro && dataN) {
-    const data = dataN || {};
+    // Effacer signatures
+    if (data.matin_alt) addBtn(grid, '🗑️ Sig. Alt. Matin', 'btn-danger', () => effacer(`${node}/${key}/matin_alt`, 'Signature alternant matin supprimée'));
+    if (data.matin_form) addBtn(grid, '🗑️ Sig. Form. Matin', 'btn-danger', () => effacer(`${node}/${key}/matin_form`, 'Signature formatrice matin supprimée'));
+    if (data.am_alt) addBtn(grid, '🗑️ Sig. Alt. AM', 'btn-danger', () => effacer(`${node}/${key}/am_alt`, 'Signature alternant AM supprimée'));
+    if (data.am_form) addBtn(grid, '🗑️ Sig. Form. AM', 'btn-danger', () => effacer(`${node}/${key}/am_form`, 'Signature formatrice AM supprimée'));
 
-    // Effacer signatures une par une
-    if (data.matin_alt) {
-      addBtn(grid, '🗑️ Sig. Alt. Matin', 'btn-danger', () => effacer(`${node}/${key}/matin_alt`, 'Signature alternant matin supprimée'));
-    }
-    if (data.matin_form) {
-      addBtn(grid, '🗑️ Sig. Form. Matin', 'btn-danger', () => effacer(`${node}/${key}/matin_form`, 'Signature formatrice matin supprimée'));
-    }
-    if (data.am_alt) {
-      addBtn(grid, '🗑️ Sig. Alt. AM', 'btn-danger', () => effacer(`${node}/${key}/am_alt`, 'Signature alternant après-midi supprimée'));
-    }
-    if (data.am_form) {
-      addBtn(grid, '🗑️ Sig. Form. AM', 'btn-danger', () => effacer(`${node}/${key}/am_form`, 'Signature formatrice après-midi supprimée'));
-    }
-    // Marquer absent (efface tout + met absence)
-    if (!data.presence || data.presence !== 'absent') {
-      addBtn(grid, '❌ Marquer Absent', 'btn-absent btn-full', async () => {
-        if (!confirm('Supprimer toutes les signatures et marquer cette personne absente ?')) return;
-        await db.ref(`${node}/${key}`).set({ presence: 'absent' });
-        log('✅ Marqué absent — signatures effacées', 'ok');
-        await chargerStatut();
+    // Certifier absence
+    if (absMatin && !data.matin_form) {
+      addBtn(grid, '✅ Certifier absence matin', 'btn-success btn-full', async () => {
+        if (!confirm("Certifier l'absence du matin ?")) return;
+        await db.ref(`${node}/${key}/matin_form`).set('absence_certifiee_' + Date.now());
+        log('✅ Absence matin certifiée', 'ok');
+        chargerStatut();
       });
     }
-    // Effacer tout
+    if (absAM && !data.am_form) {
+      addBtn(grid, "✅ Certifier absence après-midi", 'btn-success btn-full', async () => {
+        if (!confirm("Certifier l'absence de l'après-midi ?")) return;
+        await db.ref(`${node}/${key}/am_form`).set('absence_certifiee_' + Date.now());
+        log("✅ Absence après-midi certifiée", 'ok');
+        chargerStatut();
+      });
+    }
+
+    // Marquer absent
+    if (!absent) {
+      addBtn(grid, '❌ Absent matin', 'btn-absent', async () => {
+        if (!confirm('Marquer absent le matin ?')) return;
+        await db.ref(`${node}/${key}/matin_alt`).remove();
+        await db.ref(`${node}/${key}/matin_form`).remove();
+        await db.ref(`${node}/${key}/presence_matin`).set('absent');
+        log('✅ Absent matin enregistré', 'ok'); chargerStatut();
+      });
+      addBtn(grid, '❌ Absent après-midi', 'btn-absent', async () => {
+        if (!confirm("Marquer absent l'après-midi ?")) return;
+        await db.ref(`${node}/${key}/am_alt`).remove();
+        await db.ref(`${node}/${key}/am_form`).remove();
+        await db.ref(`${node}/${key}/presence_am`).set('absent');
+        log("✅ Absent après-midi enregistré", 'ok'); chargerStatut();
+      });
+    }
+
+    // Tout effacer
     addBtn(grid, '🗑️ Tout effacer', 'btn-warning btn-full', async () => {
       if (!confirm('Effacer TOUTES les données de cette séance ?')) return;
       await db.ref(`${node}/${key}`).remove();
-      log('✅ Séance effacée', 'ok');
-      await chargerStatut();
+      log('✅ Séance effacée', 'ok'); chargerStatut();
     });
   }
 
   if (isRetro) {
-    addBtn(grid, '🗑️ Effacer rétro matin', 'btn-danger', () => effacer(`${keyRetro}/matin`, 'Séance rétroactive matin effacée'));
-    addBtn(grid, '🗑️ Effacer rétro AM', 'btn-danger', () => effacer(`${keyRetro}/apres-midi`, 'Séance rétroactive après-midi effacée'));
-    addBtn(grid, '🗑️ Effacer tout rétro', 'btn-warning btn-full', async () => {
-      if (!confirm('Effacer les données rétroactives de cette séance ?')) return;
+    addBtn(grid, '🗑️ Effacer rétro', 'btn-warning btn-full', async () => {
+      if (!confirm('Effacer les données rétroactives ?')) return;
       await db.ref(keyRetro).remove();
-      log('✅ Données rétroactives effacées', 'ok');
-      await chargerStatut();
+      log('✅ Données rétroactives effacées', 'ok'); chargerStatut();
     });
   }
 }
@@ -262,10 +263,8 @@ async function effacer(path, msg) {
   try {
     await db.ref(path).remove();
     log('✅ ' + msg, 'ok');
-    await chargerStatut();
-  } catch(e) {
-    log('❌ Erreur : ' + e.message, 'err');
-  }
+    chargerStatut();
+  } catch(e) { log('❌ Erreur : ' + e.message, 'err'); }
 }
 
 function log(msg, type='inf') {
@@ -277,9 +276,6 @@ function log(msg, type='inf') {
   div.appendChild(line);
   div.scrollTop = div.scrollHeight;
 }
-
-// Init
-chargerListe();
 </script>
 </body>
 </html>
