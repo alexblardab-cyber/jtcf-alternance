@@ -1411,10 +1411,19 @@ async function certifierAbsAM() {
   await set(ref(db2, 'emargements/' + key + '/am_form'), 'absence_certifiee_' + Date.now());
   alert('✅ Absence après-midi certifiée.'); location.reload();
 }
-document.getElementById('btnCertifierAbsMatin').addEventListener('click', certifierAbsMatin);
-document.getElementById('btnCertifierAbsMatin').addEventListener('touchend', function(e){ e.preventDefault(); certifierAbsMatin(); }, {passive:false});
-document.getElementById('btnCertifierAbsAM').addEventListener('click', certifierAbsAM);
-document.getElementById('btnCertifierAbsAM').addEventListener('touchend', function(e){ e.preventDefault(); certifierAbsAM(); }, {passive:false});
+// Délégation d'événements pour les boutons certifier
+document.getElementById('ficheView').addEventListener('click', function(e) {
+  const btn = e.target.closest('#btnCertifierAbsMatin');
+  const btn2 = e.target.closest('#btnCertifierAbsAM');
+  if (btn) { e.preventDefault(); certifierAbsMatin(); }
+  if (btn2) { e.preventDefault(); certifierAbsAM(); }
+});
+document.getElementById('ficheView').addEventListener('touchend', function(e) {
+  const btn = e.target.closest('#btnCertifierAbsMatin');
+  const btn2 = e.target.closest('#btnCertifierAbsAM');
+  if (btn) { e.preventDefault(); certifierAbsMatin(); }
+  if (btn2) { e.preventDefault(); certifierAbsAM(); }
+}, {passive:false});
 
 document.getElementById('btnMarquerAbsentMatin').addEventListener('click', marquerAbsentMatin);
 document.getElementById('btnMarquerAbsentMatin').addEventListener('touchend', function(e){ e.preventDefault(); marquerAbsentMatin(); }, {passive:false});
