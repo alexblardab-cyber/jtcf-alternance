@@ -243,6 +243,7 @@
       <div class="info-row"><span class="info-label">Maître app.</span><span class="info-value" id="ficheMaitre">—</span></div>
       <div class="info-row"><span class="info-label">Contrat</span><span class="info-value" id="ficheContrat">—</span></div>
       <div class="info-row"><span class="info-label">Jour en centre</span><span class="info-value" id="ficheJour">—</span></div>
+      <div class="info-row" id="ficheDossierRow" style="display:none;"><span class="info-label">📁 Dossier</span><span class="info-value"><a id="ficheDossierLink" href="#" target="_blank" style="color:var(--or);font-weight:700;text-decoration:none;">Ouvrir Drive ↗</a></span></div>
     </div>
     <div class="card">
       <div class="card-title">✍️ Émargement</div>
@@ -283,7 +284,9 @@
         </div>
         <button class="btn-annuler-sign" id="btnAnnulerAM" style="display:none;" data-slot="am_form">🗑️ Annuler ma signature après-midi</button>
         <button class="btn-annuler-sign" id="btnEffacerAltAM" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant après-midi</button>
-        <button class="btn-annuler-sign" id="btnMarquerAbsent" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;font-size:13px;padding:11px;">❌ Marquer absent + effacer toutes signatures</button>
+        <button class="btn-annuler-sign" id="btnMarquerAbsentMatin" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent matin (efface sig. matin)</button>
+        <button class="btn-annuler-sign" id="btnMarquerAbsentAM" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent après-midi (efface sig. AM)</button>
+        <button class="btn-annuler-sign" id="btnMarquerAbsentJournee" style="display:none;background:#e53e3e;color:#fff;border-color:#e53e3e;font-size:13px;padding:11px;">❌ Absent toute la journée</button>
       </div>
     </div>
     <div class="spacer"></div>
@@ -563,6 +566,12 @@ function ouvrirFiche(alt) {
   document.getElementById('ficheMaitre').textContent = alt.maitre;
   document.getElementById('ficheContrat').textContent = alt.debut + ' → ' + alt.fin;
   document.getElementById('ficheJour').textContent = alt.jourCentre + ' · ' + alt.heures;
+  // Dossier Drive
+  const dossierLink = alt.documents && alt.documents.dossier ? alt.documents.dossier : null;
+  const dossierRow = document.getElementById('ficheDossierRow');
+  const dossierA = document.getElementById('ficheDossierLink');
+  if (dossierLink) { dossierRow.style.display='flex'; dossierA.href=dossierLink; }
+  else { dossierRow.style.display='none'; }
   seances = getSeances(alt);
   const today = new Date(); today.setHours(0,0,0,0);
   semIdx = 0;
@@ -618,7 +627,12 @@ async function updateFicheEmarg() {
   const btnAbsent = document.getElementById('btnMarquerAbsent');
   if (btnEffAltMatin) btnEffAltMatin.style.display = data.matin_alt && !absent ? 'block' : 'none';
   if (btnEffAltAM) btnEffAltAM.style.display = data.am_alt && !absent ? 'block' : 'none';
-  if (btnAbsent) btnAbsent.style.display = !absent ? 'block' : 'none';
+  const btnAbsMatin = document.getElementById('btnMarquerAbsentMatin');
+  const btnAbsAM = document.getElementById('btnMarquerAbsentAM');
+  const btnAbsJournee = document.getElementById('btnMarquerAbsentJournee');
+  if (btnAbsMatin) btnAbsMatin.style.display = !absent ? 'block' : 'none';
+  if (btnAbsAM) btnAbsAM.style.display = !absent ? 'block' : 'none';
+  if (btnAbsJournee) btnAbsJournee.style.display = !absent ? 'block' : 'none';
   ['ficheCanvasMatinForm','ficheCanvasAMForm'].forEach(function(id) {
     const c = document.getElementById(id); c.width = c.offsetWidth; c.height = 80;
     c.getContext('2d').clearRect(0,0,c.width,c.height);
@@ -1348,17 +1362,40 @@ document.getElementById('btnEffacerAltMatin').addEventListener('touchend', funct
 document.getElementById('btnEffacerAltAM').addEventListener('click', function(){ effacerSignatureAlt('am_alt'); });
 document.getElementById('btnEffacerAltAM').addEventListener('touchend', function(e){ e.preventDefault(); effacerSignatureAlt('am_alt'); }, {passive:false});
 
-// Marquer absent + effacer toutes signatures
-async function marquerAbsent() {
+// Marquer absent matin
+async function marquerAbsentMatin() {
   const key = document.getElementById('ficheDate').getAttribute('data-key');
-  if (!key) { alert('Impossible de trouver la séance.'); return; }
-  if (!confirm('Marquer absent et effacer toutes les signatures de cette séance ?')) return;
-  await set(ref(db2, 'emargements/' + key), { presence: 'absent' });
-  alert('✅ Alternant marqué absent — signatures effacées.');
-  location.reload();
+  if (!key) return;
+  if (!confirm('Marquer absent le matin et effacer la signature matin ?')) return;
+  await remove(ref(db2, 'emargements/' + key + '/matin_alt'));
+  await remove(ref(db2, 'emargements/' + key + '/matin_form'));
+  await set(ref(db2, 'emargements/' + key + '/presence_matin'), 'absent');
+  alert('✅ Absent matin enregistré.'); location.reload();
 }
-document.getElementById('btnMarquerAbsent').addEventListener('click', marquerAbsent);
-document.getElementById('btnMarquerAbsent').addEventListener('touchend', function(e){ e.preventDefault(); marquerAbsent(); }, {passive:false});
+// Marquer absent après-midi
+async function marquerAbsentAM() {
+  const key = document.getElementById('ficheDate').getAttribute('data-key');
+  if (!key) return;
+  if (!confirm('Marquer absent après-midi et effacer la signature AM ?')) return;
+  await remove(ref(db2, 'emargements/' + key + '/am_alt'));
+  await remove(ref(db2, 'emargements/' + key + '/am_form'));
+  await set(ref(db2, 'emargements/' + key + '/presence_am'), 'absent');
+  alert('✅ Absent après-midi enregistré.'); location.reload();
+}
+// Marquer absent toute la journée
+async function marquerAbsentJournee() {
+  const key = document.getElementById('ficheDate').getAttribute('data-key');
+  if (!key) return;
+  if (!confirm('Marquer absent toute la journée et effacer toutes les signatures ?')) return;
+  await set(ref(db2, 'emargements/' + key), { presence: 'absent' });
+  alert('✅ Absent toute la journée enregistré.'); location.reload();
+}
+document.getElementById('btnMarquerAbsentMatin').addEventListener('click', marquerAbsentMatin);
+document.getElementById('btnMarquerAbsentMatin').addEventListener('touchend', function(e){ e.preventDefault(); marquerAbsentMatin(); }, {passive:false});
+document.getElementById('btnMarquerAbsentAM').addEventListener('click', marquerAbsentAM);
+document.getElementById('btnMarquerAbsentAM').addEventListener('touchend', function(e){ e.preventDefault(); marquerAbsentAM(); }, {passive:false});
+document.getElementById('btnMarquerAbsentJournee').addEventListener('click', marquerAbsentJournee);
+document.getElementById('btnMarquerAbsentJournee').addEventListener('touchend', function(e){ e.preventDefault(); marquerAbsentJournee(); }, {passive:false});
 
 const observer = new MutationObserver(function(){
   const matinForm=document.getElementById('ficheStatusMatinForm');
@@ -1375,7 +1412,14 @@ const observer = new MutationObserver(function(){
   if(matinAlt&&btnEffMatin) btnEffMatin.style.display=matinAlt.textContent.includes('✅')?'block':'none';
   if(amAlt&&btnEffAM) btnEffAM.style.display=amAlt.textContent.includes('✅')?'block':'none';
   const isAbsent = matinAlt&&matinAlt.textContent.includes('Absent');
-  if(btnAbs) btnAbs.style.display=isAbsent?'none':'block';
+  const bAbsMatin=document.getElementById('btnMarquerAbsentMatin');
+  const bAbsAM=document.getElementById('btnMarquerAbsentAM');
+  const bAbsJournee=document.getElementById('btnMarquerAbsentJournee');
+  if(bAbsMatin) bAbsMatin.style.display=isAbsent?'none':'block';
+  if(bAbsAM) bAbsAM.style.display=isAbsent?'none':'block';
+  if(bAbsJournee) bAbsJournee.style.display=isAbsent?'none':'block';
+  if(matinAlt&&btnEffMatin) btnEffMatin.style.display=matinAlt.textContent.includes('✅')?'block':'none';
+  if(amAlt&&btnEffAM) btnEffAM.style.display=amAlt.textContent.includes('✅')?'block':'none';
 });
 observer.observe(document.getElementById('ficheView'),{childList:true,subtree:true});
 
