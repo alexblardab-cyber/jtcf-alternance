@@ -1363,10 +1363,19 @@ document.getElementById('btnMarquerAbsent').addEventListener('touchend', functio
 const observer = new MutationObserver(function(){
   const matinForm=document.getElementById('ficheStatusMatinForm');
   const amForm=document.getElementById('ficheStatusAMForm');
+  const matinAlt=document.getElementById('ficheStatusMatinAlt');
+  const amAlt=document.getElementById('ficheStatusAMAlt');
   const btnMatin=document.getElementById('btnAnnulerMatin');
   const btnAM=document.getElementById('btnAnnulerAM');
+  const btnEffMatin=document.getElementById('btnEffacerAltMatin');
+  const btnEffAM=document.getElementById('btnEffacerAltAM');
+  const btnAbs=document.getElementById('btnMarquerAbsent');
   if(matinForm&&btnMatin) btnMatin.style.display=matinForm.textContent.includes('✅')?'block':'none';
   if(amForm&&btnAM) btnAM.style.display=amForm.textContent.includes('✅')?'block':'none';
+  if(matinAlt&&btnEffMatin) btnEffMatin.style.display=matinAlt.textContent.includes('✅')?'block':'none';
+  if(amAlt&&btnEffAM) btnEffAM.style.display=amAlt.textContent.includes('✅')?'block':'none';
+  const isAbsent = matinAlt&&matinAlt.textContent.includes('Absent');
+  if(btnAbs) btnAbs.style.display=isAbsent?'none':'block';
 });
 observer.observe(document.getElementById('ficheView'),{childList:true,subtree:true});
 
