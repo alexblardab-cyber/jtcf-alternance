@@ -267,7 +267,11 @@
         <div class="total-item"><div class="total-val" id="adminTotalS">—</div><div class="total-lbl">Séances total</div></div>
       </div>
     </div>
-    <button class="btn-primary" id="btnExportPDFAdmin" style="margin-bottom:14px;background:linear-gradient(135deg,#C9A227,#f0d98a);color:#2a3f4e;font-weight:800;">📄 Exporter le PDF mensuel</button>
+    <button class="btn-primary" id="btnExportPDFAdmin" style="margin-bottom:8px;background:linear-gradient(135deg,#C9A227,#f0d98a);color:#2a3f4e;font-weight:800;">📄 Exporter le PDF mensuel</button>
+    <div style="position:relative;margin-bottom:14px;">
+      <button class="btn-primary" id="btnExportPDFAdminPersonne" style="background:linear-gradient(135deg,#3d5a6e,#2a3f4e);color:#fff;font-weight:800;">👤 Exporter PDF par personne</button>
+      <div id="menuPersonneAdmin" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #C9A227;border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:260px;overflow-y:auto;"></div>
+    </div>
     <div id="adminRecapListe"><div class="loading">Chargement...</div></div>
   </div>
 
@@ -866,6 +870,191 @@ async function exporterPDFAdmin() {
   }
   doc.save('JTCF_Emargements_'+periodeTitre.replace(' ','_')+'.pdf');
   btn.textContent='📄 Exporter le PDF mensuel'; btn.disabled=false;
+}
+
+// ── PDF PAR PERSONNE ADMIN ─────────────────────────────────────
+document.getElementById('btnExportPDFAdminPersonne').addEventListener('click', function(e) {
+  e.preventDefault();
+  const menu = document.getElementById('menuPersonneAdmin');
+  if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
+  menu.innerHTML = '';
+  // Charger la liste depuis Firebase
+  (async function() {
+    const {getDatabase,ref,get} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    const {getApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const db = getDatabase(getApp());
+    const snap = await get(ref(db,'alternants'));
+    const alts = [];
+    if (snap.exists()) { snap.forEach(function(c){ const a=c.val(); a.id=c.key; alts.push(a); }); }
+    alts.forEach(function(alt) {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#2a3f4e;border-bottom:1px solid #f0f2f5;';
+      item.textContent = alt.nom + ' — ' + alt.formation;
+      item.addEventListener('mouseenter', function(){ item.style.background='#fdf6e3'; });
+      item.addEventListener('mouseleave', function(){ item.style.background='#fff'; });
+      item.addEventListener('click', function() { menu.style.display='none'; exporterPDFAdminPersonne(alt); });
+      menu.appendChild(item);
+    });
+    menu.style.display = 'block';
+  })();
+});
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#btnExportPDFAdminPersonne') && !e.target.closest('#menuPersonneAdmin')) {
+    const m = document.getElementById('menuPersonneAdmin');
+    if (m) m.style.display = 'none';
+  }
+});
+
+async function exporterPDFAdminPersonne(alt) {
+  const btn = document.getElementById('btnExportPDFAdminPersonne');
+  btn.textContent = '⏳ Génération...'; btn.disabled = true;
+  if (!window.jspdf) {
+    await new Promise(function(resolve) {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = resolve; document.head.appendChild(s);
+    });
+  }
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const moisNoms=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const moisNomsFr=['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  const OR=[201,162,39],BLEU=[61,90,110],BLEU_FONCE=[42,63,78],GRIS=[113,128,150],VERT=[56,161,105],ROUGE=[229,62,62];
+  const MATIN_H=4, AM_H=3.5;
+  let pageNum=1;
+
+  const isMois = document.getElementById('adminFilterMois').classList.contains('active');
+  const moisVal = document.getElementById('adminMoisSelect').value.split('-').map(Number);
+  const filterYear = isMois ? moisVal[0] : null;
+  const filterMonth = isMois ? moisVal[1] : null;
+  const periodeTitre = isMois ? moisNoms[filterMonth]+' '+filterYear : 'Total contrat';
+
+  function addHeader(titre) {
+    doc.setFillColor(...BLEU_FONCE); doc.rect(0,0,210,30,'F');
+    doc.setTextColor(...OR); doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text('JT CONSEIL FORMATION',15,12);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255); doc.text('Saint-Joseph · La Réunion',15,18);
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text(titre,15,25);
+    const now=new Date(); doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(200,200,200);
+    doc.text('Généré le '+now.toLocaleDateString('fr-FR')+' à '+now.toLocaleTimeString('fr-FR'),150,25);
+  }
+  function addFooter(n) {
+    doc.setFillColor(...BLEU_FONCE); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('Page '+n,195,292,{align:'right'});
+  }
+
+  const {getDatabase,ref,get} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  const {getApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+  const db = getDatabase(getApp());
+
+  const parts=alt.debut?alt.debut.split('/'):['10','06','2026'];
+  const debutContrat=new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+  const jourMap={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  const jourNum=jourMap[alt.jourCentre]||1;
+  const fin=new Date(2028,5,10);
+  let d=new Date(debutContrat);
+  while(d.getDay()!==jourNum) d.setDate(d.getDate()+1);
+  const seancesFiltrees=[];
+  while(d<=fin){
+    if(isMois){if(d.getFullYear()===filterYear&&d.getMonth()===filterMonth&&d<=new Date())seancesFiltrees.push(new Date(d));}
+    else{if(d<=new Date())seancesFiltrees.push(new Date(d));}
+    d.setDate(d.getDate()+7);
+  }
+
+  let hP=0,hA=0; const seancesDetail=[];
+  for(const s of seancesFiltrees){
+    const key=alt.id+'_'+s.getFullYear()+'_'+(s.getMonth()+1)+'_'+s.getDate();
+    const yyyy=s.getFullYear(),mm=String(s.getMonth()+1).padStart(2,'0'),dd=String(s.getDate()).padStart(2,'0');
+    const keyRetro=`emargements/${alt.id}/${yyyy}-${mm}-${dd}`;
+    const [snapN,snapM,snapA]=await Promise.all([
+      get(ref(db,'emargements/'+key)),
+      get(ref(db,keyRetro+'/matin')),
+      get(ref(db,keyRetro+'/apres-midi')),
+    ]);
+    const dataN=snapN.exists()?snapN.val():null;
+    const dataM=snapM.exists()?snapM.val():null;
+    const dataA=snapA.exists()?snapA.val():null;
+    const isRetro=!dataN&&(dataM||dataA);
+    let hPs=0,hAs=0,absent=false,mode='—',altSigne=false,formSigne=false;
+    if(isRetro){
+      mode=(dataM&&dataM.mode)||(dataA&&dataA.mode)||'—';
+      if(dataM){if(dataM.statut==='present'){hPs+=MATIN_H;altSigne=true;}else{hAs+=MATIN_H;absent=true;}}
+      if(dataA){if(dataA.statut==='present'){hPs+=AM_H;altSigne=true;}else{hAs+=AM_H;absent=true;}}
+    }else{
+      const data=dataN||{};
+      absent=data.presence==='absent'; mode=data.mode||'—';
+      altSigne=!!(data.matin_alt||data.am_alt); formSigne=!!(data.matin_form||data.am_form);
+      if(absent){hAs=MATIN_H+AM_H;}else{if(data.matin_alt)hPs+=MATIN_H;if(data.am_alt)hPs+=AM_H;}
+    }
+    hP+=hPs; hA+=hAs;
+    seancesDetail.push({date:s,absent,mode,altSigne,formSigne,hP:hPs,hA:hAs,isRetro,dataN,dataM,dataA});
+  }
+
+  addHeader('ÉMARGEMENT · '+alt.nom.toUpperCase()+' · '+periodeTitre.toUpperCase());
+  addFooter(pageNum);
+  doc.setFillColor(...OR); doc.rect(0,30,210,2,'F');
+  doc.setFillColor(...BLEU_FONCE); doc.rect(15,38,180,28,'F');
+  doc.setTextColor(...OR); doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text(alt.nom,20,48);
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Formation : '+alt.formation,20,55);
+  doc.text('Entreprise : '+(alt.entreprise||'—')+'   ·   Maître : '+(alt.maitre||'—'),20,61);
+  doc.text('Jour : '+alt.jourCentre+'   ·   Contrat : '+alt.debut+' → '+alt.fin+'   ·   Période : '+periodeTitre,20,67);
+  doc.setFillColor(...VERT); doc.rect(15,72,57,14,'F');
+  doc.setFillColor(229,62,62); doc.rect(76,72,57,14,'F');
+  doc.setFillColor(...BLEU); doc.rect(137,72,58,14,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text(hP+'h',43,81,{align:'center'}); doc.text(hA+'h',104,81,{align:'center'}); doc.text(String(seancesFiltrees.length),166,81,{align:'center'});
+  doc.setFontSize(7); doc.setFont('helvetica','normal');
+  doc.text('Heures présence',43,84,{align:'center'}); doc.text('Heures absence',104,84,{align:'center'}); doc.text('Séances',166,84,{align:'center'});
+
+  let y=95;
+  doc.setFillColor(...BLEU_FONCE); doc.rect(15,y,180,8,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
+  doc.text('Date',18,y+5); doc.text('Mode',55,y+5); doc.text('Présence',80,y+5);
+  doc.text('H.Prés.',110,y+5); doc.text('H.Abs.',128,y+5);
+  doc.text('Sig. Alternant',145,y+5); doc.text('Sig. Formatrice',172,y+5);
+  y+=8;
+
+  for(const s of seancesDetail){
+    if(y>265){addFooter(pageNum);pageNum++;doc.addPage();addHeader('ÉMARGEMENT · '+alt.nom.toUpperCase()+' (suite)');addFooter(pageNum);y=38;}
+    const dateStr=s.date.getDate()+' '+moisNomsFr[s.date.getMonth()]+' '+s.date.getFullYear();
+    const rowColor=s.absent?[255,245,245]:(s.altSigne&&s.formSigne?[240,255,244]:[250,250,252]);
+    doc.setFillColor(...rowColor); doc.rect(15,y,180,10,'F');
+    doc.setTextColor(...BLEU_FONCE); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(dateStr,18,y+6);
+    doc.setFont('helvetica','normal'); doc.setTextColor(...GRIS);
+    doc.text(s.mode==='presentiel'?'Présentiel':s.mode==='distanciel'?'Distanciel':'—',55,y+6);
+    if(s.absent){doc.setTextColor(...ROUGE);doc.text('Absent(e)',80,y+6);}
+    else{doc.setTextColor(...VERT);doc.text('Présent(e)',80,y+6);}
+    doc.setTextColor(...BLEU_FONCE);
+    doc.text(s.hP>0?s.hP+'h':'—',112,y+6);
+    doc.text(s.hA>0?s.hA+'h':'—',130,y+6);
+    const sigAlt=s.isRetro?(s.dataM&&s.dataM.statut==='present'||s.dataA&&s.dataA.statut==='present'):s.altSigne;
+    const sigForm=s.isRetro?false:s.formSigne;
+    if(!s.absent&&sigAlt&&!s.isRetro&&s.dataN&&(s.dataN.matin_alt||s.dataN.am_alt)){
+      try{doc.addImage(s.dataN.matin_alt||s.dataN.am_alt,'JPEG',143,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓',145,y+6);}
+    }else{
+      doc.setTextColor(s.absent?ROUGE[0]:sigAlt?VERT[0]:GRIS[0],s.absent?ROUGE[1]:sigAlt?VERT[1]:GRIS[1],s.absent?ROUGE[2]:sigAlt?VERT[2]:GRIS[2]);
+      doc.text(s.absent?'Absent':sigAlt?'✓ Signé':'En attente',145,y+6);
+    }
+    if(!s.absent&&sigForm&&s.dataN&&(s.dataN.matin_form||s.dataN.am_form)){
+      try{doc.addImage(s.dataN.matin_form||s.dataN.am_form,'JPEG',170,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓',172,y+6);}
+    }else{
+      doc.setTextColor(s.absent?ROUGE[0]:sigForm?VERT[0]:GRIS[0],s.absent?ROUGE[1]:sigForm?VERT[1]:GRIS[1],s.absent?ROUGE[2]:sigForm?VERT[2]:GRIS[2]);
+      doc.text(s.absent?'Absent':sigForm?'✓ Signé':'En attente',172,y+6);
+    }
+    doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10); y+=10;
+  }
+  y+=10;
+  if(y<240){
+    doc.setDrawColor(...OR); doc.setLineWidth(0.5); doc.rect(15,y,84,30); doc.rect(111,y,84,30);
+    doc.setTextColor(...GRIS); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text('Signature Formatrice',57,y+5,{align:'center'}); doc.text('Signature Alternant',153,y+5,{align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(7);
+    doc.text('Lu et approuvé',57,y+28,{align:'center'}); doc.text('Lu et approuvé',153,y+28,{align:'center'});
+  }
+  doc.save('JTCF_'+alt.nom.replace(/ /g,'_')+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
+  btn.textContent='👤 Exporter PDF par personne'; btn.disabled=false;
 }
 </script>
 </body>
