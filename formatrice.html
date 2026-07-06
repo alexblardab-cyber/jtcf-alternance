@@ -1399,7 +1399,7 @@ async function marquerAbsentAM() {
 async function certifierAbsMatin() {
   const key = document.getElementById('ficheDate').getAttribute('data-key');
   if (!key) return;
-  if (!confirm('Certifier l'absence du matin pour cet alternant ?')) return;
+  if (!confirm("Certifier l'absence du matin pour cet alternant ?")) return;
   await set(ref(db2, 'emargements/' + key + '/matin_form'), 'absence_certifiee_' + Date.now());
   alert('✅ Absence matin certifiée.'); location.reload();
 }
@@ -1407,7 +1407,7 @@ async function certifierAbsMatin() {
 async function certifierAbsAM() {
   const key = document.getElementById('ficheDate').getAttribute('data-key');
   if (!key) return;
-  if (!confirm('Certifier l'absence de l'après-midi pour cet alternant ?')) return;
+  if (!confirm("Certifier l'absence de l'après-midi pour cet alternant ?")) return;
   await set(ref(db2, 'emargements/' + key + '/am_form'), 'absence_certifiee_' + Date.now());
   alert('✅ Absence après-midi certifiée.'); location.reload();
 }
