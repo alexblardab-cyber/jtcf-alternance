@@ -2,73 +2,108 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestion signatures JTCF</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Gestion Signatures — JTCF</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 16px; }
-  :root { --or: #C9A227; --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --vert: #38a169; --rouge: #e53e3e; }
-  .card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.1); max-width: 480px; margin: 0 auto 14px; }
-  .title { font-size: 16px; font-weight: 800; color: var(--bleu-fonce); margin-bottom: 4px; }
-  .subtitle { font-size: 12px; color: #718096; margin-bottom: 16px; }
-  .field { margin-bottom: 12px; }
-  .field label { display: block; font-size: 11px; font-weight: 700; color: var(--bleu); text-transform: uppercase; margin-bottom: 5px; }
-  .field select, .field input { width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; -webkit-appearance: none; }
-  .field select:focus, .field input:focus { border-color: var(--or); }
-  .btn-chercher { width: 100%; padding: 12px; background: var(--bleu-fonce); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
-  .result-card { background: #f8f9fa; border-radius: 10px; padding: 14px; margin-bottom: 8px; border-left: 4px solid var(--or); }
-  .result-nom { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); margin-bottom: 8px; }
-  .sign-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-  .sign-row:last-child { border-bottom: none; }
-  .sign-label { color: #718096; }
-  .sign-status { font-weight: 700; }
-  .signe { color: var(--vert); }
-  .attente { color: #a0aec0; }
-  .btn-suppr { padding: 5px 10px; background: #fff5f5; color: var(--rouge); border: 1px solid #fed7d7; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
-  .loading { text-align: center; color: #718096; padding: 20px; font-size: 13px; }
-  .msg { padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-top: 8px; }
-  .msg.ok { background: #f0fff4; color: var(--vert); }
-  .msg.err { background: #fff5f5; color: var(--rouge); }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #2a3f4e; min-height: 100vh; }
+  header { background: #2a3f4e; padding: 18px 20px; }
+  header h1 { color: #fff; font-size: 1.1rem; font-weight: 700; }
+  header span { color: #C9A227; font-size: 0.82rem; }
+  .container { max-width: 500px; margin: 24px auto; padding: 0 16px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 0.95rem; font-weight: 700; color: #3d5a6e; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #C9A227; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 0.78rem; font-weight: 700; color: #3d5a6e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  select, input[type="date"] { width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-family: inherit; color: #2a3f4e; outline: none; -webkit-appearance: none; background: white; }
+  select:focus, input:focus { border-color: #C9A227; }
+
+  .statut-box { background: #f0f2f5; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+  .statut-titre { font-size: 0.78rem; font-weight: 700; color: #3d5a6e; text-transform: uppercase; margin-bottom: 10px; }
+  .statut-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
+  .statut-row:last-child { border-bottom: none; }
+  .statut-label { color: #718096; }
+  .badge { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+  .badge-signe { background: #c6f6d5; color: #276749; }
+  .badge-attente { background: #fed7d7; color: #c53030; }
+  .badge-absent { background: #e2e8f0; color: #718096; }
+
+  .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  button { padding: 11px 14px; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; width: 100%; transition: opacity 0.15s; }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-danger { background: #e53e3e; color: #fff; }
+  .btn-warning { background: #dd6b20; color: #fff; }
+  .btn-primary { background: #C9A227; color: #fff; }
+  .btn-success { background: #38a169; color: #fff; }
+  .btn-full { grid-column: 1 / -1; }
+  .btn-absent { background: #2a3f4e; color: #fff; }
+
+  #log { background: #1a2732; color: #a8d8a8; font-family: monospace; font-size: 0.8rem; padding: 14px; border-radius: 8px; max-height: 200px; overflow-y: auto; display: none; margin-top: 8px; }
+  #log.on { display: block; }
+  .lok { color: #68d391; } .lerr { color: #fc8181; } .linf { color: #90cdf4; }
+
+  .warn-box { background: #fffbeb; border-left: 4px solid #C9A227; padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 0.82rem; margin-bottom: 16px; }
+  .loading { text-align: center; color: #718096; padding: 16px; font-size: 0.85rem; }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <div class="title">🔧 Gestion des signatures</div>
-  <div class="subtitle">Consultez et supprimez les signatures d'une séance</div>
+<header>
+  <h1>🔧 Gestion des Signatures — JTCF</h1>
+  <span>Correction des émargements · Alternants & FC</span>
+</header>
 
-  <div class="field">
-    <label>Alternant</label>
-    <select id="selectAlt">
-      <option value="">-- Choisir --</option>
-      <option value="AB01">AB01 — Alexandre Blard (Lundi)</option>
-      <option value="LB01">LB01 — Léa Barret (Lundi)</option>
-      <option value="BD01">BD01 — Dourga Boqui Que Ni (Lundi)</option>
-      <option value="BL01">BL01 — Loelia Brassac (Lundi)</option>
-      <option value="SL01">SL01 — Loanne Salambeau (Lundi)</option>
-      <option value="CA01">CA01 — Ahamada Chamou (Mercredi)</option>
-      <option value="BS01">BS01 — Sila Bijoux (Mercredi)</option>
-      <option value="AE01">AE01 — Engy Atrigo Firmang (Mercredi)</option>
-      <option value="AN01">AN01 — Nadia Anli (Mercredi)</option>
-    </select>
+<div class="container">
+
+  <div class="warn-box">
+    ⚠️ Cet outil modifie directement Firebase. Utilisez-le uniquement pour corriger une erreur.
   </div>
 
-  <div class="field">
-    <label>Date de la séance</label>
-    <input type="date" id="inputDate" />
+  <div class="card">
+    <h2>1️⃣ Sélectionner l'alternant / stagiaire</h2>
+    <div class="field">
+      <label>Type</label>
+      <select id="typeSelect" onchange="chargerListe()">
+        <option value="alternants">🔄 Alternant</option>
+        <option value="stagiairesFC">🎓 Stagiaire FC</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Personne</label>
+      <select id="personneSelect" onchange="chargerStatut()">
+        <option value="">-- Chargement... --</option>
+      </select>
+    </div>
   </div>
 
-  <button class="btn-chercher" id="btnChercher">🔍 Rechercher la séance</button>
-  <div id="resultat"></div>
-  <div id="msg"></div>
+  <div class="card">
+    <h2>2️⃣ Sélectionner la date</h2>
+    <div class="field">
+      <label>Date de la séance</label>
+      <input type="date" id="dateSelect" onchange="chargerStatut()" />
+    </div>
+  </div>
+
+  <div class="card" id="statutCard" style="display:none;">
+    <h2>3️⃣ Statut actuel de la séance</h2>
+    <div class="statut-box" id="statutBox">
+      <div class="loading">Chargement...</div>
+    </div>
+
+    <div class="actions-grid" id="actionsGrid" style="display:none;">
+      <!-- Boutons injectés dynamiquement -->
+    </div>
+
+    <div id="log"></div>
+  </div>
+
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-const firebaseConfig = {
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({
   apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
   authDomain: "jtcf-alternance.firebaseapp.com",
   databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
@@ -76,101 +111,175 @@ const firebaseConfig = {
   storageBucket: "jtcf-alternance.firebasestorage.app",
   messagingSenderId: "961150611919",
   appId: "1:961150611919:web:ae8be337575ab1295f62ba"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
-
-// --- Auth gate Firebase (obligatoire depuis le passage en règles sécurisées) ---
-await new Promise((resolve) => {
-  onAuthStateChanged(auth, (user) => {
-    if (user) { resolve(); return; }
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:#1a2530;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:sans-serif;';
-    overlay.innerHTML = `
-      <div style="background:white;border-radius:14px;padding:28px;max-width:340px;width:90%;">
-        <h2 style="color:#1a2530;margin:0 0 6px;">🔐 Connexion admin</h2>
-        <p style="font-size:13px;color:#718096;margin:0 0 16px;">Accès sécurisé requis.</p>
-        <input id="fbEmail" type="email" placeholder="email" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
-        <input id="fbPass" type="password" placeholder="mot de passe" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
-        <button id="fbLoginBtn" style="width:100%;padding:12px;background:#C9A227;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Se connecter</button>
-        <div id="fbLoginErr" style="color:#e53e3e;font-size:12px;margin-top:8px;"></div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.querySelector('#fbLoginBtn').addEventListener('click', async () => {
-      const email = overlay.querySelector('#fbEmail').value;
-      const pass = overlay.querySelector('#fbPass').value;
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        overlay.remove();
-        resolve();
-      } catch (err) {
-        overlay.querySelector('#fbLoginErr').textContent = 'Identifiants incorrects.';
-      }
-    });
-  });
 });
+const db = firebase.database();
 
-// Mettre la date d'aujourd'hui par défaut
-const today = new Date();
-document.getElementById('inputDate').value = today.toISOString().split('T')[0];
+let personnes = [];
 
-async function chercher(e) {
-  if (e) e.preventDefault();
-  const altId = document.getElementById('selectAlt').value;
-  const dateStr = document.getElementById('inputDate').value;
-  const resultat = document.getElementById('resultat');
-  const msg = document.getElementById('msg');
-  msg.innerHTML = '';
+// ── Init date à aujourd'hui ────────────────────────────────────
+document.getElementById('dateSelect').value = new Date().toISOString().split('T')[0];
 
-  if (!altId || !dateStr) { msg.innerHTML = '<div class="msg err">Veuillez choisir un alternant et une date.</div>'; return; }
-
-  resultat.innerHTML = '<div class="loading">🔍 Recherche...</div>';
-
-  const d = new Date(dateStr);
-  const key = altId + '_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
-  const snap = await get(ref(db, 'emargements/' + key));
-  const data = snap.exists() ? snap.val() : {};
-
-  const moisNoms = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-  const dateAff = d.getDate() + ' ' + moisNoms[d.getMonth()] + ' ' + d.getFullYear();
-
-  const slots = [
-    { label: '🌅 Matin — Alternant', key: 'matin_alt' },
-    { label: '🌅 Matin — Formatrice', key: 'matin_form' },
-    { label: '🌇 Après-midi — Alternant', key: 'am_alt' },
-    { label: '🌇 Après-midi — Formatrice', key: 'am_form' }
-  ];
-
-  resultat.innerHTML = '<div class="result-card"><div class="result-nom">📅 ' + dateAff + ' · ' + altId + '</div>'
-    + slots.map(function(s) {
-      const signe = data[s.key] ? true : false;
-      return '<div class="sign-row">'
-        + '<span class="sign-label">' + s.label + '</span>'
-        + '<span style="display:flex;align-items:center;gap:8px;">'
-        + '<span class="sign-status ' + (signe?'signe':'attente') + '">' + (signe?'✅ Signé':'— En attente') + '</span>'
-        + (signe ? '<button class="btn-suppr" data-key="'+key+'" data-slot="'+s.key+'" data-label="'+s.label+'">🗑️ Supprimer</button>' : '')
-        + '</span></div>';
-    }).join('')
-    + '</div>';
-
-  // Boutons supprimer
-  resultat.querySelectorAll('.btn-suppr').forEach(function(btn) {
-    btn.addEventListener('click', async function() {
-      const k = btn.getAttribute('data-key');
-      const slot = btn.getAttribute('data-slot');
-      const label = btn.getAttribute('data-label');
-      if (!confirm('Supprimer la signature : ' + label + ' ?\nCette action est irréversible.')) return;
-      await remove(ref(db, 'emargements/' + k + '/' + slot));
-      msg.innerHTML = '<div class="msg ok">✅ Signature supprimée : ' + label + '</div>';
-      chercher();
-    });
+// ── Charger liste personnes ───────────────────────────────────
+async function chargerListe() {
+  const type = document.getElementById('typeSelect').value;
+  const select = document.getElementById('personneSelect');
+  select.innerHTML = '<option value="">Chargement...</option>';
+  const snap = await db.ref(type).get();
+  personnes = [];
+  if (snap.exists()) {
+    snap.forEach(c => { const p = c.val(); p.id = c.key; personnes.push(p); });
+  }
+  select.innerHTML = '<option value="">-- Choisir --</option>';
+  personnes.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.nom + ' (' + p.id + ')';
+    select.appendChild(opt);
   });
+  document.getElementById('statutCard').style.display = 'none';
 }
 
-document.getElementById('btnChercher').addEventListener('click', chercher);
-document.getElementById('btnChercher').addEventListener('touchend', function(e){ e.preventDefault(); chercher(); }, {passive:false});
+// ── Charger statut ────────────────────────────────────────────
+async function chargerStatut() {
+  const type = document.getElementById('typeSelect').value;
+  const id = document.getElementById('personneSelect').value;
+  const date = document.getElementById('dateSelect').value;
+  if (!id || !date) { document.getElementById('statutCard').style.display = 'none'; return; }
+
+  document.getElementById('statutCard').style.display = 'block';
+  document.getElementById('statutBox').innerHTML = '<div class="loading">⏳ Chargement...</div>';
+  document.getElementById('actionsGrid').style.display = 'none';
+
+  // Construire la clé Firebase
+  const d = new Date(date);
+  const y = d.getFullYear(), m = d.getMonth()+1, j = d.getDate();
+  const mm = String(m).padStart(2,'0'), jj = String(j).padStart(2,'0');
+
+  const node = type === 'stagiairesFC' ? 'emargementsFC' : 'emargements';
+  const key = `${id}_${y}_${m}_${j}`;
+  const keyRetro = `${node}/${id}/${y}-${mm}-${jj}`;
+
+  const [snapNormal, snapMatinRetro, snapAMRetro] = await Promise.all([
+    db.ref(`${node}/${key}`).get(),
+    db.ref(`${keyRetro}/matin`).get(),
+    db.ref(`${keyRetro}/apres-midi`).get(),
+  ]);
+
+  const dataN = snapNormal.exists() ? snapNormal.val() : null;
+  const dataM = snapMatinRetro.exists() ? snapMatinRetro.val() : null;
+  const dataA = snapAMRetro.exists() ? snapAMRetro.val() : null;
+  const isRetro = !dataN && (dataM || dataA);
+
+  const dateLabel = d.toLocaleDateString('fr-FR', {weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+  let html = `<div class="statut-titre">📅 ${dateLabel}</div>`;
+
+  if (!dataN && !dataM && !dataA) {
+    html += '<div style="color:#718096;font-size:0.85rem;text-align:center;padding:8px 0;">Aucune donnée pour cette date</div>';
+    document.getElementById('statutBox').innerHTML = html;
+    document.getElementById('actionsGrid').style.display = 'none';
+    return;
+  }
+
+  if (isRetro) {
+    html += `<div class="statut-row"><span class="statut-label">Type</span><span class="badge badge-attente">Rétroactif</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Matin</span><span class="badge ${dataM?.statut==='present'?'badge-signe':'badge-absent'}">${dataM?.statut==='present'?'✅ Présent':'❌ Absent'} · ${dataM?.mode||'—'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Après-midi</span><span class="badge ${dataA?.statut==='present'?'badge-signe':'badge-absent'}">${dataA?.statut==='present'?'✅ Présent':'❌ Absent'} · ${dataA?.mode||'—'}</span></div>`;
+  } else {
+    const data = dataN || {};
+    const absent = data.presence === 'absent';
+    html += `<div class="statut-row"><span class="statut-label">Mode</span><span>${data.mode==='presentiel'?'🏫 Présentiel':data.mode==='distanciel'?'🏠 Distanciel':'—'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Présence</span><span class="badge ${absent?'badge-absent':'badge-signe'}">${absent?'❌ Absent':'✅ Présent'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Sig. Alternant matin</span><span class="badge ${data.matin_alt?'badge-signe':'badge-attente'}">${data.matin_alt?'✅ Signé':'En attente'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Sig. Formatrice matin</span><span class="badge ${data.matin_form?'badge-signe':'badge-attente'}">${data.matin_form?'✅ Signé':'En attente'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Sig. Alternant AM</span><span class="badge ${data.am_alt?'badge-signe':'badge-attente'}">${data.am_alt?'✅ Signé':'En attente'}</span></div>`;
+    html += `<div class="statut-row"><span class="statut-label">Sig. Formatrice AM</span><span class="badge ${data.am_form?'badge-signe':'badge-attente'}">${data.am_form?'✅ Signé':'En attente'}</span></div>`;
+    if (data.motif) html += `<div class="statut-row"><span class="statut-label">Motif absence</span><span>${data.motif}</span></div>`;
+  }
+
+  document.getElementById('statutBox').innerHTML = html;
+
+  // Boutons d'action
+  const grid = document.getElementById('actionsGrid');
+  grid.style.display = 'grid';
+  grid.innerHTML = '';
+
+  if (!isRetro && dataN) {
+    const data = dataN || {};
+
+    // Effacer signatures une par une
+    if (data.matin_alt) {
+      addBtn(grid, '🗑️ Sig. Alt. Matin', 'btn-danger', () => effacer(`${node}/${key}/matin_alt`, 'Signature alternant matin supprimée'));
+    }
+    if (data.matin_form) {
+      addBtn(grid, '🗑️ Sig. Form. Matin', 'btn-danger', () => effacer(`${node}/${key}/matin_form`, 'Signature formatrice matin supprimée'));
+    }
+    if (data.am_alt) {
+      addBtn(grid, '🗑️ Sig. Alt. AM', 'btn-danger', () => effacer(`${node}/${key}/am_alt`, 'Signature alternant après-midi supprimée'));
+    }
+    if (data.am_form) {
+      addBtn(grid, '🗑️ Sig. Form. AM', 'btn-danger', () => effacer(`${node}/${key}/am_form`, 'Signature formatrice après-midi supprimée'));
+    }
+    // Marquer absent (efface tout + met absence)
+    if (!data.presence || data.presence !== 'absent') {
+      addBtn(grid, '❌ Marquer Absent', 'btn-absent btn-full', async () => {
+        if (!confirm('Supprimer toutes les signatures et marquer cette personne absente ?')) return;
+        await db.ref(`${node}/${key}`).set({ presence: 'absent' });
+        log('✅ Marqué absent — signatures effacées', 'ok');
+        await chargerStatut();
+      });
+    }
+    // Effacer tout
+    addBtn(grid, '🗑️ Tout effacer', 'btn-warning btn-full', async () => {
+      if (!confirm('Effacer TOUTES les données de cette séance ?')) return;
+      await db.ref(`${node}/${key}`).remove();
+      log('✅ Séance effacée', 'ok');
+      await chargerStatut();
+    });
+  }
+
+  if (isRetro) {
+    addBtn(grid, '🗑️ Effacer rétro matin', 'btn-danger', () => effacer(`${keyRetro}/matin`, 'Séance rétroactive matin effacée'));
+    addBtn(grid, '🗑️ Effacer rétro AM', 'btn-danger', () => effacer(`${keyRetro}/apres-midi`, 'Séance rétroactive après-midi effacée'));
+    addBtn(grid, '🗑️ Effacer tout rétro', 'btn-warning btn-full', async () => {
+      if (!confirm('Effacer les données rétroactives de cette séance ?')) return;
+      await db.ref(keyRetro).remove();
+      log('✅ Données rétroactives effacées', 'ok');
+      await chargerStatut();
+    });
+  }
+}
+
+function addBtn(grid, label, cls, fn) {
+  const btn = document.createElement('button');
+  btn.className = cls;
+  btn.textContent = label;
+  btn.addEventListener('click', fn);
+  grid.appendChild(btn);
+}
+
+async function effacer(path, msg) {
+  try {
+    await db.ref(path).remove();
+    log('✅ ' + msg, 'ok');
+    await chargerStatut();
+  } catch(e) {
+    log('❌ Erreur : ' + e.message, 'err');
+  }
+}
+
+function log(msg, type='inf') {
+  const div = document.getElementById('log');
+  div.classList.add('on');
+  const line = document.createElement('div');
+  line.className = 'l'+type;
+  line.textContent = '[' + new Date().toLocaleTimeString('fr-FR') + '] ' + msg;
+  div.appendChild(line);
+  div.scrollTop = div.scrollHeight;
+}
+
+// Init
+chargerListe();
 </script>
 </body>
 </html>
