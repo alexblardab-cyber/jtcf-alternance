@@ -266,6 +266,7 @@
           </div>
         </div>
         <button class="btn-annuler-sign" id="btnAnnulerMatin" style="display:none;" data-slot="matin_form">🗑️ Annuler ma signature matin</button>
+        <button class="btn-annuler-sign" id="btnEffacerAltMatin" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant matin</button>
       </div>
       <div class="emarg-bloc" id="ficheBlocAM">
         <div class="emarg-titre">🌇 Après-midi · 13h30 – 16h00</div>
@@ -281,6 +282,8 @@
           </div>
         </div>
         <button class="btn-annuler-sign" id="btnAnnulerAM" style="display:none;" data-slot="am_form">🗑️ Annuler ma signature après-midi</button>
+        <button class="btn-annuler-sign" id="btnEffacerAltAM" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant après-midi</button>
+        <button class="btn-annuler-sign" id="btnMarquerAbsent" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;font-size:13px;padding:11px;">❌ Marquer absent + effacer toutes signatures</button>
       </div>
     </div>
     <div class="spacer"></div>
@@ -610,6 +613,12 @@ async function updateFicheEmarg() {
   });
   if (btnAnnMatin) btnAnnMatin.style.display = data.matin_form ? 'block' : 'none';
   if (btnAnnAM) btnAnnAM.style.display = data.am_form ? 'block' : 'none';
+  const btnEffAltMatin = document.getElementById('btnEffacerAltMatin');
+  const btnEffAltAM = document.getElementById('btnEffacerAltAM');
+  const btnAbsent = document.getElementById('btnMarquerAbsent');
+  if (btnEffAltMatin) btnEffAltMatin.style.display = data.matin_alt && !absent ? 'block' : 'none';
+  if (btnEffAltAM) btnEffAltAM.style.display = data.am_alt && !absent ? 'block' : 'none';
+  if (btnAbsent) btnAbsent.style.display = !absent ? 'block' : 'none';
   ['ficheCanvasMatinForm','ficheCanvasAMForm'].forEach(function(id) {
     const c = document.getElementById(id); c.width = c.offsetWidth; c.height = 80;
     c.getContext('2d').clearRect(0,0,c.width,c.height);
@@ -1324,6 +1333,32 @@ document.getElementById('btnAnnulerMatin').addEventListener('click', function(){
 document.getElementById('btnAnnulerMatin').addEventListener('touchend', function(e){ e.preventDefault(); annulerSignature('matin_form'); }, {passive:false});
 document.getElementById('btnAnnulerAM').addEventListener('click', function(){ annulerSignature('am_form'); });
 document.getElementById('btnAnnulerAM').addEventListener('touchend', function(e){ e.preventDefault(); annulerSignature('am_form'); }, {passive:false});
+
+// Effacer signature alternant
+async function effacerSignatureAlt(slot) {
+  const key = document.getElementById('ficheDate').getAttribute('data-key');
+  if (!key) { alert('Impossible de trouver la séance.'); return; }
+  if (!confirm('Effacer la signature de l\'alternant ?')) return;
+  await remove(ref(db2, 'emargements/' + key + '/' + slot));
+  alert('✅ Signature alternant effacée.');
+  location.reload();
+}
+document.getElementById('btnEffacerAltMatin').addEventListener('click', function(){ effacerSignatureAlt('matin_alt'); });
+document.getElementById('btnEffacerAltMatin').addEventListener('touchend', function(e){ e.preventDefault(); effacerSignatureAlt('matin_alt'); }, {passive:false});
+document.getElementById('btnEffacerAltAM').addEventListener('click', function(){ effacerSignatureAlt('am_alt'); });
+document.getElementById('btnEffacerAltAM').addEventListener('touchend', function(e){ e.preventDefault(); effacerSignatureAlt('am_alt'); }, {passive:false});
+
+// Marquer absent + effacer toutes signatures
+async function marquerAbsent() {
+  const key = document.getElementById('ficheDate').getAttribute('data-key');
+  if (!key) { alert('Impossible de trouver la séance.'); return; }
+  if (!confirm('Marquer absent et effacer toutes les signatures de cette séance ?')) return;
+  await set(ref(db2, 'emargements/' + key), { presence: 'absent' });
+  alert('✅ Alternant marqué absent — signatures effacées.');
+  location.reload();
+}
+document.getElementById('btnMarquerAbsent').addEventListener('click', marquerAbsent);
+document.getElementById('btnMarquerAbsent').addEventListener('touchend', function(e){ e.preventDefault(); marquerAbsent(); }, {passive:false});
 
 const observer = new MutationObserver(function(){
   const matinForm=document.getElementById('ficheStatusMatinForm');
