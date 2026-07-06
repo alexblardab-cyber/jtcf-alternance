@@ -555,15 +555,18 @@ async function chargerRecap() {
 
 document.getElementById('moisSelect').addEventListener('change', chargerRecap);
 
-function ouvrirFiche(alt) {
+async function ouvrirFiche(alt) {
+  // Recharger les données fraîches depuis Firebase (inclut documents.dossier)
+  const snapFrais = await get(ref(db, 'alternants/' + alt.id));
+  if (snapFrais.exists()) { alt = snapFrais.val(); alt.id = snapFrais.key; }
   currentAlt = alt; currentFC = null;
   document.getElementById('mainNav').style.display = 'none';
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('ficheView').style.display = 'block';
   document.getElementById('ficheNom').textContent = alt.nom;
   document.getElementById('ficheFormation').textContent = alt.formation;
-  document.getElementById('ficheEntreprise').textContent = alt.entreprise;
-  document.getElementById('ficheMaitre').textContent = alt.maitre;
+  document.getElementById('ficheEntreprise').textContent = alt.entreprise || '—';
+  document.getElementById('ficheMaitre').textContent = alt.maitre || '—';
   document.getElementById('ficheContrat').textContent = alt.debut + ' → ' + alt.fin;
   document.getElementById('ficheJour').textContent = alt.jourCentre + ' · ' + alt.heures;
   // Dossier Drive
@@ -1362,25 +1365,25 @@ document.getElementById('btnEffacerAltMatin').addEventListener('touchend', funct
 document.getElementById('btnEffacerAltAM').addEventListener('click', function(){ effacerSignatureAlt('am_alt'); });
 document.getElementById('btnEffacerAltAM').addEventListener('touchend', function(e){ e.preventDefault(); effacerSignatureAlt('am_alt'); }, {passive:false});
 
-// Marquer absent matin
+// Marquer absent matin (conserve l'après-midi)
 async function marquerAbsentMatin() {
   const key = document.getElementById('ficheDate').getAttribute('data-key');
   if (!key) return;
-  if (!confirm('Marquer absent le matin et effacer la signature matin ?')) return;
+  if (!confirm('Marquer absent le matin et effacer uniquement la signature matin ?')) return;
   await remove(ref(db2, 'emargements/' + key + '/matin_alt'));
   await remove(ref(db2, 'emargements/' + key + '/matin_form'));
   await set(ref(db2, 'emargements/' + key + '/presence_matin'), 'absent');
-  alert('✅ Absent matin enregistré.'); location.reload();
+  alert('✅ Absent matin enregistré. La signature après-midi est conservée.'); location.reload();
 }
-// Marquer absent après-midi
+// Marquer absent après-midi (conserve le matin)
 async function marquerAbsentAM() {
   const key = document.getElementById('ficheDate').getAttribute('data-key');
   if (!key) return;
-  if (!confirm('Marquer absent après-midi et effacer la signature AM ?')) return;
+  if (!confirm('Marquer absent après-midi et effacer uniquement la signature AM ?')) return;
   await remove(ref(db2, 'emargements/' + key + '/am_alt'));
   await remove(ref(db2, 'emargements/' + key + '/am_form'));
   await set(ref(db2, 'emargements/' + key + '/presence_am'), 'absent');
-  alert('✅ Absent après-midi enregistré.'); location.reload();
+  alert('✅ Absent après-midi enregistré. La signature matin est conservée.'); location.reload();
 }
 // Marquer absent toute la journée
 async function marquerAbsentJournee() {
