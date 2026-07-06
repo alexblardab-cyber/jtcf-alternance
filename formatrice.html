@@ -1500,35 +1500,29 @@ async function signerTousLeGroupe(jour, periode) {
 });
 </script>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script>
-// ── Certifier absence — script classique (pas module ES6) ─────
-(function() {
-  const db3 = firebase.database();
+// ── Certifier absence — REST API Firebase (pas de SDK) ────────
+const FIREBASE_URL = 'https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app';
 
-  function getKey() {
-    return document.getElementById('ficheDate').getAttribute('data-key');
-  }
+async function certifierAbsence(slot, label) {
+  const key = document.getElementById('ficheDate').getAttribute('data-key');
+  if (!key) { alert('Séance introuvable. Naviguez vers une séance d'abord.'); return; }
+  if (!confirm('Certifier l'absence ' + label + ' pour cet alternant ?')) return;
+  const url = FIREBASE_URL + '/emargements/' + key + '/' + slot + '.json';
+  const val = 'absence_certifiee_' + Date.now();
+  const resp = await fetch(url, { method: 'PUT', body: JSON.stringify(val), headers: {'Content-Type': 'application/json'} });
+  if (resp.ok) { alert('✅ Absence ' + label + ' certifiée.'); location.reload(); }
+  else { alert('Erreur Firebase : ' + resp.status); }
+}
 
-  document.getElementById('btnCertifierAbsMatin').addEventListener('click', async function() {
-    const key = getKey();
-    if (!key) { alert('Séance introuvable.'); return; }
-    if (!confirm("Certifier l'absence du matin pour cet alternant ?")) return;
-    await db3.ref('emargements/' + key + '/matin_form').set('absence_certifiee_' + Date.now());
-    alert('✅ Absence matin certifiée.');
-    location.reload();
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('btnCertifierAbsMatin').addEventListener('click', function() {
+    certifierAbsence('matin_form', 'du matin');
   });
-
-  document.getElementById('btnCertifierAbsAM').addEventListener('click', async function() {
-    const key = getKey();
-    if (!key) { alert('Séance introuvable.'); return; }
-    if (!confirm("Certifier l'absence de l'après-midi pour cet alternant ?")) return;
-    await db3.ref('emargements/' + key + '/am_form').set('absence_certifiee_' + Date.now());
-    alert('✅ Absence après-midi certifiée.');
-    location.reload();
+  document.getElementById('btnCertifierAbsAM').addEventListener('click', function() {
+    certifierAbsence('am_form', 'de l'après-midi');
   });
-})();
+});
 </script>
 </body>
 </html>
