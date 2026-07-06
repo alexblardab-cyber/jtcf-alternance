@@ -243,7 +243,7 @@
       <div class="info-row"><span class="info-label">Maître app.</span><span class="info-value" id="ficheMaitre">—</span></div>
       <div class="info-row"><span class="info-label">Contrat</span><span class="info-value" id="ficheContrat">—</span></div>
       <div class="info-row"><span class="info-label">Jour en centre</span><span class="info-value" id="ficheJour">—</span></div>
-      <div class="info-row" id="ficheDossierRow" style="display:none;"><span class="info-label">📁 Dossier</span><span class="info-value"><a id="ficheDossierLink" href="#" target="_blank" style="color:var(--or);font-weight:700;text-decoration:none;">Ouvrir Drive ↗</a></span></div>
+      <div class="info-row" id="ficheDossierRow" style="display:none;"><span class="info-label">📁 Dossier Drive</span><span class="info-value"><a id="ficheDossierLink" href="#" target="_blank" style="color:var(--or);font-weight:700;text-decoration:none;background:var(--or-pale);padding:3px 10px;border-radius:8px;border:1px solid var(--or-clair);">📂 Ouvrir ↗</a></span></div>
     </div>
     <div class="card">
       <div class="card-title">✍️ Émargement</div>
@@ -572,7 +572,7 @@ async function ouvrirFiche(alt) {
   const dossierLink = alt.documents && alt.documents.dossier ? alt.documents.dossier : null;
   const dossierRow = document.getElementById('ficheDossierRow');
   const dossierA = document.getElementById('ficheDossierLink');
-  if (dossierLink) { dossierRow.style.display='flex'; dossierA.href=dossierLink; }
+  if (dossierLink && dossierRow) { dossierRow.style.display='flex'; dossierA.href=dossierLink; console.log('Drive link:', dossierLink); }
   else { dossierRow.style.display='none'; }
   seances = getSeances(alt);
   const today = new Date(); today.setHours(0,0,0,0);
