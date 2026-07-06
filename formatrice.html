@@ -267,7 +267,7 @@
           </div>
         </div>
         <button class="btn-annuler-sign" id="btnAnnulerMatin" style="display:none;" data-slot="matin_form">🗑️ Annuler ma signature matin</button>
-        <button class="btn-annuler-sign" id="btnCertifierAbsMatin" onclick="window.certifierAbsMatin()" style="display:none;background:#276749;color:#fff;border-color:#276749;">✅ Certifier l'absence matin</button>
+        <button class="btn-annuler-sign" id="btnCertifierAbsMatin" style="display:none;background:#276749;color:#fff;border-color:#276749;">✅ Certifier l'absence matin</button>
         <button class="btn-annuler-sign" id="btnEffacerAltMatin" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant matin</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentMatin" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent matin (efface sig. matin)</button>
       </div>
@@ -285,7 +285,7 @@
           </div>
         </div>
         <button class="btn-annuler-sign" id="btnAnnulerAM" style="display:none;" data-slot="am_form">🗑️ Annuler ma signature après-midi</button>
-        <button class="btn-annuler-sign" id="btnCertifierAbsAM" onclick="window.certifierAbsAM()" style="display:none;background:#276749;color:#fff;border-color:#276749;">✅ Certifier l'absence après-midi</button>
+        <button class="btn-annuler-sign" id="btnCertifierAbsAM" style="display:none;background:#276749;color:#fff;border-color:#276749;">✅ Certifier l'absence après-midi</button>
         <button class="btn-annuler-sign" id="btnEffacerAltAM" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant après-midi</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentAM" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent après-midi (efface sig. AM)</button>
       </div>
@@ -1395,25 +1395,7 @@ async function marquerAbsentAM() {
   await set(ref(db2, 'emargements/' + key + '/presence_am'), 'absent');
   alert('✅ Absent après-midi enregistré. La signature matin est conservée.'); location.reload();
 }
-// Certifier absence matin
-async function certifierAbsMatin() {
-  const key = document.getElementById('ficheDate').getAttribute('data-key');
-  if (!key) return;
-  if (!confirm("Certifier l'absence du matin pour cet alternant ?")) return;
-  await set(ref(db2, 'emargements/' + key + '/matin_form'), 'absence_certifiee_' + Date.now());
-  alert('✅ Absence matin certifiée.'); location.reload();
-}
-// Certifier absence après-midi
-async function certifierAbsAM() {
-  const key = document.getElementById('ficheDate').getAttribute('data-key');
-  if (!key) return;
-  if (!confirm("Certifier l'absence de l'après-midi pour cet alternant ?")) return;
-  await set(ref(db2, 'emargements/' + key + '/am_form'), 'absence_certifiee_' + Date.now());
-  alert('✅ Absence après-midi certifiée.'); location.reload();
-}
-// Exposition globale des fonctions certifier
-window.certifierAbsMatin = certifierAbsMatin;
-window.certifierAbsAM = certifierAbsAM;
+
 
 document.getElementById('btnMarquerAbsentMatin').addEventListener('click', marquerAbsentMatin);
 document.getElementById('btnMarquerAbsentMatin').addEventListener('touchend', function(e){ e.preventDefault(); marquerAbsentMatin(); }, {passive:false});
@@ -1516,6 +1498,37 @@ async function signerTousLeGroupe(jour, periode) {
   function open(e){if(e)e.preventDefault();signerTousLeGroupe(jour,periode);}
   el.addEventListener('click',open); el.addEventListener('touchend',open,{passive:false});
 });
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+// ── Certifier absence — script classique (pas module ES6) ─────
+(function() {
+  const db3 = firebase.database();
+
+  function getKey() {
+    return document.getElementById('ficheDate').getAttribute('data-key');
+  }
+
+  document.getElementById('btnCertifierAbsMatin').addEventListener('click', async function() {
+    const key = getKey();
+    if (!key) { alert('Séance introuvable.'); return; }
+    if (!confirm("Certifier l'absence du matin pour cet alternant ?")) return;
+    await db3.ref('emargements/' + key + '/matin_form').set('absence_certifiee_' + Date.now());
+    alert('✅ Absence matin certifiée.');
+    location.reload();
+  });
+
+  document.getElementById('btnCertifierAbsAM').addEventListener('click', async function() {
+    const key = getKey();
+    if (!key) { alert('Séance introuvable.'); return; }
+    if (!confirm("Certifier l'absence de l'après-midi pour cet alternant ?")) return;
+    await db3.ref('emargements/' + key + '/am_form').set('absence_certifiee_' + Date.now());
+    alert('✅ Absence après-midi certifiée.');
+    location.reload();
+  });
+})();
 </script>
 </body>
 </html>
