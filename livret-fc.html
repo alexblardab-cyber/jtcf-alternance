@@ -432,8 +432,10 @@ function getKey(d) {
 
 // ── Déterminer le type d'un jour ───────────────────────────
 function getTypeJour(d) {
-  const iso = d.toISOString().split('T')[0];
-  const y = d.getFullYear(), m = d.getMonth();
+  // Date locale pour éviter décalage UTC/Réunion (UTC+4)
+  const y = d.getFullYear(), m = d.getMonth(), j = d.getDate();
+  const mm = String(m+1).padStart(2,'0'), jj = String(j).padStart(2,'0');
+  const iso = y + '-' + mm + '-' + jj;
 
   // Jours fériés
   const feries = ['2026-07-14','2026-08-15','2026-11-01','2026-11-11',
