@@ -316,6 +316,68 @@ const auth = getAuth(app);
 const userId = sessionStorage.getItem('jtcf_form_user');
 if (!userId) { window.location.href = 'index.html'; }
 
+// ── Profils formateurs ─────────────────────────────────────
+const PROFILS = {
+  'FORM01': {
+    nom: 'Fontaine Emilie',
+    acces: 'total',
+    onglets: ['lundi','mardi','mercredi','jeudi','fc','groupes','recap'],
+    fcIds: null, // tous
+    debut: null, fin: null // illimité
+  },
+  'FORM02': {
+    nom: 'Sarquet Virgile',
+    acces: 'fc-partiel',
+    onglets: ['fc'],
+    fcIds: ['ML01','GM01'],
+    debut: '2026-07-17', fin: '2026-11-26'
+  },
+  'FORM03': {
+    nom: 'Faconnier Elodie',
+    acces: 'partiel',
+    onglets: ['lundi','mardi','mercredi','fc','groupes'],
+    fcIds: null, // tous
+    joursAutorises: ['2026-08-03','2026-08-04','2026-08-05','2026-08-10','2026-08-11','2026-08-12'],
+    debut: '2026-08-03', fin: '2026-08-12'
+  }
+};
+
+const profil = PROFILS[userId] || PROFILS['FORM01'];
+
+// Vérifier accès selon les dates
+function verifierAcces() {
+  if (!profil.debut) return true; // FORM01 = accès illimité
+  const today = new Date();
+  const y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), d = String(today.getDate()).padStart(2,'0');
+  const isoToday = y + '-' + m + '-' + d;
+  // FORM03 : jours autorisés spécifiques
+  if (profil.joursAutorises) return profil.joursAutorises.includes(isoToday);
+  // FORM02 : plage de dates
+  return isoToday >= profil.debut && isoToday <= profil.fin;
+}
+
+// Masquer les onglets non autorisés
+function appliquerAcces() {
+  document.getElementById('headerNom').textContent = '👩‍🏫 ' + profil.nom;
+  const tousOnglets = ['lundi','mardi','mercredi','jeudi','fc','groupes','recap'];
+  tousOnglets.forEach(function(id) {
+    const btn = document.querySelector('.nav-btn[data-target="' + id + '"]');
+    const section = document.getElementById(id);
+    if (!profil.onglets.includes(id)) {
+      if (btn) btn.style.display = 'none';
+      if (section) section.style.display = 'none';
+    }
+  });
+  // Activer le premier onglet autorisé
+  const premier = profil.onglets[0];
+  const btnPremier = document.querySelector('.nav-btn[data-target="' + premier + '"]');
+  const sectionPremier = document.getElementById(premier);
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  if (btnPremier) btnPremier.classList.add('active');
+  if (sectionPremier) sectionPremier.classList.add('active');
+}
+
 await new Promise((resolve) => {
   onAuthStateChanged(auth, (user) => {
     if (user) { resolve(); return; }
@@ -372,7 +434,9 @@ async function chargerAlternants() {
     allFC = [];
     fcSnap.forEach(function(child) { const fc = child.val(); fc.id = child.key; allFC.push(fc); });
   }
-  afficherListeFC('listeFC', allFC);
+  // Filtrer FC selon profil
+  const fcFiltered = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
+  afficherListeFC('listeFC', fcFiltered);
   remplirMoisSelect();
   chargerRecap();
 }
@@ -716,7 +780,14 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
 document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';},{passive:false});
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 
-chargerAlternants();
+// Vérifier accès
+if (!verifierAcces()) {
+  document.getElementById('mainContent').innerHTML = '<div style="padding:40px 20px;text-align:center;"><div style="font-size:48px;margin-bottom:16px;">🔒</div><div style="font-size:18px;font-weight:700;color:#2a3f4e;margin-bottom:8px;">Accès non autorisé</div><div style="font-size:14px;color:#718096;">Votre accès à cet espace n'est pas disponible aujourd'hui.<br>Veuillez contacter l'administration.</div></div>';
+  document.getElementById('mainNav').style.display = 'none';
+} else {
+  appliquerAcces();
+  chargerAlternants();
+}
 
 // ── NOTIFICATIONS ────────────────────────────────────────────
 
