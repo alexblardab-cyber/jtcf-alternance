@@ -102,6 +102,8 @@ async function connexion(e) {
     const formSnap = await get(ref(db, 'formateurs/' + id));
     if (formSnap.exists()) {
       sessionStorage.setItem('jtcf_form_user', id);
+      if (id === 'FORM02') { window.location.href = 'formatrice-form02.html'; return; }
+      if (id === 'FORM03') { window.location.href = 'formatrice-form03.html'; return; }
       window.location.href = 'formatrice.html';
       return;
     }

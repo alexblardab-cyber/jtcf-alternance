@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Espace Formateur – JTCF</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a202c; }
+  :root {
+    --or: #C9A227; --or-clair: #f0d98a; --or-pale: #fdf6e3;
+    --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --bleu-clair: #eaf0f4;
+    --blanc: #ffffff; --gris: #718096; --gris-clair: #f0f2f5;
+    --vert: #38a169; --vert-clair: #f0fff4;
+    --rouge: #e53e3e; --rouge-clair: #fff5f5;
+    --violet: #6b46c1; --violet-clair: #faf5ff;
+  }
+  .header { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: var(--blanc); padding: 20px 20px 14px; text-align: center; }
+  .header .stars { font-size: 13px; color: var(--or); letter-spacing: 4px; margin-bottom: 4px; }
+  .header .logo { font-size: 18px; font-weight: 800; color: var(--or); text-transform: uppercase; letter-spacing: 2px; }
+  .header .logo-sub { font-size: 10px; opacity: 0.75; letter-spacing: 1px; text-transform: uppercase; }
+  .header .welcome { margin-top: 14px; background: rgba(201,162,39,0.15); border: 1px solid rgba(201,162,39,0.3); border-radius: 12px; padding: 11px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+  .welcome-left .name { font-size: 15px; font-weight: 700; }
+  .welcome-left .role { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+  .welcome-left .badge { display: inline-block; margin-top: 6px; background: var(--or); color: var(--bleu-fonce); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .btn-logout { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 11px; padding: 6px 10px; border-radius: 8px; cursor: pointer; flex-shrink: 0; touch-action: manipulation; }
+  .nav { display: flex; overflow-x: auto; background: var(--bleu-fonce); padding: 0 4px; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex-shrink: 0; padding: 14px 11px; border: none; background: none; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; touch-action: manipulation; display: block; }
+  .nav-btn.active { color: var(--or); border-bottom-color: var(--or); font-weight: 700; }
+  .content { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .card { background: var(--blanc); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(61,90,110,0.1); }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--bleu); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 2px solid var(--or); }
+  .jour-titre { font-size: 11px; font-weight: 700; color: var(--bleu); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; border-left: 3px solid var(--or); padding-left: 8px; }
+  .alternant-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; margin-bottom: 8px; background: var(--gris-clair); cursor: pointer; border: 2px solid transparent; touch-action: manipulation; }
+  .alternant-card:hover { border-color: var(--or); background: var(--or-pale); }
+  .alternant-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+  .alternant-nom { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); }
+  .alternant-formation { font-size: 11px; color: var(--gris); }
+  .alternant-arrow { margin-left: auto; color: var(--or); font-size: 18px; font-weight: 700; }
+  .back-btn { display: flex; align-items: center; gap: 6px; color: var(--or); font-weight: 700; font-size: 13px; margin-bottom: 14px; cursor: pointer; border: none; background: none; touch-action: manipulation; }
+  .info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--gris); font-size: 12px; }
+  .info-value { font-weight: 600; text-align: right; max-width: 60%; color: var(--bleu-fonce); }
+  .emarg-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .btn-nav { padding: 8px 14px; border: 2px solid var(--or); border-radius: 8px; background: none; color: var(--or); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  .btn-nav:disabled { opacity: 0.3; }
+  .emarg-semaine { font-size: 13px; font-weight: 700; color: var(--bleu-fonce); }
+  .emarg-date { background: var(--or-pale); border: 2px solid var(--or); border-radius: 10px; padding: 10px; text-align: center; margin-bottom: 12px; font-weight: 800; font-size: 14px; color: var(--bleu-fonce); }
+  .emarg-bloc { border: 2px solid var(--gris-clair); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .emarg-bloc.signe { border-color: var(--vert); background: var(--vert-clair); }
+  .emarg-bloc.absent-bloc { border-color: var(--rouge); background: var(--rouge-clair); }
+  .emarg-titre { font-size: 12px; font-weight: 700; color: var(--bleu); margin-bottom: 10px; text-transform: uppercase; }
+  .emarg-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .emarg-label { font-size: 12px; color: var(--gris); }
+  .emarg-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .status-signe { background: #c6f6d5; color: #276749; }
+  .status-attente { background: #fed7d7; color: #c53030; }
+  .status-distanciel { background: #e9d8fd; color: #6b46c1; }
+  .sign-zone { border: 2px dashed var(--or-clair); border-radius: 10px; background: var(--or-pale); padding: 8px; margin-top: 8px; text-align: center; }
+  .sign-canvas { width: 100%; height: 80px; border-radius: 6px; background: white; display: block; cursor: crosshair; touch-action: none; }
+  .sign-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
+  .btn-sign { padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  .btn-valider { background: var(--vert); color: white; }
+  .btn-effacer-canvas { background: #e2e8f0; color: var(--bleu-fonce); }
+  .sign-label { font-size: 11px; color: var(--gris); margin-bottom: 6px; }
+  .btn-annuler-sign { width: 100%; padding: 8px; background: #fff5f5; color: var(--rouge); border: 1px solid #fed7d7; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; margin-top: 8px; display: none; }
+  .btn-global { width: 100%; padding: 13px; background: linear-gradient(135deg, #276749, #38a169); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; }
+  .loading { text-align: center; color: var(--gris); font-size: 13px; padding: 20px; }
+  .spacer { height: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="stars">★ ★ ★</div>
+  <div class="logo">JT Conseil Formation</div>
+  <div class="logo-sub">Saint-Joseph · Formateur</div>
+  <div class="welcome">
+    <div class="welcome-left">
+      <div class="name">👨‍🏫 Sarquet Virgile</div>
+      <div class="role">ACA · Formation Continue</div>
+      <div class="badge">✏️ Formateur</div>
+    </div>
+    <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+  </div>
+</div>
+
+<div class="nav" id="mainNav">
+  <a class="nav-btn active" data-target="fc">🎓 FC</a>
+</div>
+
+<div class="content" id="mainContent">
+  <div class="section active" id="fc">
+    <button class="btn-global" id="btnSignGlobalMatinFC">✍️ Signer MATIN — ML01 & GM01</button>
+    <button class="btn-global" id="btnSignGlobalAMFC" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — ML01 & GM01</button>
+    <div class="jour-titre">Stagiaires ACA — Formation Continue</div>
+    <div id="listeFC"><div class="loading">Chargement...</div></div>
+  </div>
+</div>
+
+<!-- FICHE -->
+<div id="ficheView" style="display:none;">
+  <div class="header">
+    <div class="stars">★ ★ ★</div>
+    <div class="logo">JT Conseil Formation</div>
+    <div class="logo-sub">Saint-Joseph · Formateur</div>
+  </div>
+  <div class="content">
+    <button class="back-btn" id="btnRetour">◀ Retour à la liste</button>
+    <div class="card">
+      <div class="card-title">👤 Fiche stagiaire</div>
+      <div class="info-row"><span class="info-label">Nom</span><span class="info-value" id="ficheNom">—</span></div>
+      <div class="info-row"><span class="info-label">Formation</span><span class="info-value" id="ficheFormation">—</span></div>
+      <div class="info-row"><span class="info-label">Jours</span><span class="info-value">Lundi au Vendredi</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">✍️ Émargement</div>
+      <div class="emarg-nav">
+        <button class="btn-nav" id="ficheBtnPrev">◀ Préc.</button>
+        <div class="emarg-semaine" id="ficheSemaine">Séance —</div>
+        <button class="btn-nav" id="ficheBtnNext">Suiv. ▶</button>
+      </div>
+      <div class="emarg-date" id="ficheDate">— Chargement... —</div>
+      <div class="emarg-bloc" id="ficheBlocMatin">
+        <div class="emarg-titre">🌅 Matin · 8h15 – 12h00</div>
+        <div class="emarg-row"><span class="emarg-label">Stagiaire</span><span class="emarg-status status-attente" id="ficheStatusMatinAlt">En attente</span></div>
+        <div class="emarg-row"><span class="emarg-label">Formateur</span><span class="emarg-status status-attente" id="ficheStatusMatinForm">En attente</span></div>
+        <div class="sign-zone" id="ficheZoneMatinForm">
+          <div class="sign-label">Votre signature (formateur)</div>
+          <canvas class="sign-canvas" id="ficheCanvasMatinForm"></canvas>
+          <div class="sign-actions">
+            <button class="btn-sign btn-effacer-canvas" data-canvas="ficheCanvasMatinForm">Effacer</button>
+            <button class="btn-sign btn-valider" data-slot="matin_form">✅ Valider</button>
+          </div>
+        </div>
+        <button class="btn-annuler-sign" id="btnAnnulerMatin">🗑️ Annuler ma signature matin</button>
+      </div>
+      <div class="emarg-bloc" id="ficheBlocAM">
+        <div class="emarg-titre">🌇 Après-midi · 13h00 – 15h15</div>
+        <div class="emarg-row"><span class="emarg-label">Stagiaire</span><span class="emarg-status status-attente" id="ficheStatusAMAlt">En attente</span></div>
+        <div class="emarg-row"><span class="emarg-label">Formateur</span><span class="emarg-status status-attente" id="ficheStatusAMForm">En attente</span></div>
+        <div class="sign-zone" id="ficheZoneAMForm">
+          <div class="sign-label">Votre signature (formateur)</div>
+          <canvas class="sign-canvas" id="ficheCanvasAMForm"></canvas>
+          <div class="sign-actions">
+            <button class="btn-sign btn-effacer-canvas" data-canvas="ficheCanvasAMForm">Effacer</button>
+            <button class="btn-sign btn-valider" data-slot="am_form">✅ Valider</button>
+          </div>
+        </div>
+        <button class="btn-annuler-sign" id="btnAnnulerAM">🗑️ Annuler ma signature après-midi</button>
+      </div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+});
+const db = getDatabase(app);
+const auth = getAuth(app);
+await signInAnonymously(auth).catch(()=>{});
+
+// FORM02 — accès ML01 et GM01 uniquement
+const FC_IDS = ['ML01', 'GM01'];
+
+let allFC = [];
+let currentFC = null;
+let seances = [];
+let semIdx = 0;
+
+function getJoursFC() {
+  const jours = [];
+  const debut = new Date(2026, 6, 13);
+  const fin = new Date(2027, 5, 30);
+  let d = new Date(debut);
+  while (d <= fin) {
+    const j = d.getDay();
+    if (j >= 1 && j <= 5) jours.push(new Date(d)); // lundi à vendredi pour ACA
+    d.setDate(d.getDate() + 1);
+  }
+  return jours;
+}
+
+function formatDate(d) {
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return jours[d.getDay()] + ' ' + d.getDate() + ' ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function getFCKey(fc, d) {
+  return fc.id + '_fc_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+}
+
+async function charger() {
+  const snap = await get(ref(db, 'stagiairesFC'));
+  allFC = [];
+  if (snap.exists()) {
+    snap.forEach(function(c) {
+      const fc = c.val(); fc.id = c.key;
+      if (FC_IDS.includes(fc.id)) allFC.push(fc);
+    });
+  }
+  const container = document.getElementById('listeFC');
+  container.innerHTML = '';
+  if (allFC.length === 0) { container.innerHTML = '<div class="loading">Aucun stagiaire trouvé.</div>'; return; }
+  allFC.forEach(function(fc) {
+    const ini = fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    const card = document.createElement('div');
+    card.className = 'alternant-card';
+    card.innerHTML = '<div class="alternant-avatar" style="border-color:#C9A227;">'+ini+'</div><div style="flex:1"><div class="alternant-nom">'+fc.nom+'</div><div class="alternant-formation">'+fc.formation+'</div><div style="font-size:10px;color:#C9A227;font-weight:700;margin-top:2px;">🎓 Formation Continue · ACA</div></div><div class="alternant-arrow">›</div>';
+    function open(e) { e.preventDefault(); ouvrirFiche(fc); }
+    card.addEventListener('touchend', open, {passive:false});
+    card.addEventListener('click', open);
+    container.appendChild(card);
+  });
+}
+
+function ouvrirFiche(fc) {
+  currentFC = fc;
+  document.getElementById('mainNav').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('ficheView').style.display = 'block';
+  document.getElementById('ficheNom').textContent = fc.nom;
+  document.getElementById('ficheFormation').textContent = fc.formation;
+  seances = getJoursFC();
+  const today = new Date(); today.setHours(0,0,0,0);
+  semIdx = 0;
+  for (let i = 0; i < seances.length; i++) {
+    const s = new Date(seances[i]); s.setHours(0,0,0,0);
+    if (s <= today) { semIdx = i; } else { break; }
+  }
+  updateFiche();
+}
+
+async function updateFiche() {
+  if (!currentFC) return;
+  const d = seances[semIdx];
+  document.getElementById('ficheSemaine').textContent = 'Séance n°' + (semIdx+1);
+  document.getElementById('ficheDate').textContent = formatDate(d);
+  document.getElementById('ficheBtnPrev').disabled = semIdx === 0;
+  document.getElementById('ficheBtnNext').disabled = semIdx === seances.length-1;
+  const key = getFCKey(currentFC, d);
+  document.getElementById('ficheDate').setAttribute('data-key', key);
+  const snap = await get(ref(db, 'emargementsFC/' + key));
+  const data = snap.exists() ? snap.val() : {};
+  const absent = data.presence === 'absent';
+  const slots = [
+    {alt:'matin_alt',form:'matin_form',altEl:'ficheStatusMatinAlt',formEl:'ficheStatusMatinForm',zone:'ficheZoneMatinForm',bloc:'ficheBlocMatin'},
+    {alt:'am_alt',form:'am_form',altEl:'ficheStatusAMAlt',formEl:'ficheStatusAMForm',zone:'ficheZoneAMForm',bloc:'ficheBlocAM'}
+  ];
+  slots.forEach(function(s) {
+    const altSigne = data[s.alt]; const formSigne = data[s.form];
+    const altEl = document.getElementById(s.altEl);
+    if (absent) { altEl.textContent='❌ Absent(e)'; altEl.className='emarg-status status-attente'; }
+    else { altEl.textContent=altSigne?'✅ Signé':'En attente'; altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente'); }
+    const formEl = document.getElementById(s.formEl);
+    formEl.textContent = formSigne?'✅ Signé':'En attente';
+    formEl.className = 'emarg-status '+(formSigne?'status-signe':'status-attente');
+    document.getElementById(s.zone).style.display = (formSigne||absent)?'none':'block';
+    document.getElementById(s.bloc).className = 'emarg-bloc'+(absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
+  });
+  document.getElementById('btnAnnulerMatin').style.display = data.matin_form ? 'block' : 'none';
+  document.getElementById('btnAnnulerAM').style.display = data.am_form ? 'block' : 'none';
+  ['ficheCanvasMatinForm','ficheCanvasAMForm'].forEach(function(id) {
+    const c = document.getElementById(id); if(!c) return;
+    c.width=c.offsetWidth; c.height=80; c.getContext('2d').clearRect(0,0,c.width,c.height);
+  });
+  initCanvases();
+}
+
+function initCanvases() {
+  ['ficheCanvasMatinForm','ficheCanvasAMForm'].forEach(function(id) {
+    const canvas = document.getElementById(id); if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth; canvas.height = 80;
+    let drawing = false;
+    function getPos(e) { const r=canvas.getBoundingClientRect(); if(e.touches) return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}; return{x:e.clientX-r.left,y:e.clientY-r.top}; }
+    function start(e) { e.preventDefault(); drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+    function draw(e) { e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#2a3f4e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke(); }
+    function stop() { drawing=false; }
+    canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',draw); canvas.addEventListener('mouseup',stop);
+    canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',draw,{passive:false}); canvas.addEventListener('touchend',stop);
+  });
+}
+
+document.querySelectorAll('.btn-valider').forEach(function(btn) {
+  async function valider(e) {
+    e.preventDefault();
+    const slot = btn.getAttribute('data-slot');
+    const canvasMap = {'matin_form':'ficheCanvasMatinForm','am_form':'ficheCanvasAMForm'};
+    const canvas = document.getElementById(canvasMap[slot]); if(!canvas) return;
+    const imageData = canvas.toDataURL();
+    const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
+    if (imageData===blank.toDataURL()) { alert('Veuillez signer avant de valider.'); return; }
+    const key = document.getElementById('ficheDate').getAttribute('data-key');
+    await set(ref(db,'emargementsFC/'+key+'/'+slot), imageData);
+    await updateFiche();
+  }
+  btn.addEventListener('touchend',valider,{passive:false}); btn.addEventListener('click',valider);
+});
+
+document.querySelectorAll('.btn-effacer-canvas').forEach(function(btn) {
+  function effacer(e) { e.preventDefault(); const c=document.getElementById(btn.getAttribute('data-canvas')); if(c){c.getContext('2d').clearRect(0,0,c.width,c.height);} }
+  btn.addEventListener('touchend',effacer,{passive:false}); btn.addEventListener('click',effacer);
+});
+
+document.getElementById('ficheBtnPrev').addEventListener('click',function(){if(semIdx>0){semIdx--;updateFiche();}});
+document.getElementById('ficheBtnNext').addEventListener('click',function(){if(semIdx<seances.length-1){semIdx++;updateFiche();}});
+document.getElementById('ficheBtnPrev').addEventListener('touchend',function(e){e.preventDefault();if(semIdx>0){semIdx--;updateFiche();}},{passive:false});
+document.getElementById('ficheBtnNext').addEventListener('touchend',function(e){e.preventDefault();if(semIdx<seances.length-1){semIdx++;updateFiche();}},{passive:false});
+
+document.getElementById('btnAnnulerMatin').addEventListener('click', async function(){
+  if(!confirm('Annuler votre signature matin ?')) return;
+  const key=document.getElementById('ficheDate').getAttribute('data-key');
+  await remove(ref(db,'emargementsFC/'+key+'/matin_form'));
+  await updateFiche();
+});
+document.getElementById('btnAnnulerAM').addEventListener('click', async function(){
+  if(!confirm('Annuler votre signature après-midi ?')) return;
+  const key=document.getElementById('ficheDate').getAttribute('data-key');
+  await remove(ref(db,'emargementsFC/'+key+'/am_form'));
+  await updateFiche();
+});
+
+function retour(e) { e.preventDefault(); document.getElementById('ficheView').style.display='none'; document.getElementById('mainNav').style.display='flex'; document.getElementById('mainContent').style.display='block'; currentFC=null; }
+document.getElementById('btnRetour').addEventListener('touchend',retour,{passive:false}); document.getElementById('btnRetour').addEventListener('click',retour);
+
+// Signature globale FC
+async function signerGlobal(period) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayFC = getJoursFC().find(function(s){ const d=new Date(s); d.setHours(0,0,0,0); return d.getTime()===today.getTime(); });
+  if (!todayFC) { alert("Pas de séance aujourd'hui."); return; }
+  const slot = period === 'matin' ? 'matin_form' : 'am_form';
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = '<div style="background:white;border-radius:16px;padding:20px;width:100%;max-width:400px;"><div style="font-weight:700;color:#2a3f4e;margin-bottom:12px;">✍️ Signature globale ' + (period==='matin'?'Matin':'Après-midi') + '</div><canvas id="canvasGlobal" style="width:100%;height:100px;background:white;border:2px dashed #f0d98a;border-radius:10px;display:block;touch-action:none;cursor:crosshair;"></canvas><div style="display:flex;gap:8px;margin-top:10px;"><button id="btnEff" style="flex:1;padding:10px;background:#e2e8f0;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Effacer</button><button id="btnVal" style="flex:1;padding:10px;background:#38a169;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">✅ Valider</button><button id="btnAnn" style="flex:1;padding:10px;background:#fff5f5;color:#e53e3e;border:1px solid #fed7d7;border-radius:8px;font-weight:700;cursor:pointer;">Annuler</button></div><div id="gStatus" style="margin-top:8px;font-size:12px;color:#38a169;font-weight:600;"></div></div>';
+  document.body.appendChild(modal);
+  const canvas = document.getElementById('canvasGlobal');
+  canvas.width = canvas.offsetWidth; canvas.height = 100;
+  const ctx = canvas.getContext('2d'); let drawing = false;
+  function gp(e){const r=canvas.getBoundingClientRect();if(e.touches)return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};return{x:e.clientX-r.left,y:e.clientY-r.top};}
+  canvas.addEventListener('mousedown',function(e){drawing=true;const p=gp(e);ctx.beginPath();ctx.moveTo(p.x,p.y);});
+  canvas.addEventListener('mousemove',function(e){if(!drawing)return;const p=gp(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#2a3f4e';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();});
+  canvas.addEventListener('mouseup',function(){drawing=false;});
+  canvas.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;const p=gp(e);ctx.beginPath();ctx.moveTo(p.x,p.y);},{passive:false});
+  canvas.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;const p=gp(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#2a3f4e';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();},{passive:false});
+  canvas.addEventListener('touchend',function(){drawing=false;});
+  document.getElementById('btnEff').addEventListener('click',function(){ctx.clearRect(0,0,canvas.width,canvas.height);});
+  document.getElementById('btnAnn').addEventListener('click',function(){document.body.removeChild(modal);});
+  document.getElementById('btnVal').addEventListener('click',async function(){
+    const imgData = canvas.toDataURL();
+    const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
+    if(imgData===blank.toDataURL()){alert('Veuillez signer.');return;}
+    document.getElementById('gStatus').textContent='⏳ Enregistrement...';
+    for(const fc of allFC){
+      const key=getFCKey(fc, todayFC);
+      await set(ref(db,'emargementsFC/'+key+'/'+slot), imgData);
+    }
+    document.getElementById('gStatus').textContent='✅ Signature appliquée pour ML01 et GM01 !';
+    setTimeout(function(){document.body.removeChild(modal);},1500);
+  });
+}
+
+document.getElementById('btnSignGlobalMatinFC').addEventListener('click',function(){signerGlobal('matin');});
+document.getElementById('btnSignGlobalAMFC').addEventListener('click',function(){signerGlobal('am');});
+document.getElementById('btnSignGlobalMatinFC').addEventListener('touchend',function(e){e.preventDefault();signerGlobal('matin');},{passive:false});
+document.getElementById('btnSignGlobalAMFC').addEventListener('touchend',function(e){e.preventDefault();signerGlobal('am');},{passive:false});
+
+document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
+document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';},{passive:false});
+
+charger();
+</script>
+</body>
+</html>
