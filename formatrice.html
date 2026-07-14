@@ -318,100 +318,7 @@ if (!userId) { window.location.href = 'index.html'; }
 
 
 // Vérifier accès selon les dates
-function verifierAcces() {
-  if (!profil.debut) return true; // FORM01 = accès illimité
-  const today = new Date();
-  const y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), d = String(today.getDate()).padStart(2,'0');
-  const isoToday = y + '-' + m + '-' + d;
-  // FORM03 : jours autorisés spécifiques
-  if (profil.joursAutorises) return profil.joursAutorises.includes(isoToday);
-  // FORM02 : plage de dates
-  return isoToday >= profil.debut && isoToday <= profil.fin;
-}
-
 // Masquer les onglets non autorisés
-function appliquerAcces() {
-  document.getElementById('headerNom').textContent = '👩‍🏫 ' + profil.nom;
-  const tousOnglets = ['lundi','mardi','mercredi','jeudi','fc','groupes','recap'];
-  tousOnglets.forEach(function(id) {
-    const btn = document.querySelector('.nav-btn[data-target="' + id + '"]');
-    const section = document.getElementById(id);
-    if (!profil.onglets.includes(id)) {
-      if (btn) btn.style.display = 'none';
-      if (section) section.style.display = 'none';
-    }
-  });
-  // Activer le premier onglet autorisé
-  const premier = profil.onglets[0];
-  const btnPremier = document.querySelector('.nav-btn[data-target="' + premier + '"]');
-  const sectionPremier = document.getElementById(premier);
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  if (btnPremier) btnPremier.classList.add('active');
-  if (sectionPremier) sectionPremier.classList.add('active');
-}
-
-await new Promise((resolve) => {
-  onAuthStateChanged(auth, (user) => {
-    if (user) { resolve(); return; }
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:#1a2530;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:sans-serif;';
-    overlay.innerHTML = `
-      <div style="background:white;border-radius:14px;padding:28px;max-width:340px;width:90%;">
-        <h2 style="color:#1a2530;margin:0 0 6px;">🔐 Connexion formatrice</h2>
-        <p style="font-size:13px;color:#718096;margin:0 0 16px;">Accès sécurisé requis.</p>
-        <input id="fbEmail" type="email" placeholder="email" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
-        <input id="fbPass" type="password" placeholder="mot de passe" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
-        <button id="fbLoginBtn" style="width:100%;padding:12px;background:#C9A227;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Se connecter</button>
-        <div id="fbLoginErr" style="color:#e53e3e;font-size:12px;margin-top:8px;"></div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.querySelector('#fbLoginBtn').addEventListener('click', async () => {
-      const email = overlay.querySelector('#fbEmail').value;
-      const pass = overlay.querySelector('#fbPass').value;
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        overlay.remove();
-        resolve();
-      } catch (err) {
-        overlay.querySelector('#fbLoginErr').textContent = 'Identifiants incorrects.';
-      }
-    });
-  });
-});
-
-let allAlternants = [];
-let allFC = [];
-let currentAlt = null;
-let currentFC = null;
-let seances = [];
-let semIdx = 0;
-let filterMode = 'mois';
-
-const MATIN_H = 4;
-const AM_H = 3.5;
-
-async function chargerAlternants() {
-  const snap = await get(ref(db, 'alternants'));
-  if (snap.exists()) {
-    allAlternants = [];
-    snap.forEach(function(child) { const alt = child.val(); alt.id = child.key; allAlternants.push(alt); });
-  }
-  afficherListe('listeLundi', allAlternants.filter(a => a.jourCentre === 'Lundi'));
-  afficherListe('listeMardi', allAlternants.filter(a => a.jourCentre === 'Mardi'));
-  afficherListe('listeMercredi', allAlternants.filter(a => a.jourCentre === 'Mercredi'));
-  afficherListe('listeJeudi', allAlternants.filter(a => a.jourCentre === 'Jeudi'));
-
-  const fcSnap = await get(ref(db, 'stagiairesFC'));
-  if (fcSnap.exists()) {
-    allFC = [];
-    fcSnap.forEach(function(child) { const fc = child.val(); fc.id = child.key; allFC.push(fc); });
-  }
-  afficherListeFC('listeFC', allFC);
-  remplirMoisSelect();
-  chargerRecap();
-}
-
 function afficherListeFC(containerId, fcs) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -751,14 +658,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
 document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';},{passive:false});
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 
-// Vérifier accès
-if (!verifierAcces()) {
-  document.getElementById('mainContent').innerHTML = '<div style="padding:40px 20px;text-align:center;"><div style="font-size:48px;margin-bottom:16px;">🔒</div><div style="font-size:18px;font-weight:700;color:#2a3f4e;margin-bottom:8px;">Accès non autorisé</div><div style="font-size:14px;color:#718096;">Votre accès à cet espace n'est pas disponible aujourd'hui.<br>Veuillez contacter l'administration.</div></div>';
-  document.getElementById('mainNav').style.display = 'none';
-} else {
-  appliquerAcces();
-  chargerAlternants();
-}
+chargerAlternants();
 
 // ── NOTIFICATIONS ────────────────────────────────────────────
 
