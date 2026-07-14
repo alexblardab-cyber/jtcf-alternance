@@ -781,13 +781,7 @@ document.getElementById('btnLogout').addEventListener('touchend',function(e){e.p
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 
 // Vérifier accès
-if (!verifierAcces()) {
-  document.getElementById('mainContent').innerHTML = '<div style="padding:40px 20px;text-align:center;"><div style="font-size:48px;margin-bottom:16px;">🔒</div><div style="font-size:18px;font-weight:700;color:#2a3f4e;margin-bottom:8px;">Accès non autorisé</div><div style="font-size:14px;color:#718096;">Votre accès à cet espace n'est pas disponible aujourd'hui.<br>Veuillez contacter l'administration.</div></div>';
-  document.getElementById('mainNav').style.display = 'none';
-} else {
-  appliquerAcces();
-  chargerAlternants();
-}
+chargerAlternants();
 
 // ── NOTIFICATIONS ────────────────────────────────────────────
 
