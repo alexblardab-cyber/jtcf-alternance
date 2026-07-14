@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer Formateurs — JTCF</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .card { background: white; border-radius: 16px; padding: 28px; max-width: 440px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+  h1 { font-size: 1.1rem; color: #2a3f4e; margin-bottom: 6px; }
+  p { font-size: 0.85rem; color: #718096; margin-bottom: 20px; }
+  .formateur { background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .formateur h3 { font-size: 0.9rem; color: #2a3f4e; margin-bottom: 8px; }
+  input { width: 100%; padding: 9px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; margin-bottom: 8px; box-sizing: border-box; }
+  button { width: 100%; padding: 11px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; background: #C9A227; color: #2a3f4e; margin-top: 4px; }
+  .status { font-size: 0.8rem; margin-top: 6px; padding: 6px 10px; border-radius: 6px; display: none; }
+  .ok { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; display: block; }
+  .err { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; display: block; }
+  .warn { background: #fffbeb; border-left: 4px solid #C9A227; padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 0.82rem; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>👩‍🏫 Créer les comptes formateurs</h1>
+  <p>Crée les comptes Firebase Auth pour FORM02 et FORM03. À utiliser une seule fois.</p>
+  <div class="warn">⚠️ Cet outil crée des comptes dans Firebase Auth. Utiliser une seule fois, puis supprimer de GitHub.</div>
+
+  <!-- FORM02 -->
+  <div class="formateur">
+    <h3>FORM02 — Sarquet Virgile (ACA FC)</h3>
+    <input type="email" id="email02" placeholder="Email" value="form02@jtcf.re" />
+    <input type="password" id="pass02" placeholder="Mot de passe" value="JTCF2026FORM02" />
+    <button onclick="creerCompte('FORM02', 'email02', 'pass02')">Créer FORM02</button>
+    <div class="status" id="status02"></div>
+  </div>
+
+  <!-- FORM03 -->
+  <div class="formateur">
+    <h3>FORM03 — Faconnier Elodie (Remplacement août)</h3>
+    <input type="email" id="email03" placeholder="Email" value="form03@jtcf.re" />
+    <input type="password" id="pass03" placeholder="Mot de passe" value="JTCF2026FORM03" />
+    <button onclick="creerCompte('FORM03', 'email03', 'pass03')">Créer FORM03</button>
+    <div class="status" id="status03"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+});
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+window.creerCompte = async function(code, emailId, passId) {
+  const email = document.getElementById(emailId).value.trim();
+  const pass = document.getElementById(passId).value.trim();
+  const statusEl = document.getElementById('status' + code.slice(-2));
+  statusEl.className = 'status';
+  statusEl.textContent = '⏳ Création en cours...';
+  statusEl.style.display = 'block';
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    // Enregistrer le profil dans Firebase Database
+    const noms = { FORM02: 'Sarquet Virgile', FORM03: 'Faconnier Elodie' };
+    await set(ref(db, 'formateurs/' + code), {
+      nom: noms[code],
+      email: email,
+      code: code
+    });
+    statusEl.className = 'status ok';
+    statusEl.textContent = '✅ Compte ' + code + ' créé ! Email : ' + email;
+  } catch(e) {
+    statusEl.className = 'status err';
+    statusEl.textContent = '❌ ' + (e.code === 'auth/email-already-in-use' ? 'Compte déjà existant !' : e.message);
+  }
+};
+</script>
+</body>
+</html>
