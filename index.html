@@ -41,7 +41,10 @@
   </div>
   <div class="field">
     <label>Code d'accès</label>
-    <input type="password" id="code" placeholder="••••••••" maxlength="20" />
+    <div style="position:relative;">
+      <input type="password" id="code" placeholder="••••••••" maxlength="20" style="padding-right:44px;width:100%;box-sizing:border-box;" />
+      <button type="button" id="btnToggleCode" onclick="toggleCode()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:#718096;padding:4px;line-height:1;">👁️</button>
+    </div>
   </div>
   <button class="btn" id="btnConnect">ACCÉDER À MON ESPACE</button>
   <div class="error-msg" id="errorMsg">❌ Identifiant ou code incorrect.</div>
@@ -119,6 +122,18 @@ async function connexion(e) {
   } catch(err2) {
     err.textContent = '❌ Erreur de connexion. Réessayez.';
     err.classList.add('visible');
+  }
+}
+
+function toggleCode() {
+  const input = document.getElementById('code');
+  const btn = document.getElementById('btnToggleCode');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
   }
 }
 
