@@ -342,7 +342,12 @@ const PROFILS = {
   }
 };
 
-const profil = PROFILS[userId] || PROFILS['FORM01'];
+const profil = PROFILS[userId] || {
+  nom: 'Fontaine Emilie',
+  acces: 'total',
+  onglets: ['lundi','mardi','mercredi','jeudi','fc','groupes','recap'],
+  fcIds: null, debut: null, fin: null
+};
 
 // Vérifier accès selon les dates
 function verifierAcces() {
@@ -358,7 +363,12 @@ function verifierAcces() {
 
 // Masquer les onglets non autorisés
 function appliquerAcces() {
-  document.getElementById('headerNom').textContent = '👩‍🏫 ' + profil.nom;
+  // Mettre à jour le nom dans le header
+  const headerNom = document.getElementById('headerNom');
+  if (headerNom) headerNom.textContent = '👩‍🏫 ' + profil.nom;
+  // Mettre à jour le sous-titre
+  const roleEl = document.querySelector('.welcome-left .role');
+  if (roleEl) roleEl.textContent = profil.nom + ' · ' + (profil.fcIds ? profil.fcIds.join(', ') : 'Tous les alternants');
   const tousOnglets = ['lundi','mardi','mercredi','jeudi','fc','groupes','recap'];
   tousOnglets.forEach(function(id) {
     const btn = document.querySelector('.nav-btn[data-target="' + id + '"]');
