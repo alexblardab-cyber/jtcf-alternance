@@ -90,11 +90,38 @@
 </div>
 
 <div class="nav" id="mainNav">
-  <a class="nav-btn active" data-target="fc">🎓 FC</a>
+  <a class="nav-btn active" data-target="lundi">📅 Lundi</a>
+  <a class="nav-btn" data-target="mardi">📅 Mardi</a>
+  <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
+  <a class="nav-btn" data-target="fc">🎓 FC</a>
 </div>
 
 <div class="content" id="mainContent">
-  <div class="section active" id="fc">
+
+  <!-- LUNDI -->
+  <div class="section active" id="lundi">
+    <button class="btn-global" id="btnSignGlobalMatinLundi">✍️ Signer MATIN — Tous les lundis</button>
+    <button class="btn-global" id="btnSignGlobalAMLundi" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les lundis</button>
+    <div class="jour-titre">Alternants du Lundi</div>
+    <div id="listeLundi"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- MARDI -->
+  <div class="section" id="mardi">
+    <div class="jour-titre">Alternants du Mardi</div>
+    <div id="listeMardi"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- MERCREDI -->
+  <div class="section" id="mercredi">
+    <button class="btn-global" id="btnSignGlobalMatinMercredi">✍️ Signer MATIN — Tous les mercredis</button>
+    <button class="btn-global" id="btnSignGlobalAMMercredi" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les mercredis</button>
+    <div class="jour-titre">Alternants du Mercredi</div>
+    <div id="listeMercredi"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- FC -->
+  <div class="section" id="fc">
     <button class="btn-global" id="btnSignGlobalMatinFC">✍️ Signer MATIN — Tous les stagiaires FC</button>
     <button class="btn-global" id="btnSignGlobalAMFC" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les stagiaires FC</button>
     <div class="jour-titre">Stagiaires FC</div>
@@ -216,7 +243,153 @@ if (!JOURS_AUTORISES.includes(isoToday)) {
   document.getElementById('mainNav').style.display = 'none';
 } else {
   charger();
+  chargerAlternants();
 }
+
+let allAlts = [];
+
+async function chargerAlternants() {
+  const snap = await get(ref(db, 'alternants'));
+  allAlts = [];
+  if (snap.exists()) snap.forEach(function(child){ const a=child.val(); a.id=child.key; allAlts.push(a); });
+  afficherAlts('listeLundi', allAlts.filter(a => a.jourCentre === 'Lundi'));
+  afficherAlts('listeMardi', allAlts.filter(a => a.jourCentre === 'Mardi'));
+  afficherAlts('listeMercredi', allAlts.filter(a => a.jourCentre === 'Mercredi'));
+}
+
+function getSeances(alt) {
+  const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  const jourNum = jourMap[alt.jourCentre] || 1;
+  const parts = alt.debut ? alt.debut.split('/') : ['01','01','2026'];
+  const debut = new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+  const fin = new Date(2028,5,10);
+  let d = new Date(debut);
+  while (d.getDay() !== jourNum) d.setDate(d.getDate()+1);
+  const result = [];
+  while (d <= fin) { result.push(new Date(d)); d.setDate(d.getDate()+7); }
+  return result;
+}
+
+function getAltKey(alt, d) {
+  return alt.id + '_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+}
+
+function afficherAlts(containerId, alts) {
+  const container = document.getElementById(containerId); if(!container) return;
+  if (alts.length === 0) { container.innerHTML = '<div class="loading">Aucun alternant.</div>'; return; }
+  container.innerHTML = '';
+  alts.forEach(function(alt) {
+    const ini = alt.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    const card = document.createElement('div');
+    card.className = 'alternant-card';
+    card.innerHTML = '<div class="alternant-avatar">'+ini+'</div><div style="flex:1"><div class="alternant-nom">'+alt.nom+'</div><div class="alternant-formation">'+alt.formation+'</div></div><div class="alternant-arrow">›</div>';
+    function open(e) { e.preventDefault(); ouvrirFicheAlt(alt); }
+    card.addEventListener('touchend', open, {passive:false});
+    card.addEventListener('click', open);
+    container.appendChild(card);
+  });
+}
+
+let currentAlt = null;
+let altSeances = [];
+let altSemIdx = 0;
+
+function ouvrirFicheAlt(alt) {
+  currentAlt = alt; currentFC = null;
+  document.getElementById('mainNav').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('ficheView').style.display = 'block';
+  document.getElementById('ficheNom').textContent = alt.nom;
+  document.getElementById('ficheFormation').textContent = alt.formation;
+  altSeances = getSeances(alt);
+  const today = new Date(); today.setHours(0,0,0,0);
+  altSemIdx = 0;
+  for (let i = 0; i < altSeances.length; i++) {
+    const s = new Date(altSeances[i]); s.setHours(0,0,0,0);
+    if (s <= today) { altSemIdx = i; } else { break; }
+  }
+  updateFicheAlt();
+}
+
+async function updateFicheAlt() {
+  if (!currentAlt) return;
+  const d = altSeances[altSemIdx];
+  document.getElementById('ficheSemaine').textContent = 'Séance n°' + (altSemIdx+1);
+  document.getElementById('ficheDate').textContent = formatDate(d);
+  document.getElementById('ficheBtnPrev').disabled = altSemIdx === 0;
+  document.getElementById('ficheBtnNext').disabled = altSemIdx === altSeances.length-1;
+  const key = getAltKey(currentAlt, d);
+  document.getElementById('ficheDate').setAttribute('data-key', key);
+  document.getElementById('ficheDate').setAttribute('data-type', 'alt');
+  const snap = await get(ref(db, 'emargements/' + key));
+  const data = snap.exists() ? snap.val() : {};
+  const absent = data.presence === 'absent';
+  const slots = [
+    {alt:'matin_alt',form:'matin_form',altEl:'ficheStatusMatinAlt',formEl:'ficheStatusMatinForm',zone:'ficheZoneMatinForm',bloc:'ficheBlocMatin'},
+    {alt:'am_alt',form:'am_form',altEl:'ficheStatusAMAlt',formEl:'ficheStatusAMForm',zone:'ficheZoneAMForm',bloc:'ficheBlocAM'}
+  ];
+  slots.forEach(function(s) {
+    const altSigne=data[s.alt]; const formSigne=data[s.form];
+    const altEl=document.getElementById(s.altEl);
+    if(absent){altEl.textContent='❌ Absent(e)';altEl.className='emarg-status status-attente';}
+    else{altEl.textContent=altSigne?'✅ Signé':'En attente';altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente');}
+    const formEl=document.getElementById(s.formEl);
+    formEl.textContent=formSigne?'✅ Signé':'En attente';
+    formEl.className='emarg-status '+(formSigne?'status-signe':'status-attente');
+    document.getElementById(s.zone).style.display=(formSigne||absent)?'none':'block';
+    document.getElementById(s.bloc).className='emarg-bloc'+(absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
+  });
+  document.getElementById('btnAnnulerMatin').style.display = data.matin_form ? 'block' : 'none';
+  document.getElementById('btnAnnulerAM').style.display = data.am_form ? 'block' : 'none';
+  ['ficheCanvasMatinForm','ficheCanvasAMForm'].forEach(function(id){const c=document.getElementById(id);if(!c)return;c.width=c.offsetWidth;c.height=80;c.getContext('2d').clearRect(0,0,c.width,c.height);});
+  initCanvases();
+}
+
+async function signerGlobalAlt(jour, period) {
+  const altsJour = allAlts.filter(a => a.jourCentre === jour);
+  if (altsJour.length === 0) { alert('Aucun alternant ce jour.'); return; }
+  const today = new Date();
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = '<div style="background:white;border-radius:16px;padding:20px;width:100%;max-width:400px;"><div style="font-weight:700;color:#2a3f4e;margin-bottom:12px;">✍️ Signature globale '+jour+' '+(period==='matin'?'Matin':'Après-midi')+'</div><canvas id="canvasGlobal2" style="width:100%;height:100px;background:white;border:2px dashed #f0d98a;border-radius:10px;display:block;touch-action:none;cursor:crosshair;"></canvas><div style="display:flex;gap:8px;margin-top:10px;"><button id="btnEff2" style="flex:1;padding:10px;background:#e2e8f0;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Effacer</button><button id="btnVal2" style="flex:1;padding:10px;background:#38a169;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">✅ Valider</button><button id="btnAnn2" style="flex:1;padding:10px;background:#fff5f5;color:#e53e3e;border:1px solid #fed7d7;border-radius:8px;font-weight:700;cursor:pointer;">Annuler</button></div><div id="gStatus2" style="margin-top:8px;font-size:12px;color:#38a169;font-weight:600;"></div></div>';
+  document.body.appendChild(modal);
+  const canvas=document.getElementById('canvasGlobal2'); canvas.width=canvas.offsetWidth; canvas.height=100;
+  const ctx=canvas.getContext('2d'); let drawing=false;
+  function gp(e){const r=canvas.getBoundingClientRect();if(e.touches)return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};return{x:e.clientX-r.left,y:e.clientY-r.top};}
+  canvas.addEventListener('mousedown',function(e){drawing=true;const p=gp(e);ctx.beginPath();ctx.moveTo(p.x,p.y);});
+  canvas.addEventListener('mousemove',function(e){if(!drawing)return;const p=gp(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#2a3f4e';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();});
+  canvas.addEventListener('mouseup',function(){drawing=false;});
+  canvas.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;const p=gp(e);ctx.beginPath();ctx.moveTo(p.x,p.y);},{passive:false});
+  canvas.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;const p=gp(e);ctx.lineTo(p.x,p.y);ctx.strokeStyle='#2a3f4e';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();},{passive:false});
+  canvas.addEventListener('touchend',function(){drawing=false;});
+  document.getElementById('btnEff2').addEventListener('click',function(){ctx.clearRect(0,0,canvas.width,canvas.height);});
+  document.getElementById('btnAnn2').addEventListener('click',function(){document.body.removeChild(modal);});
+  document.getElementById('btnVal2').addEventListener('click',async function(){
+    const imgData=canvas.toDataURL();
+    const blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
+    if(imgData===blank.toDataURL()){alert('Veuillez signer.');return;}
+    document.getElementById('gStatus2').textContent='⏳ Enregistrement...';
+    const slot=period==='matin'?'matin_form':'am_form';
+    const jourMap={'Lundi':1,'Mardi':2,'Mercredi':3};
+    const jourNum=jourMap[jour]||1;
+    let d=new Date(today);
+    while(d.getDay()!==jourNum) d.setDate(d.getDate()-1);
+    for(const alt of altsJour){
+      const key=alt.id+'_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+d.getDate();
+      await set(ref(db,'emargements/'+key+'/'+slot),imgData);
+    }
+    document.getElementById('gStatus2').textContent='✅ Signature appliquée pour tous les alternants du '+jour+' !';
+    setTimeout(function(){document.body.removeChild(modal);},1500);
+  });
+}
+
+['btnSignGlobalMatinLundi','btnSignGlobalAMLundi','btnSignGlobalMatinMercredi','btnSignGlobalAMMercredi'].forEach(function(id){
+  const el=document.getElementById(id); if(!el) return;
+  const jour=id.includes('Lundi')?'Lundi':'Mercredi';
+  const period=id.includes('Matin')?'matin':'am';
+  el.addEventListener('click',function(){signerGlobalAlt(jour,period);});
+  el.addEventListener('touchend',function(e){e.preventDefault();signerGlobalAlt(jour,period);},{passive:false});
+});
 
 async function charger() {
   const snap = await get(ref(db, 'stagiairesFC'));
@@ -260,6 +433,7 @@ function ouvrirFiche(fc) {
 }
 
 async function updateFiche() {
+  if (currentAlt) { await updateFicheAlt(); return; }
   if (!currentFC) return;
   const d = seances[semIdx];
   document.getElementById('ficheSemaine').textContent = 'Séance n°' + (semIdx+1);
@@ -320,7 +494,9 @@ document.querySelectorAll('.btn-valider').forEach(function(btn) {
     const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
     if (imageData===blank.toDataURL()) { alert('Veuillez signer avant de valider.'); return; }
     const key = document.getElementById('ficheDate').getAttribute('data-key');
-    await set(ref(db,'emargementsFC/'+key+'/'+slot), imageData);
+    const dtype = document.getElementById('ficheDate').getAttribute('data-type');
+    const dnode = dtype==='alt' ? 'emargements' : 'emargementsFC';
+    await set(ref(db,dnode+'/'+key+'/'+slot), imageData);
     await updateFiche();
   }
   btn.addEventListener('touchend',valider,{passive:false}); btn.addEventListener('click',valider);
@@ -331,25 +507,41 @@ document.querySelectorAll('.btn-effacer-canvas').forEach(function(btn) {
   btn.addEventListener('touchend',effacer,{passive:false}); btn.addEventListener('click',effacer);
 });
 
-document.getElementById('ficheBtnPrev').addEventListener('click',function(){if(semIdx>0){semIdx--;updateFiche();}});
-document.getElementById('ficheBtnNext').addEventListener('click',function(){if(semIdx<seances.length-1){semIdx++;updateFiche();}});
-document.getElementById('ficheBtnPrev').addEventListener('touchend',function(e){e.preventDefault();if(semIdx>0){semIdx--;updateFiche();}},{passive:false});
-document.getElementById('ficheBtnNext').addEventListener('touchend',function(e){e.preventDefault();if(semIdx<seances.length-1){semIdx++;updateFiche();}},{passive:false});
+document.getElementById('ficheBtnPrev').addEventListener('click',function(){
+  if(currentAlt){if(altSemIdx>0){altSemIdx--;updateFicheAlt();}}
+  else{if(semIdx>0){semIdx--;updateFiche();}}
+});
+document.getElementById('ficheBtnNext').addEventListener('click',function(){
+  if(currentAlt){if(altSemIdx<altSeances.length-1){altSemIdx++;updateFicheAlt();}}
+  else{if(semIdx<seances.length-1){semIdx++;updateFiche();}}
+});
+document.getElementById('ficheBtnPrev').addEventListener('touchend',function(e){e.preventDefault();
+  if(currentAlt){if(altSemIdx>0){altSemIdx--;updateFicheAlt();}}
+  else{if(semIdx>0){semIdx--;updateFiche();}}
+},{passive:false});
+document.getElementById('ficheBtnNext').addEventListener('touchend',function(e){e.preventDefault();
+  if(currentAlt){if(altSemIdx<altSeances.length-1){altSemIdx++;updateFicheAlt();}}
+  else{if(semIdx<seances.length-1){semIdx++;updateFiche();}}
+},{passive:false});
 
 document.getElementById('btnAnnulerMatin').addEventListener('click', async function(){
   if(!confirm('Annuler votre signature matin ?')) return;
   const key=document.getElementById('ficheDate').getAttribute('data-key');
-  await remove(ref(db,'emargementsFC/'+key+'/matin_form'));
-  await updateFiche();
+  const type=document.getElementById('ficheDate').getAttribute('data-type');
+  const node=type==='alt'?'emargements':'emargementsFC';
+  await remove(ref(db,node+'/'+key+'/matin_form'));
+  if(currentAlt) await updateFicheAlt(); else await updateFiche();
 });
 document.getElementById('btnAnnulerAM').addEventListener('click', async function(){
   if(!confirm('Annuler votre signature après-midi ?')) return;
   const key=document.getElementById('ficheDate').getAttribute('data-key');
-  await remove(ref(db,'emargementsFC/'+key+'/am_form'));
-  await updateFiche();
+  const type=document.getElementById('ficheDate').getAttribute('data-type');
+  const node=type==='alt'?'emargements':'emargementsFC';
+  await remove(ref(db,node+'/'+key+'/am_form'));
+  if(currentAlt) await updateFicheAlt(); else await updateFiche();
 });
 
-function retour(e) { e.preventDefault(); document.getElementById('ficheView').style.display='none'; document.getElementById('mainNav').style.display='flex'; document.getElementById('mainContent').style.display='block'; currentFC=null; }
+function retour(e) { e.preventDefault(); document.getElementById('ficheView').style.display='none'; document.getElementById('mainNav').style.display='flex'; document.getElementById('mainContent').style.display='block'; currentFC=null; currentAlt=null; }
 document.getElementById('btnRetour').addEventListener('touchend',retour,{passive:false}); document.getElementById('btnRetour').addEventListener('click',retour);
 
 // Signature globale FC
@@ -397,6 +589,18 @@ document.getElementById('btnLogout').addEventListener('click',function(){session
 document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';},{passive:false});
 
 }
+
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  function activate(e) {
+    e.preventDefault();
+    var target = btn.getAttribute('data-target');
+    document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+    document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+    document.getElementById(target).classList.add('active');
+    btn.classList.add('active');
+  }
+  btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
+});
 
 charger();
 </script>
