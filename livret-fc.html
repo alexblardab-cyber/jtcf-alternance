@@ -431,43 +431,85 @@ function getKey(d) {
 }
 
 // ── Déterminer le type d'un jour ───────────────────────────
+// Plannings par groupe
+const PLANNINGS_FC = {
+  CV: {
+    stages: [
+      {debut:'2026-10-05', fin:'2026-10-30'},
+      {debut:'2026-11-23', fin:'2026-12-18'},
+    ],
+    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
+  },
+  AD: {
+    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
+    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
+  },
+  ACA: {
+    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
+    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
+  }
+};
+
+function getGroupeFC() {
+  if (!user) return 'CV';
+  if (user.formation && user.formation.includes('ACA')) return 'ACA';
+  if (user.formation && user.formation.includes('Direction')) return 'AD';
+  return 'CV';
+}
+
 function getTypeJour(d) {
-  // Date locale pour éviter décalage UTC/Réunion (UTC+4)
   const y = d.getFullYear(), m = d.getMonth(), j = d.getDate();
   const mm = String(m+1).padStart(2,'0'), jj = String(j).padStart(2,'0');
   const iso = y + '-' + mm + '-' + jj;
 
-  // Jours fériés
+  // Jours fériés Réunion
   const feries = ['2026-07-14','2026-08-15','2026-11-01','2026-11-11',
                   '2026-12-25','2027-01-01','2027-04-05','2027-05-01',
                   '2027-05-08','2027-05-13','2027-05-24'];
   if (feries.includes(iso)) return 'ferie';
 
-  // Vacances centre — décembre 2026 + janvier 2027
-  if ((y === 2026 && m === 11) || (y === 2027 && m === 0)) return 'vacances';
+  const groupe = getGroupeFC();
+  const planning = PLANNINGS_FC[groupe];
 
-  // Stage 1 : 31/08/2026 → 25/09/2026
-  if (iso >= '2026-08-31' && iso <= '2026-09-25') return 'stage';
+  // Vacances
+  for (const v of planning.vacances) {
+    if (iso >= v.debut && iso <= v.fin) return 'vacances';
+  }
 
-  // Stage 2 : 11/01/2027 → 05/02/2027
-  if (iso >= '2027-01-11' && iso <= '2027-02-05') return 'stage';
+  // Stages
+  for (const s of planning.stages) {
+    if (iso >= s.debut && iso <= s.fin) return 'stage';
+  }
 
   return 'formation';
 }
 
 // ── Étape clé pour une date ────────────────────────────────
 function getEtapeJour(iso) {
-  const etapes = {
-    '2026-10-21': { label: 'Bilan mi-parcours', icone: '📊' },
-    '2026-11-02': { label: 'Évaluation 1', icone: '📝' },
-    '2027-02-08': { label: 'Dossier Professionnel', icone: '📁' },
-    '2027-02-09': { label: 'Dossier Pro. (suite)', icone: '📁' },
-    '2027-02-10': { label: 'Dossier Pro. (fin)', icone: '📁' },
-    '2027-02-18': { label: 'Évaluation 2', icone: '📝' },
-    '2027-03-01': { label: 'Bilan Final', icone: '🏁' },
-    '2027-03-08': { label: 'Examen', icone: '🎓' },
+  const groupe = getGroupeFC();
+  const etapesCV = {
+    '2026-09-16': { label: 'Évaluation 1', icone: '📝' },
+    '2027-02-02': { label: 'Examen', icone: '🎓' },
+    '2027-02-16': { label: 'Évaluation 2', icone: '📝' },
   };
-  return etapes[iso] || null;
+  const etapesAD = {
+    '2026-11-09': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2026-11-10': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2027-02-02': { label: 'Évaluation 2', icone: '📝' },
+    '2027-02-09': { label: 'Bilan Final', icone: '🏁' },
+    '2027-02-16': { label: 'Examen', icone: '🎓' },
+  };
+  const etapesACA = {
+    '2026-11-09': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2026-11-10': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2026-11-11': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2026-11-12': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2027-02-02': { label: 'Évaluation 3', icone: '📝' },
+    '2027-02-09': { label: 'Bilan Final', icone: '🏁' },
+    '2027-02-16': { label: 'Examen', icone: '🎓' },
+  };
+  const map = groupe === 'ACA' ? etapesACA : groupe === 'AD' ? etapesAD : etapesCV;
+  return map[iso] || null;
 }
 
 async function chargerUser() {
@@ -598,20 +640,40 @@ function updatePlanning() {
 
 // ── Étapes clés synthèse ───────────────────────────────────
 function afficherEtapesCles() {
-  const etapes = [
-    { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
-    { date: '31/08/2026 → 25/09/2026', label: 'Stage 1 en entreprise', icone: '🏢', type: 'stage' },
-    { date: '21/10/2026', label: 'Bilan mi-parcours', icone: '📊', type: 'bilan' },
-    { date: '02/11/2026', label: 'Évaluation 1', icone: '📝', type: 'eval' },
-    { date: 'Décembre 2026', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
-    { date: 'Janvier 2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
-    { date: '11/01/2027 → 05/02/2027', label: 'Stage 2 en entreprise', icone: '🏢', type: 'stage' },
-    { date: '08 → 10/02/2027', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
-    { date: '18/02/2027', label: 'Évaluation 2', icone: '📝', type: 'eval' },
-    { date: '01/03/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
-    { date: '08/03/2027', label: 'Examen', icone: '🎓', type: 'exam' },
-  ];
-
+  const groupe = getGroupeFC();
+  let etapes = [];
+  if (groupe === 'CV') {
+    etapes = [
+      { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '05/10 → 30/10/2026', label: 'Stage 1 en entreprise', icone: '🏢', type: 'stage' },
+      { date: '16/09/2026', label: 'Évaluation 1', icone: '📝', type: 'eval' },
+      { date: '23/11 → 18/12/2026', label: 'Stage 2 en entreprise', icone: '🏢', type: 'stage' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '02/02/2027', label: 'Examen', icone: '🎓', type: 'exam' },
+      { date: '16/02/2027', label: 'Évaluation 2', icone: '📝', type: 'eval' },
+      { date: '23/02/2027', label: 'Fin de formation', icone: '🏁', type: 'fin' },
+    ];
+  } else if (groupe === 'AD') {
+    etapes = [
+      { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '12/10 → 06/11/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '09 → 10/11/2026', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '02/02/2027', label: 'Évaluation 2', icone: '📝', type: 'eval' },
+      { date: '09/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+      { date: '16/02/2027', label: 'Examen', icone: '🎓', type: 'exam' },
+    ];
+  } else {
+    etapes = [
+      { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '12/10 → 06/11/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '09 → 12/11/2026', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '02/02/2027', label: 'Évaluation 3', icone: '📝', type: 'eval' },
+      { date: '09/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+      { date: '16/02/2027', label: 'Examen', icone: '🎓', type: 'exam' },
+    ];
+  }
   const couleurs = {
     debut: '#c6f6d5', stage: '#feebc8', bilan: '#bee3f8',
     eval: '#e9d8fd', vacances: '#fed7d7', dp: '#c6f6d5',
