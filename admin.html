@@ -417,6 +417,7 @@ function ouvrirFormAjout(){
 
 async function ouvrirFormModif(alt){
   editingId=alt.id;
+  window._currentAltId = alt.id; // exposer pour le script REST
   document.getElementById('formTitre').textContent='✏️ Modifier '+alt.nom;
   document.getElementById('formId').value=alt.id; document.getElementById('formId').disabled=true;
   document.getElementById('formNom').value=alt.nom;
@@ -1707,44 +1708,34 @@ async function exporterPDFAdminPersonne(alt) {
 }
 </script>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script>
-// ── Sauvegarde lien Drive alternant ─────────────────────────
-(function() {
-  // Attendre que Firebase soit déjà initialisé par le module ES6
-  function getDB() {
-    try { return firebase.database(); } catch(e) { return null; }
-  }
+// ── Sauvegarde lien Drive via REST API ───────────────────────
+const FB_URL = 'https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app';
 
-  function getEditingId() {
-    // Récupérer depuis l'URL ou le champ caché
-    const el = document.getElementById('formId');
-    return el ? el.value.trim().toUpperCase() : null;
-  }
-
-  document.getElementById('btnSauvegarderDocs').addEventListener('click', async function(e) {
-    e.preventDefault();
-    const id = getEditingId();
-    if (!id) { alert('Aucun alternant sélectionné.'); return; }
-    const lien = document.getElementById('docDossier').value.trim();
-    const db3 = getDB();
-    if (!db3) { alert('Erreur Firebase.'); return; }
-    try {
-      await db3.ref('alternants/' + id + '/documents/dossier').set(lien || null);
-      // Mettre à jour l'objet en mémoire pour éviter l'écrasement
+async function sauvegarderLienDrive() {
+  const id = window._currentAltId || (document.getElementById('formId') ? document.getElementById('formId').value.trim().toUpperCase() : null);
+  if (!id) { alert('Aucun alternant sélectionné.'); return; }
+  const lien = document.getElementById('docDossier').value.trim();
+  try {
+    const resp = await fetch(FB_URL + '/alternants/' + id + '/documents/dossier.json', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(lien || null)
+    });
+    if (resp.ok) {
+      // Garder en mémoire
       window._dossierCache = window._dossierCache || {};
       window._dossierCache[id] = lien;
       const s = document.getElementById('docsSuccess');
       if (s) { s.classList.add('visible'); setTimeout(function(){ s.classList.remove('visible'); }, 2000); }
-    } catch(err) { alert('Erreur sauvegarde : ' + err.message); }
-  });
+    } else {
+      alert('Erreur Firebase : ' + resp.status);
+    }
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
 
-  document.getElementById('btnSauvegarderDocs').addEventListener('touchend', function(e) {
-    e.preventDefault();
-    document.getElementById('btnSauvegarderDocs').click();
-  }, {passive:false});
-})();
+document.getElementById('btnSauvegarderDocs').addEventListener('click', sauvegarderLienDrive);
+document.getElementById('btnSauvegarderDocs').addEventListener('touchend', function(e){ e.preventDefault(); sauvegarderLienDrive(); }, {passive:false});
 </script>
 </body>
 </html>
