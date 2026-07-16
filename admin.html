@@ -133,16 +133,9 @@
   <!-- TABLEAU DE BORD -->
   <div class="section active" id="dashboard">
     <div class="today-card">
-      <div class="today-titre">📅 Émargements du jour</div>
+      <div class="today-titre">📅 Séances aujourd'hui</div>
       <div class="today-date" id="todayDate">—</div>
-      <div style="font-size:10px;opacity:0.7;margin-bottom:8px;display:flex;gap:12px;">
-        <span>🏫 Présentiel</span><span>💻 Distanciel</span><span>❌ Absent</span><span>⏳ En attente</span>
-      </div>
       <div id="todayList"><div style="opacity:0.7;font-size:12px;">Chargement...</div></div>
-    </div>
-    <div class="today-card" style="margin-top:-6px;">
-      <div class="today-titre">🎓 Formation Continue — Émargements du jour</div>
-      <div id="todayListFC"><div style="opacity:0.7;font-size:12px;">Chargement...</div></div>
     </div>
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-val or" id="kpiTotal">—</div><div class="kpi-lbl">Alternants actifs</div></div>
@@ -360,110 +353,36 @@ function formatDate(d) {
 
 async function chargerDashboard() {
   const today = new Date();
-  const y = today.getFullYear(), m = today.getMonth()+1, d = today.getDate();
   document.getElementById('todayDate').textContent = formatDate(today);
   document.getElementById('kpiTotal').textContent = allAlternants.length;
   document.getElementById('kpiFC').textContent = allFC.length;
   document.getElementById('kpiLundi').textContent = allAlternants.filter(a=>a.jourCentre==='Lundi').length;
   const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today.getDay()];
-
-  function modeIcon(mode) {
-    if (mode === 'presentiel') return '🏫';
-    if (mode === 'distanciel') return '💻';
-    return '—';
-  }
-
-  function statutRow(signe, absent, slot) {
-    if (absent) return '<span style="color:#e53e3e;font-weight:700;font-size:11px;">❌ Absent</span>';
-    if (signe) return '<span style="color:#38a169;font-weight:700;font-size:11px;">✅ Signé</span>';
-    return '<span style="color:#C9A227;font-weight:700;font-size:11px;">⏳ En attente</span>';
-  }
-
-  // ── ALTERNANTS ─────────────────────────────────────────────
   const altAujourdhui = allAlternants.filter(a => a.jourCentre === jourNom);
   const todayList = document.getElementById('todayList');
   if (altAujourdhui.length === 0) {
-    todayList.innerHTML = '<div style="opacity:0.7;font-size:12px;">Aucune séance alternant aujourd\'hui (' + jourNom + ')</div>';
+    todayList.innerHTML = '<div style="opacity:0.7;font-size:12px;">Aucune séance prévue aujourd\'hui</div>';
   } else {
     todayList.innerHTML = '';
     let absentsCount = 0;
     for (const alt of altAujourdhui) {
-      const key = alt.id+'_'+y+'_'+m+'_'+d;
-      const snap = await get(ref(db,'emargements/'+key));
-      const data = snap.exists() ? snap.val() : {};
-      const absent = data.presence === 'absent';
-      if (absent) absentsCount++;
-      const mode = data.mode || null;
-      const row = document.createElement('div');
-      row.style.cssText = 'background:rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-bottom:8px;';
-      row.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <div style="font-weight:700;font-size:13px;">${alt.nom}</div>
-          <div style="font-size:10px;opacity:0.7;">${alt.formation.replace('TP ','')}</div>
-        </div>
-        <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;">
-          <span style="font-size:10px;opacity:0.7;width:60px;">Mode :</span>
-          <span style="font-size:12px;font-weight:700;">${mode ? modeIcon(mode)+' '+mode.charAt(0).toUpperCase()+mode.slice(1) : '⏳ Non défini'}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-          <div style="background:rgba(0,0,0,0.15);border-radius:6px;padding:6px 8px;">
-            <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">🌅 Matin</div>
-            <div style="font-size:11px;">${statutRow(data.matin_alt, absent)} Alt.</div>
-            <div style="font-size:11px;">${statutRow(data.matin_form, absent)} Form.</div>
-          </div>
-          <div style="background:rgba(0,0,0,0.15);border-radius:6px;padding:6px 8px;">
-            <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">🌇 Après-midi</div>
-            <div style="font-size:11px;">${statutRow(data.am_alt, absent)} Alt.</div>
-            <div style="font-size:11px;">${statutRow(data.am_form, absent)} Form.</div>
-          </div>
-        </div>`;
+      const key=alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap=await get(ref(db,'emargements/'+key));
+      const data=snap.exists()?snap.val():{};
+      const absent=data.presence==='absent';
+      if(absent) absentsCount++;
+      const row=document.createElement('div'); row.className='today-row';
+      row.innerHTML=`<div class="today-nom">${alt.nom}</div><div class="today-statuts">
+        <div class="dot-sign ${absent?'absent':data.matin_alt?'signe':'attente'}"></div>
+        <div class="dot-sign ${absent?'absent':data.matin_form?'signe':'attente'}"></div>
+        <div class="dot-sign ${absent?'absent':data.am_alt?'signe':'attente'}"></div>
+        <div class="dot-sign ${absent?'absent':data.am_form?'signe':'attente'}"></div>
+      </div>`;
       todayList.appendChild(row);
     }
     document.getElementById('kpiAbsents').textContent = absentsCount;
   }
-
-  // ── FC — tous les jours lundi à jeudi ──────────────────────
-  const todayListFC = document.getElementById('todayListFC');
-  const jourFC = today.getDay();
-  if (jourFC < 1 || jourFC > 4) {
-    todayListFC.innerHTML = '<div style="opacity:0.7;font-size:12px;">Pas de FC le week-end</div>';
-  } else if (allFC.length === 0) {
-    todayListFC.innerHTML = '<div style="opacity:0.7;font-size:12px;">Aucun stagiaire FC</div>';
-  } else {
-    todayListFC.innerHTML = '';
-    for (const fc of allFC) {
-      const key = fc.id+'_fc_'+y+'_'+m+'_'+d;
-      const snap = await get(ref(db,'emargementsFC/'+key));
-      const data = snap.exists() ? snap.val() : {};
-      const absent = data.presence === 'absent';
-      const mode = data.mode || null;
-      const row = document.createElement('div');
-      row.style.cssText = 'background:rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-bottom:8px;';
-      row.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <div style="font-weight:700;font-size:13px;">${fc.nom}</div>
-          <div style="font-size:10px;opacity:0.7;">${(fc.formation||'').replace('TP ','')}</div>
-        </div>
-        <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;">
-          <span style="font-size:10px;opacity:0.7;width:60px;">Mode :</span>
-          <span style="font-size:12px;font-weight:700;">${mode ? modeIcon(mode)+' '+mode.charAt(0).toUpperCase()+mode.slice(1) : '⏳ Non défini'}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-          <div style="background:rgba(0,0,0,0.15);border-radius:6px;padding:6px 8px;">
-            <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">🌅 Matin</div>
-            <div style="font-size:11px;">${statutRow(data.matin_alt, absent)} Stag.</div>
-            <div style="font-size:11px;">${statutRow(data.matin_form, absent)} Form.</div>
-          </div>
-          <div style="background:rgba(0,0,0,0.15);border-radius:6px;padding:6px 8px;">
-            <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">🌇 Après-midi</div>
-            <div style="font-size:11px;">${statutRow(data.am_alt, absent)} Stag.</div>
-            <div style="font-size:11px;">${statutRow(data.am_form, absent)} Form.</div>
-          </div>
-        </div>`;
-      todayListFC.appendChild(row);
-    }
-  }
-  document.getElementById('activiteRecente').innerHTML = '<div style="font-size:12px;color:var(--gris);">✅ Signé &nbsp;&nbsp; ⏳ En attente &nbsp;&nbsp; ❌ Absent</div>';
+  document.getElementById('activiteRecente').innerHTML='<div style="font-size:12px;color:var(--gris);">🟢 Signé &nbsp; 🔴 En attente &nbsp; ⚫ Absent</div>';
 }
 
 function afficherListeAlternants() {
@@ -496,7 +415,7 @@ function ouvrirFormAjout(){
   document.getElementById('altFormView').style.display='block';
 }
 
-function ouvrirFormModif(alt){
+async function ouvrirFormModif(alt){
   editingId=alt.id;
   document.getElementById('formTitre').textContent='✏️ Modifier '+alt.nom;
   document.getElementById('formId').value=alt.id; document.getElementById('formId').disabled=true;
@@ -514,7 +433,18 @@ function ouvrirFormModif(alt){
   document.getElementById('altFormView').style.display='block';
   const sectionDocs=document.getElementById('sectionDocs');
   sectionDocs.style.display='block';
-  document.getElementById('docDossier').value=(alt.documents&&alt.documents.dossier)?alt.documents.dossier:'';
+  // Recharger lien Drive depuis Firebase (données fraîches)
+  try {
+    const snapFrais = await get(ref(db, 'alternants/' + alt.id));
+    if (snapFrais.exists()) {
+      const d = snapFrais.val();
+      document.getElementById('docDossier').value = (d.documents && d.documents.dossier) ? d.documents.dossier : '';
+    } else {
+      document.getElementById('docDossier').value = (alt.documents && alt.documents.dossier) ? alt.documents.dossier : '';
+    }
+  } catch(e) {
+    document.getElementById('docDossier').value = (alt.documents && alt.documents.dossier) ? alt.documents.dossier : '';
+  }
 }
 
 async function sauvegarder(e){
