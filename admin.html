@@ -433,17 +433,27 @@ async function ouvrirFormModif(alt){
   document.getElementById('altFormView').style.display='block';
   const sectionDocs=document.getElementById('sectionDocs');
   sectionDocs.style.display='block';
-  // Recharger lien Drive depuis Firebase (données fraîches)
-  try {
-    const snapFrais = await get(ref(db, 'alternants/' + alt.id));
-    if (snapFrais.exists()) {
-      const d = snapFrais.val();
-      document.getElementById('docDossier').value = (d.documents && d.documents.dossier) ? d.documents.dossier : '';
-    } else {
+  // Vérifier le cache local d'abord, sinon recharger Firebase
+  const cached = window._dossierCache && window._dossierCache[alt.id];
+  if (cached) {
+    document.getElementById('docDossier').value = cached;
+  } else {
+    try {
+      const snapFrais = await get(ref(db, 'alternants/' + alt.id));
+      if (snapFrais.exists()) {
+        const d = snapFrais.val();
+        const lienFrais = (d.documents && d.documents.dossier) ? d.documents.dossier : '';
+        document.getElementById('docDossier').value = lienFrais;
+        if (lienFrais) {
+          window._dossierCache = window._dossierCache || {};
+          window._dossierCache[alt.id] = lienFrais;
+        }
+      } else {
+        document.getElementById('docDossier').value = (alt.documents && alt.documents.dossier) ? alt.documents.dossier : '';
+      }
+    } catch(e) {
       document.getElementById('docDossier').value = (alt.documents && alt.documents.dossier) ? alt.documents.dossier : '';
     }
-  } catch(e) {
-    document.getElementById('docDossier').value = (alt.documents && alt.documents.dossier) ? alt.documents.dossier : '';
   }
 }
 
@@ -1023,14 +1033,7 @@ function ajouterBadgeOnglet(target, count) {
   }, 3000);
 })();
 
-async function sauvegarderDocs(e){
-  e.preventDefault(); if(!editingId)return;
-  await set(ref(db,'alternants/'+editingId+'/documents/dossier'),document.getElementById('docDossier').value.trim()||null);
-  document.getElementById('docsSuccess').classList.add('visible');
-  setTimeout(function(){document.getElementById('docsSuccess').classList.remove('visible');},2000);
-}
-document.getElementById('btnSauvegarderDocs').addEventListener('click',sauvegarderDocs);
-document.getElementById('btnSauvegarderDocs').addEventListener('touchend',sauvegarderDocs,{passive:false});
+// sauvegarderDocs déplacé en script compat
 
 function afficherListeFC(){
   const container=document.getElementById('listeFC');
@@ -1702,6 +1705,46 @@ async function exporterPDFAdminPersonne(alt) {
   doc.save('JTCF_'+alt.nom.replace(/ /g,'_')+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
   btn.textContent='👤 Exporter PDF par personne'; btn.disabled=false;
 }
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+// ── Sauvegarde lien Drive alternant ─────────────────────────
+(function() {
+  // Attendre que Firebase soit déjà initialisé par le module ES6
+  function getDB() {
+    try { return firebase.database(); } catch(e) { return null; }
+  }
+
+  function getEditingId() {
+    // Récupérer depuis l'URL ou le champ caché
+    const el = document.getElementById('formId');
+    return el ? el.value.trim().toUpperCase() : null;
+  }
+
+  document.getElementById('btnSauvegarderDocs').addEventListener('click', async function(e) {
+    e.preventDefault();
+    const id = getEditingId();
+    if (!id) { alert('Aucun alternant sélectionné.'); return; }
+    const lien = document.getElementById('docDossier').value.trim();
+    const db3 = getDB();
+    if (!db3) { alert('Erreur Firebase.'); return; }
+    try {
+      await db3.ref('alternants/' + id + '/documents/dossier').set(lien || null);
+      // Mettre à jour l'objet en mémoire pour éviter l'écrasement
+      window._dossierCache = window._dossierCache || {};
+      window._dossierCache[id] = lien;
+      const s = document.getElementById('docsSuccess');
+      if (s) { s.classList.add('visible'); setTimeout(function(){ s.classList.remove('visible'); }, 2000); }
+    } catch(err) { alert('Erreur sauvegarde : ' + err.message); }
+  });
+
+  document.getElementById('btnSauvegarderDocs').addEventListener('touchend', function(e) {
+    e.preventDefault();
+    document.getElementById('btnSauvegarderDocs').click();
+  }, {passive:false});
+})();
 </script>
 </body>
 </html>
