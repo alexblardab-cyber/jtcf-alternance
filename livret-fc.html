@@ -538,9 +538,13 @@ async function chargerUser() {
 
   // Lire les jours depuis Firebase (noeud alternants)
   try {
-    const joursSnap = await get(ref(db, 'alternants/' + userId + '/jours'));
-    const debSnap   = await get(ref(db, 'alternants/' + userId + '/debut_formateur'));
-    const finSnap   = await get(ref(db, 'alternants/' + userId + '/fin_formateur'));
+    // Lire les jours depuis stagiairesFC en priorité, sinon alternants
+    let joursSnap = await get(ref(db, 'stagiairesFC/' + userId + '/jours'));
+    if (!joursSnap.exists()) joursSnap = await get(ref(db, 'alternants/' + userId + '/jours'));
+    let debSnap = await get(ref(db, 'stagiairesFC/' + userId + '/debut_formateur'));
+    if (!debSnap.exists()) debSnap = await get(ref(db, 'alternants/' + userId + '/debut_formateur'));
+    let finSnap = await get(ref(db, 'stagiairesFC/' + userId + '/fin_formateur'));
+    if (!finSnap.exists()) finSnap = await get(ref(db, 'alternants/' + userId + '/fin_formateur'));
     const joursFirebase = joursSnap.exists() ? Object.values(joursSnap.val()) : null;
     const debutStr  = debSnap.exists() ? debSnap.val() : (user.debut || '13/07/2026');
     const finStr    = finSnap.exists() ? finSnap.val() : (user.fin   || '30/06/2027');
