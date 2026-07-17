@@ -237,7 +237,7 @@
       <div class="verrou-box" id="verouJour" style="display:none;">
         <div style="font-size:20px;margin-bottom:6px;">🔒</div>
         <div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">Signature disponible</div>
-        <div style="font-size:13px;font-weight:700;color:var(--or);" id="msgJoursFormation">uniquement les jours de formation</div>
+        <div style="font-size:13px;font-weight:700;color:var(--or);" id="msgJoursFormation">les jours de formation</div>
         <div style="font-size:11px;color:var(--gris);margin-top:4px;">Vous pouvez consulter vos autres informations librement</div>
       </div>
 
@@ -407,23 +407,22 @@ let jourIdx = 0;
 let semainePlanIdx = 0;
 
 // ── Jours de formation FC — lus depuis Firebase ──────────────
-const jourMap = { 'Lundi':1, 'Mardi':2, 'Mercredi':3, 'Jeudi':4, 'Vendredi':5, 'Samedi':6 };
+const jourMapFC = { 'Lundi':1, 'Mardi':2, 'Mercredi':3, 'Jeudi':4, 'Vendredi':5 };
+
+function parseDateFC(str) {
+  if (!str || str === '—' || str === '-') return null;
+  const p = str.split('/');
+  if (p.length === 3) return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+  return null;
+}
 
 function getJoursFC(joursAutorise, debutStr, finStr) {
   const jours = [];
-  // Dates de début et fin depuis Firebase ou valeurs par défaut
-  function parseDate(str) {
-    if (!str) return null;
-    const p = str.split('/');
-    if (p.length === 3) return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
-    return new Date(str);
-  }
-  const debut = parseDate(debutStr) || new Date(2026, 6, 13);
-  const fin   = parseDate(finStr)   || new Date(2027, 5, 30);
-  // Numéros de jours autorisés (1=Lundi...5=Vendredi)
-  const joursNum = Array.isArray(joursAutorise)
-    ? joursAutorise.map(j => jourMap[j]).filter(Boolean)
-    : [1,2,3,4];  // fallback lundi-jeudi
+  const debut = parseDateFC(debutStr) || new Date(2026, 6, 13);
+  const fin   = parseDateFC(finStr)   || new Date(2027, 5, 30);
+  const joursNum = (Array.isArray(joursAutorise) && joursAutorise.length > 0)
+    ? joursAutorise.map(j => jourMapFC[j]).filter(Boolean)
+    : [1, 2, 3, 4];  // fallback lundi-jeudi
   let d = new Date(debut);
   while (d <= fin) {
     if (joursNum.includes(d.getDay())) jours.push(new Date(d));
@@ -537,18 +536,23 @@ async function chargerUser() {
   document.getElementById('infoDebut').textContent = user.debut || '13/07/2026';
   document.getElementById('infoHeures').textContent = user.heures || '8h15 – 12h00 / 13h00 – 15h15';
 
-  // Lire les jours depuis Firebase (champ jours de l'alternant)
-  const joursSnap = await get(ref(db, 'alternants/' + userId + '/jours'));
-  const debutSnap = await get(ref(db, 'alternants/' + userId + '/debut_formateur'));
-  const finSnap   = await get(ref(db, 'alternants/' + userId + '/fin_formateur'));
-  const joursFirebase  = joursSnap.exists()  ? Object.values(joursSnap.val())  : null;
-  const debutFormateur = debutSnap.exists()  ? debutSnap.val()  : null;
-  const finFormateur   = finSnap.exists()    ? finSnap.val()    : null;
-  joursFormation = getJoursFC(joursFirebase, debutFormateur || user.debut, finFormateur || user.fin);
-  // Mettre à jour le message du verrou
-  if (joursFirebase && joursFirebase.length > 0) {
-    const el = document.getElementById('msgJoursFormation');
-    if (el) el.textContent = 'les ' + joursFirebase.join(', ');
+  // Lire les jours depuis Firebase (noeud alternants)
+  try {
+    const joursSnap = await get(ref(db, 'alternants/' + userId + '/jours'));
+    const debSnap   = await get(ref(db, 'alternants/' + userId + '/debut_formateur'));
+    const finSnap   = await get(ref(db, 'alternants/' + userId + '/fin_formateur'));
+    const joursFirebase = joursSnap.exists() ? Object.values(joursSnap.val()) : null;
+    const debutStr  = debSnap.exists() ? debSnap.val() : (user.debut || '13/07/2026');
+    const finStr    = finSnap.exists() ? finSnap.val() : (user.fin   || '30/06/2027');
+    joursFormation  = getJoursFC(joursFirebase, debutStr, finStr);
+    // Mettre à jour le message du verrou
+    if (joursFirebase && joursFirebase.length > 0) {
+      const el = document.getElementById('msgJoursFormation');
+      if (el) el.textContent = joursFirebase.join(', ');
+    }
+  } catch(e) {
+    console.warn('Jours Firebase non disponibles, fallback lundi-jeudi', e);
+    joursFormation = getJoursFC(null, user.debut, user.fin);
   }
 
   const today = new Date(); today.setHours(0,0,0,0);
