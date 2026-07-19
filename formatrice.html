@@ -1269,6 +1269,26 @@ document.getElementById('btnExportPDFPersonne').addEventListener('click', functi
     });
     menu.appendChild(item);
   });
+  // Stagiaires Formation Continue
+  const fcAutorises = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
+  if (fcAutorises.length > 0) {
+    const sep = document.createElement('div');
+    sep.style.cssText = 'padding:8px 14px;font-size:10px;font-weight:800;color:#C9A227;background:#fdf6e3;text-transform:uppercase;letter-spacing:1px;';
+    sep.textContent = '🎓 Formation Continue';
+    menu.appendChild(sep);
+    fcAutorises.forEach(function(fc) {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#2a3f4e;border-bottom:1px solid #f0f2f5;';
+      item.textContent = fc.nom + ' — ' + fc.formation;
+      item.addEventListener('mouseenter', function(){ item.style.background='#fdf6e3'; });
+      item.addEventListener('mouseleave', function(){ item.style.background='#fff'; });
+      item.addEventListener('click', function() {
+        menu.style.display = 'none';
+        exporterPDFPersonneFC(fc);
+      });
+      menu.appendChild(item);
+    });
+  }
   menu.style.display = 'block';
 });
 document.addEventListener('click', function(e) {
@@ -1454,6 +1474,198 @@ async function exporterPDFPersonne(alt) {
 </script>
 
 <script>
+// ══════════════════════════════════════════════════════════════
+// EXPORT PDF PAR PERSONNE — FORMATION CONTINUE (pour la Région)
+// ══════════════════════════════════════════════════════════════
+async function exporterPDFPersonneFC(fc) {
+  const btn = document.getElementById('btnExportPDFPersonne');
+  btn.textContent = '⏳ Génération...'; btn.disabled = true;
+  if (!window.jspdf) {
+    await new Promise(function(resolve) {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = resolve; document.head.appendChild(s);
+    });
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const moisNomsFr = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  const OR=[201,162,39],BLEU=[61,90,110],BLEU_FONCE=[42,63,78],GRIS=[113,128,150],VERT=[56,161,105],ROUGE=[229,62,62],VIOLET=[124,92,255];
+  const MATIN_H_FC=4, AM_H_FC=3.5;
+  let pageNum = 1;
+
+  // Période — mois sélectionné ou total
+  const isMois = document.getElementById('filterMois').classList.contains('active');
+  const moisVal = document.getElementById('moisSelect').value.split('-').map(Number);
+  const filterYear = isMois ? moisVal[0] : null;
+  const filterMonth = isMois ? moisVal[1] : null;
+  const periodeTitre = isMois ? moisNoms[filterMonth]+' '+filterYear : 'Total formation';
+
+  function addHeader(titre) {
+    doc.setFillColor(...BLEU_FONCE); doc.rect(0,0,210,30,'F');
+    doc.setTextColor(...OR); doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text('JT CONSEIL FORMATION',15,12);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255); doc.text('Saint-Joseph · La Réunion · Formation Continue',15,18);
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text(titre,15,25);
+    const now=new Date(); doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(200,200,200);
+    doc.text('Généré le '+now.toLocaleDateString('fr-FR')+' à '+now.toLocaleTimeString('fr-FR'),150,25);
+  }
+  function addFooter(n) {
+    doc.setFillColor(...BLEU_FONCE); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('Page '+n,195,292,{align:'right'});
+  }
+
+  const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  const { getApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+  const db = getDatabase(getApp());
+
+  // Lire les jours de formation depuis Firebase (avec distanciel auto)
+  const joursSnap = await get(ref(db, 'stagiairesFC/' + fc.id + '/jours'));
+  const joursFirebase = joursSnap.exists() ? Object.values(joursSnap.val()) : ['Lundi','Mardi','Mercredi','Jeudi'];
+  const jourMapFC = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  const joursNum = joursFirebase.map(j => jourMapFC[j]).filter(Boolean);
+
+  // Générer les séances (début formation → aujourd'hui)
+  const partsDebut = fc.debut ? fc.debut.split('/') : ['13','07','2026'];
+  const debutFormation = new Date(parseInt(partsDebut[2]),parseInt(partsDebut[1])-1,parseInt(partsDebut[0]));
+  const finFormation = new Date(2027, 5, 30);
+  const today = new Date(); today.setHours(23,59,59,999);
+  const seancesFiltrees = [];
+  let d = new Date(debutFormation);
+  while (d <= finFormation && d <= today) {
+    if (joursNum.includes(d.getDay())) {
+      if (isMois) {
+        if (d.getFullYear()===filterYear && d.getMonth()===filterMonth) seancesFiltrees.push(new Date(d));
+      } else {
+        seancesFiltrees.push(new Date(d));
+      }
+    }
+    d.setDate(d.getDate()+1);
+  }
+
+  // Lire les émargements
+  let hP=0, hA=0, nbDistanciel=0;
+  const seancesDetail = [];
+  for (const s of seancesFiltrees) {
+    const key = fc.id+'_fc_'+s.getFullYear()+'_'+(s.getMonth()+1)+'_'+s.getDate();
+    const snap = await get(ref(db,'emargementsFC/'+key));
+    const data = snap.exists() ? snap.val() : {};
+    const absent = data.presence === 'absent';
+    const mode = data.mode || '—';
+    const altSigne = !!(data.matin_alt || data.am_alt);
+    const formSigne = !!(data.matin_form || data.am_form);
+    let hPsean=0, hAsean=0;
+    if (absent) { hAsean = MATIN_H_FC+AM_H_FC; }
+    else { if(data.matin_alt)hPsean+=MATIN_H_FC; if(data.am_alt)hPsean+=AM_H_FC; }
+    if (mode==='distanciel') nbDistanciel++;
+    hP+=hPsean; hA+=hAsean;
+    seancesDetail.push({date:s,absent,mode,altSigne,formSigne,hP:hPsean,hA:hAsean,data,motif:data.motif||'',auto:!!data.auto});
+  }
+
+  // ══ PAGE ══
+  addHeader('ÉMARGEMENT FC · '+fc.nom.toUpperCase()+' · '+periodeTitre.toUpperCase());
+  addFooter(pageNum);
+  doc.setFillColor(...OR); doc.rect(0,30,210,2,'F');
+
+  // Infos stagiaire
+  doc.setFillColor(...BLEU_FONCE); doc.rect(15,38,180,32,'F');
+  doc.setTextColor(...OR); doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text(fc.nom,20,48);
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Formation : '+fc.formation,20,55);
+  doc.text('Type : Formation Continue   ·   Financement : Pass Formation — Région Réunion',20,61);
+  doc.text('Jours : '+joursFirebase.join(', ')+'   ·   Horaires : '+(fc.heures||'8h00 – 16h00'),20,66);
+  doc.text('Formation : '+fc.debut+' → '+(fc.fin||'—')+'   ·   Période éditée : '+periodeTitre,20,69.5);
+
+  // Récap heures — 4 blocs
+  doc.setFillColor(...VERT); doc.rect(15,76,42,14,'F');
+  doc.setFillColor(229,62,62); doc.rect(61,76,42,14,'F');
+  doc.setFillColor(...VIOLET); doc.rect(107,76,42,14,'F');
+  doc.setFillColor(...BLEU); doc.rect(153,76,42,14,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text(hP+'h',36,84,{align:'center'});
+  doc.text(hA+'h',82,84,{align:'center'});
+  doc.text(String(nbDistanciel),128,84,{align:'center'});
+  doc.text(String(seancesFiltrees.length),174,84,{align:'center'});
+  doc.setFontSize(6.5); doc.setFont('helvetica','normal');
+  doc.text('Heures présence',36,88,{align:'center'});
+  doc.text('Heures absence',82,88,{align:'center'});
+  doc.text('Séances distanciel',128,88,{align:'center'});
+  doc.text('Total séances',174,88,{align:'center'});
+
+  // Tableau séances
+  let y = 98;
+  doc.setFillColor(...BLEU_FONCE); doc.rect(15,y,180,8,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
+  doc.text('Date',18,y+5); doc.text('Mode',48,y+5); doc.text('Présence',72,y+5);
+  doc.text('H.Prés.',96,y+5); doc.text('H.Abs.',112,y+5);
+  doc.text('Sig. Stagiaire',130,y+5); doc.text('Sig. Formateur',165,y+5);
+  y += 8;
+
+  for (const s of seancesDetail) {
+    if (y > 262) {
+      pageNum++; doc.addPage();
+      addHeader('ÉMARGEMENT FC · '+fc.nom.toUpperCase()+' (suite)'); addFooter(pageNum); 
+      doc.setFillColor(...OR); doc.rect(0,30,210,2,'F');
+      y=38;
+      doc.setFillColor(...BLEU_FONCE); doc.rect(15,y,180,8,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
+      doc.text('Date',18,y+5); doc.text('Mode',48,y+5); doc.text('Présence',72,y+5);
+      doc.text('H.Prés.',96,y+5); doc.text('H.Abs.',112,y+5);
+      doc.text('Sig. Stagiaire',130,y+5); doc.text('Sig. Formateur',165,y+5);
+      y += 8;
+    }
+    const dateStr = s.date.getDate()+' '+moisNomsFr[s.date.getMonth()]+' '+s.date.getFullYear();
+    const rowColor = s.absent ? [255,245,245] : (s.mode==='distanciel' ? [245,242,255] : (s.altSigne&&s.formSigne ? [240,255,244] : [250,250,252]));
+    doc.setFillColor(...rowColor); doc.rect(15,y,180,10,'F');
+    doc.setTextColor(...BLEU_FONCE); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(dateStr,18,y+6);
+    doc.setFont('helvetica','normal');
+    if (s.mode==='distanciel') { doc.setTextColor(...VIOLET); doc.text('Distanciel',48,y+6); }
+    else if (s.mode==='presentiel') { doc.setTextColor(...GRIS); doc.text('Présentiel',48,y+6); }
+    else { doc.setTextColor(...GRIS); doc.text('—',48,y+6); }
+    if (s.absent) { doc.setTextColor(...ROUGE); doc.text('Absent(e)',72,y+6); }
+    else { doc.setTextColor(...VERT); doc.text('Présent(e)',72,y+6); }
+    doc.setTextColor(...BLEU_FONCE);
+    doc.text(s.hP>0?s.hP+'h':'—',98,y+6);
+    doc.text(s.hA>0?s.hA+'h':'—',114,y+6);
+    // Signature stagiaire — image si base64, texte sinon
+    const sigAltData = s.data.matin_alt || s.data.am_alt;
+    if (!s.absent && sigAltData && sigAltData.startsWith && sigAltData.startsWith('data:image')) {
+      try { doc.addImage(sigAltData,'JPEG',128,y+1,22,8); } catch(e) { doc.setTextColor(...VERT); doc.text('Signé',132,y+6); }
+    } else if (!s.absent && sigAltData) {
+      doc.setTextColor(...VERT); doc.text('Signé',132,y+6);
+    } else {
+      doc.setTextColor(s.absent?ROUGE[0]:GRIS[0],s.absent?ROUGE[1]:GRIS[1],s.absent?ROUGE[2]:GRIS[2]);
+      doc.text(s.absent?'Absent':'En attente',132,y+6);
+    }
+    // Signature formateur
+    const sigFormData = s.data.matin_form || s.data.am_form;
+    if (!s.absent && sigFormData && sigFormData.startsWith && sigFormData.startsWith('data:image')) {
+      try { doc.addImage(sigFormData,'JPEG',165,y+1,22,8); } catch(e) { doc.setTextColor(...VERT); doc.text('Signé',168,y+6); }
+    } else if (!s.absent && sigFormData) {
+      doc.setTextColor(...VERT); doc.text('Signé',168,y+6);
+    } else {
+      doc.setTextColor(s.absent?ROUGE[0]:GRIS[0],s.absent?ROUGE[1]:GRIS[1],s.absent?ROUGE[2]:GRIS[2]);
+      doc.text(s.absent?'Absent':'En attente',168,y+6);
+    }
+    doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10);
+    y += 10;
+  }
+
+  // Zones signature officielles
+  y += 10;
+  if (y > 235) { pageNum++; doc.addPage(); addHeader('ÉMARGEMENT FC · '+fc.nom.toUpperCase()+' · Validation'); addFooter(pageNum); y=45; }
+  doc.setDrawColor(...OR); doc.setLineWidth(0.5); doc.rect(15,y,84,30); doc.rect(111,y,84,30);
+  doc.setTextColor(...GRIS); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('Signature Formateur / Direction',57,y+5,{align:'center'}); doc.text('Signature Stagiaire',153,y+5,{align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
+  doc.text('Lu et approuvé',57,y+28,{align:'center'}); doc.text('Lu et approuvé',153,y+28,{align:'center'});
+
+  doc.save('JTCF_FC_'+fc.nom.replace(/ /g,'_')+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
+  btn.textContent='👤 Exporter PDF par personne'; btn.disabled=false;
+}
+
 function chargerGroupesForm() {
   (async function() {
     const {getDatabase,ref,get}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
