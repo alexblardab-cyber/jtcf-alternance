@@ -539,7 +539,11 @@ async function chargerRecap() {
   container.innerHTML = '';
 
   // ══ RÉCAP FORMATION CONTINUE ══
-  const fcFiltres = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
+  // Dédupliquer les FC par id avant le récap
+  const fcMap = {}; allFC.forEach(fc => { if (fc && fc.id && fc.nom) fcMap[fc.id] = fc; });
+  const fcFiltres = profil.fcIds
+    ? Object.values(fcMap).filter(fc => profil.fcIds.includes(fc.id))
+    : Object.values(fcMap);
   if (fcFiltres.length > 0) {
     const sepFC = document.createElement('div');
     sepFC.style.cssText = 'padding:10px 4px;font-size:12px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;margin-top:10px;';
