@@ -648,7 +648,12 @@ async function chargerRecap() {
         if(dataFC.mode==='distanciel') distfc++;
         if(dataFC.presence==='absent'){hAfc+=(MATIN_H+AM_H);const m=dataFC.motif||'Non renseigné';motifsFC[m]=(motifsFC[m]||0)+1;}
         else if(dataFC.auto||dataFC.mode==='distanciel'){hPfc+=(MATIN_H+AM_H);}
-        else{if(dataFC.matin_alt)hPfc+=MATIN_H;if(dataFC.am_alt)hPfc+=AM_H;}
+        else{
+          // Si au moins une signature existe, compter comme présent même sans champ presence
+          const aSigne = dataFC.matin_alt || dataFC.am_alt;
+          if(aSigne){if(dataFC.matin_alt)hPfc+=MATIN_H;if(dataFC.am_alt)hPfc+=AM_H;}
+          // Sinon ne pas compter comme absence si presence non renseigné
+        }
       }
       dfc.setDate(dfc.getDate()+1);
     }
