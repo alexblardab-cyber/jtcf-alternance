@@ -423,8 +423,12 @@ const AM_H = 3.5;
 async function chargerAlternants() {
   const snap = await get(ref(db, 'alternants'));
   if (snap.exists()) {
-    allAlternants = [];
-    snap.forEach(function(child) { const alt = child.val(); alt.id = child.key; allAlternants.push(alt); });
+    const map = {};
+    snap.forEach(function(child) {
+      const alt = child.val(); alt.id = child.key;
+      if (alt && alt.nom && alt.jourCentre) map[alt.id] = alt;  // ignore les entrées corrompues
+    });
+    allAlternants = Object.values(map);
   }
   afficherListe('listeLundi', allAlternants.filter(a => a.jourCentre === 'Lundi'));
   afficherListe('listeMardi', allAlternants.filter(a => a.jourCentre === 'Mardi'));
@@ -433,9 +437,17 @@ async function chargerAlternants() {
 
   const fcSnap = await get(ref(db, 'stagiairesFC'));
   if (fcSnap.exists()) {
-    allFC = [];
-    fcSnap.forEach(function(child) { const fc = child.val(); fc.id = child.key; allFC.push(fc); });
+    const mapFC = {};
+    fcSnap.forEach(function(child) {
+      const fc = child.val(); fc.id = child.key;
+      if (fc && fc.nom) mapFC[fc.id] = fc;
+    });
+    allFC = Object.values(mapFC);
   }
+  // Exposer pour les scripts classiques (menu PDF, exports)
+  window.allAlternants = allAlternants;
+  window.allFC = allFC;
+  window.profil = profil;
   // Filtrer FC selon profil
   const fcFiltered = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
   afficherListeFC('listeFC', fcFiltered);
@@ -526,6 +538,86 @@ async function chargerRecap() {
   let totalHeuresGlobal = 0, totalAbsencesGlobal = 0, totalSeancesGlobal = 0;
   container.innerHTML = '';
 
+  // ══ RÉCAP FORMATION CONTINUE ══
+  const fcFiltres = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
+  if (fcFiltres.length > 0) {
+    const sepFC = document.createElement('div');
+    sepFC.style.cssText = 'padding:10px 4px;font-size:12px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;margin-top:10px;';
+    sepFC.textContent = '🎓 Formation Continue';
+    container.appendChild(sepFC);
+  }
+  const jourMapFC = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  for (const fc of fcFiltres) {
+    // Jours depuis Firebase
+    let joursFC = ['Lundi','Mardi','Mercredi','Jeudi'];
+    try {
+      const jSnap = await get(ref(db, 'stagiairesFC/' + fc.id + '/jours'));
+      if (jSnap.exists()) joursFC = Object.values(jSnap.val()).filter(Boolean);
+    } catch(e) {}
+    const joursNum = joursFC.map(j => jourMapFC[j]).filter(Boolean);
+    // Séances depuis le début de formation
+    const pd = fc.debut ? fc.debut.split('/') : ['13','07','2026'];
+    const debutFC = new Date(parseInt(pd[2]),parseInt(pd[1])-1,parseInt(pd[0]));
+    const finFC = new Date(2027,5,30);
+    const aujourdhui = new Date(); aujourdhui.setHours(23,59,59,999);
+    let hP=0, hA=0, sCount=0, nbDist=0; const motifsCount={};
+    let dFC = new Date(debutFC);
+    while (dFC <= finFC && dFC <= aujourdhui) {
+      if (joursNum.includes(dFC.getDay())) {
+        let inclure = true;
+        if (filterMode==='mois' && (dFC.getFullYear()!==filterYear || dFC.getMonth()!==filterMonth)) inclure = false;
+        if (inclure) {
+          const keyFC = fc.id+'_fc_'+dFC.getFullYear()+'_'+(dFC.getMonth()+1)+'_'+dFC.getDate();
+          const snapFC = await get(ref(db,'emargementsFC/'+keyFC));
+          const dataFC = snapFC.exists() ? snapFC.val() : {};
+          sCount++;
+          if (dataFC.mode==='distanciel') nbDist++;
+          if (dataFC.presence==='absent') {
+            hA += (MATIN_H+AM_H);
+            const m = dataFC.motif||'Non renseigné'; motifsCount[m]=(motifsCount[m]||0)+1;
+          } else {
+            // Compter si signé (image base64 OU signature auto texte)
+            const maPresent = dataFC.matin_alt && dataFC.matin_alt !== '';
+            const amPresent = dataFC.am_alt && dataFC.am_alt !== '';
+            // Mode distanciel auto = toujours présent et 7.5h
+            if (dataFC.auto || dataFC.mode === 'distanciel') {
+              hP += (MATIN_H + AM_H);
+            } else {
+              if (maPresent) hP += MATIN_H;
+              if (amPresent) hP += AM_H;
+            }
+          }
+        }
+      }
+      dFC.setDate(dFC.getDate()+1);
+    }
+    totalHeuresGlobal += hP; totalAbsencesGlobal += hA; totalSeancesGlobal += sCount;
+    if (sCount===0) continue;
+    const initFC = fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    let motifsHtmlFC='';
+    if (Object.keys(motifsCount).length>0) {
+      motifsHtmlFC='<div class="recap-motifs"><div style="font-size:11px;font-weight:700;color:var(--rouge);margin-bottom:4px;">Motifs d\'absence :</div>'+
+        Object.entries(motifsCount).map(([m,c])=>'<div class="recap-motif-item"><span>'+m+'</span><span style="font-weight:700;">'+c+'×</span></div>').join('')+'</div>';
+    }
+    const cardFC = document.createElement('div');
+    cardFC.className = 'recap-card';
+    cardFC.style.borderLeftColor = '#C9A227';
+    cardFC.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'+
+      '<div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;border-color:#C9A227;">'+initFC+'</div>'+
+      '<div><div class="recap-nom">'+fc.nom+'</div><div style="font-size:11px;color:var(--gris);">'+fc.formation+' · '+joursFC.join(', ')+'</div></div>'+
+      '</div>'+
+      '<div class="recap-grid">'+
+      '<div class="recap-item vert"><div class="recap-val vert">'+hP+'h</div><div class="recap-lbl">Heures présence</div></div>'+
+      '<div class="recap-item rouge"><div class="recap-val rouge">'+hA+'h</div><div class="recap-lbl">Heures absence</div></div>'+
+      '<div class="recap-item" style="background:#f5f2ff;"><div class="recap-val" style="color:#7C5CFF;">'+nbDist+'</div><div class="recap-lbl">Distanciel</div></div>'+
+      '<div class="recap-item or"><div class="recap-val or">'+sCount+'</div><div class="recap-lbl">Séances</div></div>'+
+      '</div>'+motifsHtmlFC;
+    container.appendChild(cardFC);
+  }
+
+
+  // ══ ALTERNANTS ══
+
   for (const alt of allAlternants) {
     const altSeances = getSeances(alt);
     let heuresPresence = 0, heuresAbsence = 0, seancesCount = 0;
@@ -600,75 +692,6 @@ async function chargerRecap() {
         <div class="recap-item"><div class="recap-val">${heuresPresence + heuresAbsence}h</div><div class="recap-lbl">Heures totales</div></div>
       </div>${motifsHtml}`;
     container.appendChild(card);
-  }
-
-  // ══ RÉCAP FORMATION CONTINUE ══
-  const fcFiltres = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
-  if (fcFiltres.length > 0) {
-    const sepFC = document.createElement('div');
-    sepFC.style.cssText = 'padding:10px 4px;font-size:12px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;margin-top:10px;';
-    sepFC.textContent = '🎓 Formation Continue';
-    container.appendChild(sepFC);
-  }
-  const jourMapFC = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
-  for (const fc of fcFiltres) {
-    // Jours depuis Firebase
-    let joursFC = ['Lundi','Mardi','Mercredi','Jeudi'];
-    try {
-      const jSnap = await get(ref(db, 'stagiairesFC/' + fc.id + '/jours'));
-      if (jSnap.exists()) joursFC = Object.values(jSnap.val()).filter(Boolean);
-    } catch(e) {}
-    const joursNum = joursFC.map(j => jourMapFC[j]).filter(Boolean);
-    // Séances depuis le début de formation
-    const pd = fc.debut ? fc.debut.split('/') : ['13','07','2026'];
-    const debutFC = new Date(parseInt(pd[2]),parseInt(pd[1])-1,parseInt(pd[0]));
-    const finFC = new Date(2027,5,30);
-    const aujourdhui = new Date(); aujourdhui.setHours(23,59,59,999);
-    let hP=0, hA=0, sCount=0, nbDist=0; const motifsCount={};
-    let dFC = new Date(debutFC);
-    while (dFC <= finFC && dFC <= aujourdhui) {
-      if (joursNum.includes(dFC.getDay())) {
-        let inclure = true;
-        if (filterMode==='mois' && (dFC.getFullYear()!==filterYear || dFC.getMonth()!==filterMonth)) inclure = false;
-        if (inclure) {
-          const keyFC = fc.id+'_fc_'+dFC.getFullYear()+'_'+(dFC.getMonth()+1)+'_'+dFC.getDate();
-          const snapFC = await get(ref(db,'emargementsFC/'+keyFC));
-          const dataFC = snapFC.exists() ? snapFC.val() : {};
-          sCount++;
-          if (dataFC.mode==='distanciel') nbDist++;
-          if (dataFC.presence==='absent') {
-            hA += (MATIN_H+AM_H);
-            const m = dataFC.motif||'Non renseigné'; motifsCount[m]=(motifsCount[m]||0)+1;
-          } else {
-            if (dataFC.matin_alt) hP += MATIN_H;
-            if (dataFC.am_alt) hP += AM_H;
-          }
-        }
-      }
-      dFC.setDate(dFC.getDate()+1);
-    }
-    totalHeuresGlobal += hP; totalAbsencesGlobal += hA; totalSeancesGlobal += sCount;
-    if (sCount===0) continue;
-    const initFC = fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
-    let motifsHtmlFC='';
-    if (Object.keys(motifsCount).length>0) {
-      motifsHtmlFC='<div class="recap-motifs"><div style="font-size:11px;font-weight:700;color:var(--rouge);margin-bottom:4px;">Motifs d\'absence :</div>'+
-        Object.entries(motifsCount).map(([m,c])=>'<div class="recap-motif-item"><span>'+m+'</span><span style="font-weight:700;">'+c+'×</span></div>').join('')+'</div>';
-    }
-    const cardFC = document.createElement('div');
-    cardFC.className = 'recap-card';
-    cardFC.style.borderLeftColor = '#C9A227';
-    cardFC.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'+
-      '<div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;border-color:#C9A227;">'+initFC+'</div>'+
-      '<div><div class="recap-nom">'+fc.nom+'</div><div style="font-size:11px;color:var(--gris);">'+fc.formation+' · '+joursFC.join(', ')+'</div></div>'+
-      '</div>'+
-      '<div class="recap-grid">'+
-      '<div class="recap-item vert"><div class="recap-val vert">'+hP+'h</div><div class="recap-lbl">Heures présence</div></div>'+
-      '<div class="recap-item rouge"><div class="recap-val rouge">'+hA+'h</div><div class="recap-lbl">Heures absence</div></div>'+
-      '<div class="recap-item" style="background:#f5f2ff;"><div class="recap-val" style="color:#7C5CFF;">'+nbDist+'</div><div class="recap-lbl">Distanciel</div></div>'+
-      '<div class="recap-item or"><div class="recap-val or">'+sCount+'</div><div class="recap-lbl">Séances</div></div>'+
-      '</div>'+motifsHtmlFC;
-    container.appendChild(cardFC);
   }
 
   document.getElementById('totalHeures').textContent = totalHeuresGlobal + 'h';
@@ -862,13 +885,15 @@ chargerAlternants().then(() => signerDistancielAuto());
 async function signerDistancielAuto() {
   try {
     // Stagiaires et leurs jours distanciel automatique
+    // CV/AD : vendredi à partir du 21/07 (semaine complète après le 14 juillet)
+    // ACA   : mardi à partir du 21/07 (même logique)
     const DISTANCIEL_AUTO = {
-      'HV01': { jourSemaine: 5, formation: 'CV'  },  // vendredi
-      'MJ01': { jourSemaine: 5, formation: 'CV'  },  // vendredi
-      'BC01': { jourSemaine: 5, formation: 'AD'  },  // vendredi
-      'RE02': { jourSemaine: 5, formation: 'AD'  },  // vendredi
-      'ML01': { jourSemaine: 2, formation: 'ACA' },  // mardi
-      'GM01': { jourSemaine: 2, formation: 'ACA' },  // mardi
+      'HV01': { jourSemaine: 5, formation: 'CV',  debut: new Date(2026, 6, 21) },
+      'MJ01': { jourSemaine: 5, formation: 'CV',  debut: new Date(2026, 6, 21) },
+      'BC01': { jourSemaine: 5, formation: 'AD',  debut: new Date(2026, 6, 21) },
+      'RE02': { jourSemaine: 5, formation: 'AD',  debut: new Date(2026, 6, 21) },
+      'ML01': { jourSemaine: 2, formation: 'ACA', debut: new Date(2026, 6, 21) },
+      'GM01': { jourSemaine: 2, formation: 'ACA', debut: new Date(2026, 6, 21) },
     };
 
     // Dates exclues (fériés, fermetures, exceptions)
@@ -903,7 +928,7 @@ async function signerDistancielAuto() {
           const isoDate = y + '-' + String(m).padStart(2,'0') + '-' + String(j).padStart(2,'0');
 
           // Vérifier exclusions
-          if (!EXCLUSIONS.includes(isoDate) && d >= DEBUT_FORMATION && d <= FIN_FORMATION) {
+          if (!EXCLUSIONS.includes(isoDate) && d >= cfg.debut && d <= FIN_FORMATION) {
             const key = fcId + '_fc_' + y + '_' + m + '_' + j;
             const snap = await get(ref(db, 'emargementsFC/' + key));
             const data = snap.exists() ? snap.val() : {};
