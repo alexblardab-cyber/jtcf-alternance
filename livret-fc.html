@@ -884,6 +884,11 @@ document.querySelectorAll('.btn-valider').forEach(function(btn) {
     const blank=document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
     if(imageData===blank.toDataURL()){alert('Veuillez signer avant de valider.');return;}
     await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/'+slot),imageData);
+    // Sauvegarder la première signature si pas encore enregistrée
+    const premSnap = await get(ref(db, 'stagiairesFC/' + userId + '/premiereSignature'));
+    if (!premSnap.exists()) {
+      await set(ref(db, 'stagiairesFC/' + userId + '/premiereSignature'), imageData);
+    }
     await updateEmargement();
   }
   btn.addEventListener('touchend',valider,{passive:false}); btn.addEventListener('click',valider);

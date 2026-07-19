@@ -783,7 +783,84 @@ document.getElementById('btnLogout').addEventListener('touchend',function(e){e.p
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 
 // Vérifier accès
-chargerAlternants();
+chargerAlternants().then(() => signerDistancielAuto());
+
+// ══════════════════════════════════════════════════════════════
+// SIGNATURE AUTOMATIQUE DISTANCIEL
+// CV + AD → vendredi  |  ACA → mardi (sauf 14/07/2026)
+// Déclenché au login du formateur, rattrape les jours manqués
+// ══════════════════════════════════════════════════════════════
+async function signerDistancielAuto() {
+  try {
+    // Stagiaires et leurs jours distanciel automatique
+    const DISTANCIEL_AUTO = {
+      'HV01': { jourSemaine: 5, formation: 'CV'  },  // vendredi
+      'MJ01': { jourSemaine: 5, formation: 'CV'  },  // vendredi
+      'BC01': { jourSemaine: 5, formation: 'AD'  },  // vendredi
+      'RE02': { jourSemaine: 5, formation: 'AD'  },  // vendredi
+      'ML01': { jourSemaine: 2, formation: 'ACA' },  // mardi
+      'GM01': { jourSemaine: 2, formation: 'ACA' },  // mardi
+    };
+
+    // Dates exclues (fériés, fermetures, exceptions)
+    const EXCLUSIONS = [
+      '2026-07-14', // 14 juillet — fête nationale
+      '2026-12-21','2026-12-22','2026-12-23','2026-12-24','2026-12-25',
+      '2026-12-28','2026-12-29','2026-12-30','2026-12-31',
+      '2027-01-01','2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08',
+    ];
+
+    const DEBUT_FORMATION = new Date(2026, 6, 13); // 13 juillet 2026
+    const FIN_FORMATION   = new Date(2027, 5, 30); // 30 juin 2027
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    for (const [fcId, cfg] of Object.entries(DISTANCIEL_AUTO)) {
+      // Récupérer la première signature de l'apprenant (image base64)
+      const premSnap = await get(ref(db, 'stagiairesFC/' + fcId + '/premiereSignature'));
+      const sigAlt = premSnap.exists() ? premSnap.val() : 'global_sign_auto';
+
+      // Signature formateur automatique
+      const sigForm = 'global_sign_auto_' + Date.now();
+
+      // Parcourir tous les jours depuis le début jusqu'à hier
+      let d = new Date(DEBUT_FORMATION);
+      while (d < today) {
+        // Vérifier que c'est le bon jour de semaine
+        if (d.getDay() === cfg.jourSemaine) {
+          const y = d.getFullYear();
+          const m = d.getMonth()+1;
+          const j = d.getDate();
+          const isoDate = y + '-' + String(m).padStart(2,'0') + '-' + String(j).padStart(2,'0');
+
+          // Vérifier exclusions
+          if (!EXCLUSIONS.includes(isoDate) && d >= DEBUT_FORMATION && d <= FIN_FORMATION) {
+            const key = fcId + '_fc_' + y + '_' + m + '_' + j;
+            const snap = await get(ref(db, 'emargementsFC/' + key));
+            const data = snap.exists() ? snap.val() : {};
+
+            // Signer seulement si pas encore signé
+            if (!data.matin_alt || !data.matin_form || !data.am_alt || !data.am_form) {
+              await set(ref(db, 'emargementsFC/' + key), {
+                mode:       'distanciel',
+                presence:   'present',
+                matin_alt:  data.matin_alt  || sigAlt,
+                matin_form: data.matin_form || 'global_sign_auto_' + Date.now(),
+                am_alt:     data.am_alt     || sigAlt,
+                am_form:    data.am_form    || 'global_sign_auto_' + Date.now(),
+                auto:       true,
+              });
+            }
+          }
+        }
+        d.setDate(d.getDate() + 1);
+      }
+    }
+    console.log('✅ Signatures distanciel automatiques vérifiées');
+  } catch(e) {
+    console.warn('⚠️ Erreur signature auto distanciel:', e);
+  }
+}
 
 // ── NOTIFICATIONS ────────────────────────────────────────────
 
