@@ -415,9 +415,8 @@ function ouvrirFormAjout(){
   document.getElementById('altFormView').style.display='block';
 }
 
-async function ouvrirFormModif(alt){
+function ouvrirFormModif(alt){
   editingId=alt.id;
-  window._currentAltId = alt.id; // exposer pour le script REST
   document.getElementById('formTitre').textContent='✏️ Modifier '+alt.nom;
   document.getElementById('formId').value=alt.id; document.getElementById('formId').disabled=true;
   document.getElementById('formNom').value=alt.nom;
@@ -434,28 +433,7 @@ async function ouvrirFormModif(alt){
   document.getElementById('altFormView').style.display='block';
   const sectionDocs=document.getElementById('sectionDocs');
   sectionDocs.style.display='block';
-  // Vérifier le cache local d'abord, sinon recharger Firebase
-  const cached = window._dossierCache && window._dossierCache[alt.id];
-  if (cached) {
-    document.getElementById('docDossier').value = cached;
-  } else {
-    try {
-      const snapFrais = await get(ref(db, 'alternants/' + alt.id));
-      if (snapFrais.exists()) {
-        const d = snapFrais.val();
-        const lienFrais = (d.documents && d.documents.dossier) ? d.documents.dossier : '';
-        document.getElementById('docDossier').value = lienFrais;
-        if (lienFrais) {
-          window._dossierCache = window._dossierCache || {};
-          window._dossierCache[alt.id] = lienFrais;
-        }
-      } else {
-        document.getElementById('docDossier').value = (alt.documents && alt.documents.dossier) ? alt.documents.dossier : '';
-      }
-    } catch(e) {
-      document.getElementById('docDossier').value = (alt.documents && alt.documents.dossier) ? alt.documents.dossier : '';
-    }
-  }
+  document.getElementById('docDossier').value=(alt.documents&&alt.documents.dossier)?alt.documents.dossier:'';
 }
 
 async function sauvegarder(e){
@@ -871,6 +849,71 @@ async function chargerRecapAdmin(){
     </div>${motifsHtml}`;
     container.appendChild(card);
   }
+  // ══ RÉCAP FORMATION CONTINUE ══
+  if (allFC.length > 0) {
+    const sepFC = document.createElement('div');
+    sepFC.style.cssText = 'padding:10px 4px;font-size:12px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;margin-top:10px;';
+    sepFC.textContent = '🎓 Formation Continue';
+    container.appendChild(sepFC);
+  }
+  const jourMapFC = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  for (const fc of allFC) {
+    let joursFC = ['Lundi','Mardi','Mercredi','Jeudi'];
+    try {
+      const jSnap = await get(ref(db, 'stagiairesFC/' + fc.id + '/jours'));
+      if (jSnap.exists()) joursFC = Object.values(jSnap.val()).filter(Boolean);
+    } catch(e) {}
+    const joursNum = joursFC.map(j => jourMapFC[j]).filter(Boolean);
+    const pd = fc.debut ? fc.debut.split('/') : ['13','07','2026'];
+    const debutFC = new Date(parseInt(pd[2]),parseInt(pd[1])-1,parseInt(pd[0]));
+    const finFC = new Date(2027,5,30);
+    const aujourdhui = new Date(); aujourdhui.setHours(23,59,59,999);
+    let hP=0, hA=0, sCount=0, nbDist=0; const motifsCount={};
+    let dFC = new Date(debutFC);
+    while (dFC <= finFC && dFC <= aujourdhui) {
+      if (joursNum.includes(dFC.getDay())) {
+        let inclure = true;
+        if (filterMode==='mois' && (dFC.getFullYear()!==filterYear || dFC.getMonth()!==filterMonth)) inclure = false;
+        if (inclure) {
+          const keyFC = fc.id+'_fc_'+dFC.getFullYear()+'_'+(dFC.getMonth()+1)+'_'+dFC.getDate();
+          const snapFC = await get(ref(db,'emargementsFC/'+keyFC));
+          const dataFC = snapFC.exists() ? snapFC.val() : {};
+          sCount++;
+          if (dataFC.mode==='distanciel') nbDist++;
+          if (dataFC.presence==='absent') {
+            hA += (MATIN_H+AM_H);
+            const m = dataFC.motif||'Non renseigné'; motifsCount[m]=(motifsCount[m]||0)+1;
+          } else {
+            if (dataFC.matin_alt) hP += MATIN_H;
+            if (dataFC.am_alt) hP += AM_H;
+          }
+        }
+      }
+      dFC.setDate(dFC.getDate()+1);
+    }
+    totalH+=hP; totalA+=hA; totalS+=sCount;
+    if (sCount===0) continue;
+    const initFC = fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    let motifsHtmlFC='';
+    if (Object.keys(motifsCount).length>0) {
+      motifsHtmlFC='<div style="margin-top:8px;font-size:11px;"><div style="font-weight:700;color:var(--rouge);margin-bottom:4px;">Motifs :</div>'+
+        Object.entries(motifsCount).map(([m,c])=>'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--gris-clair);"><span>'+m+'</span><span style="font-weight:700;">'+c+'×</span></div>').join('')+'</div>';
+    }
+    const cardFC=document.createElement('div'); cardFC.className='recap-card';
+    cardFC.style.borderLeftColor='#C9A227';
+    cardFC.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'+
+      '<div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;border-color:#C9A227;">'+initFC+'</div>'+
+      '<div><div class="recap-nom">'+fc.nom+'</div><div style="font-size:11px;color:var(--gris);">'+fc.formation+' · '+joursFC.join(', ')+'</div></div>'+
+      '</div>'+
+      '<div class="recap-grid">'+
+      '<div class="recap-item vert"><div class="recap-val vert">'+hP+'h</div><div class="recap-lbl">Présence</div></div>'+
+      '<div class="recap-item rouge"><div class="recap-val rouge">'+hA+'h</div><div class="recap-lbl">Absence</div></div>'+
+      '<div class="recap-item" style="background:#f5f2ff;"><div class="recap-val" style="color:#7C5CFF;">'+nbDist+'</div><div class="recap-lbl">Distanciel</div></div>'+
+      '<div class="recap-item or"><div class="recap-val or">'+sCount+'</div><div class="recap-lbl">Séances</div></div>'+
+      '</div>'+motifsHtmlFC;
+    container.appendChild(cardFC);
+  }
+
   document.getElementById('adminTotalH').textContent=totalH+'h';
   document.getElementById('adminTotalA').textContent=totalA+'h';
   document.getElementById('adminTotalS').textContent=totalS;
@@ -1034,7 +1077,14 @@ function ajouterBadgeOnglet(target, count) {
   }, 3000);
 })();
 
-// sauvegarderDocs déplacé en script compat
+async function sauvegarderDocs(e){
+  e.preventDefault(); if(!editingId)return;
+  await set(ref(db,'alternants/'+editingId+'/documents/dossier'),document.getElementById('docDossier').value.trim()||null);
+  document.getElementById('docsSuccess').classList.add('visible');
+  setTimeout(function(){document.getElementById('docsSuccess').classList.remove('visible');},2000);
+}
+document.getElementById('btnSauvegarderDocs').addEventListener('click',sauvegarderDocs);
+document.getElementById('btnSauvegarderDocs').addEventListener('touchend',sauvegarderDocs,{passive:false});
 
 function afficherListeFC(){
   const container=document.getElementById('listeFC');
@@ -1706,36 +1756,6 @@ async function exporterPDFAdminPersonne(alt) {
   doc.save('JTCF_'+alt.nom.replace(/ /g,'_')+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
   btn.textContent='👤 Exporter PDF par personne'; btn.disabled=false;
 }
-</script>
-
-<script>
-// ── Sauvegarde lien Drive via REST API ───────────────────────
-const FB_URL = 'https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app';
-
-async function sauvegarderLienDrive() {
-  const id = window._currentAltId || (document.getElementById('formId') ? document.getElementById('formId').value.trim().toUpperCase() : null);
-  if (!id) { alert('Aucun alternant sélectionné.'); return; }
-  const lien = document.getElementById('docDossier').value.trim();
-  try {
-    const resp = await fetch(FB_URL + '/alternants/' + id + '/documents/dossier.json', {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(lien || null)
-    });
-    if (resp.ok) {
-      // Garder en mémoire
-      window._dossierCache = window._dossierCache || {};
-      window._dossierCache[id] = lien;
-      const s = document.getElementById('docsSuccess');
-      if (s) { s.classList.add('visible'); setTimeout(function(){ s.classList.remove('visible'); }, 2000); }
-    } else {
-      alert('Erreur Firebase : ' + resp.status);
-    }
-  } catch(e) { alert('Erreur : ' + e.message); }
-}
-
-document.getElementById('btnSauvegarderDocs').addEventListener('click', sauvegarderLienDrive);
-document.getElementById('btnSauvegarderDocs').addEventListener('touchend', function(e){ e.preventDefault(); sauvegarderLienDrive(); }, {passive:false});
 </script>
 </body>
 </html>
