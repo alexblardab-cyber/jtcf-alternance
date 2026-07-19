@@ -525,7 +525,10 @@ function remplirMoisSelect() {
   }
 }
 
+let _recapEnCours = false;
 async function chargerRecap() {
+  if (_recapEnCours) return;
+  _recapEnCours = true;
   const container = document.getElementById('recapListe');
   container.innerHTML = '<div class="loading">Calcul en cours...</div>';
 
@@ -673,6 +676,7 @@ async function chargerRecap() {
   document.getElementById('totalHeures').textContent = totalHeuresGlobal + 'h';
   document.getElementById('totalAbsences').textContent = totalAbsencesGlobal + 'h';
   document.getElementById('totalSeances').textContent = totalSeancesGlobal;
+  _recapEnCours = false;
 }
 
 ['filterMois','filterTotal'].forEach(function(id) {
