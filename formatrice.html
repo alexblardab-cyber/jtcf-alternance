@@ -133,7 +133,8 @@
 </div>
 
 <div class="nav" id="mainNav">
-  <a class="nav-btn active" data-target="lundi">📅 Lundi</a>
+  <a class="nav-btn active" data-target="dashboard">🏠 Accueil</a>
+  <a class="nav-btn" data-target="lundi">📅 Lundi</a>
   <a class="nav-btn" data-target="mardi">📅 Mardi</a>
   <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
   <a class="nav-btn" data-target="jeudi">📅 Jeudi</a>
@@ -145,7 +146,44 @@
 <div class="content" id="mainContent">
 
   <!-- LUNDI -->
-  <div class="section active" id="lundi">
+  <!-- TABLEAU DE BORD -->
+  <div class="section active" id="dashboard">
+    <div class="card" style="background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));color:white;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;opacity:0.7;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Aujourd'hui</div>
+      <div style="font-size:18px;font-weight:800;color:var(--or);" id="dashDate">—</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div class="card" style="text-align:center;padding:14px 8px;">
+        <div style="font-size:26px;font-weight:800;color:var(--vert);" id="dashPresents">—</div>
+        <div style="font-size:11px;color:var(--gris);margin-top:2px;">Présents</div>
+      </div>
+      <div class="card" style="text-align:center;padding:14px 8px;">
+        <div style="font-size:26px;font-weight:800;color:var(--rouge);" id="dashAbsents">—</div>
+        <div style="font-size:11px;color:var(--gris);margin-top:2px;">Absents</div>
+      </div>
+      <div class="card" style="text-align:center;padding:14px 8px;">
+        <div style="font-size:26px;font-weight:800;color:#7C5CFF;" id="dashDistanciel">—</div>
+        <div style="font-size:11px;color:var(--gris);margin-top:2px;">Distanciel</div>
+      </div>
+      <div class="card" style="text-align:center;padding:14px 8px;">
+        <div style="font-size:26px;font-weight:800;color:var(--or);" id="dashTotal">—</div>
+        <div style="font-size:11px;color:var(--gris);margin-top:2px;">Total séances</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Émargements du jour</div>
+      <div style="font-size:11px;color:var(--gris);margin-bottom:10px;">
+        🟢 Signé &nbsp; 🔴 En attente &nbsp; ⚫ Absent &nbsp; 🟣 Distanciel auto
+      </div>
+      <div id="dashListe"><div class="loading">Chargement...</div></div>
+    </div>
+    <div class="card" style="margin-top:12px;">
+      <div class="card-title">📅 Prochaines séances</div>
+      <div id="dashProchain"><div class="loading">Chargement...</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="lundi">
     <button class="btn-global" id="btnSignGlobalMatinLundi">✍️ Signer MATIN — Tous les lundis</button>
     <button class="btn-global" id="btnSignGlobalAMLundi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les lundis</button>
     <div class="jour-titre">Alternants du Lundi</div>
@@ -423,34 +461,25 @@ const AM_H = 3.5;
 async function chargerAlternants() {
   const snap = await get(ref(db, 'alternants'));
   if (snap.exists()) {
-    const map = {};
-    snap.forEach(function(child) {
-      const alt = child.val(); alt.id = child.key;
-      if (alt && alt.nom && alt.jourCentre) map[alt.id] = alt;
-    });
-    allAlternants = Object.values(map);
+    allAlternants = [];
+    snap.forEach(function(child) { const alt = child.val(); alt.id = child.key; allAlternants.push(alt); });
   }
-  afficherListe('listeLundi',    allAlternants.filter(a => a.jourCentre === 'Lundi'));
-  afficherListe('listeMardi',    allAlternants.filter(a => a.jourCentre === 'Mardi'));
+  afficherListe('listeLundi', allAlternants.filter(a => a.jourCentre === 'Lundi'));
+  afficherListe('listeMardi', allAlternants.filter(a => a.jourCentre === 'Mardi'));
   afficherListe('listeMercredi', allAlternants.filter(a => a.jourCentre === 'Mercredi'));
-  afficherListe('listeJeudi',    allAlternants.filter(a => a.jourCentre === 'Jeudi'));
+  afficherListe('listeJeudi', allAlternants.filter(a => a.jourCentre === 'Jeudi'));
+
   const fcSnap = await get(ref(db, 'stagiairesFC'));
   if (fcSnap.exists()) {
-    const mapFC = {};
-    fcSnap.forEach(function(child) {
-      const fc = child.val(); fc.id = child.key;
-      if (fc && fc.nom) mapFC[fc.id] = fc;
-    });
-    allFC = Object.values(mapFC);
+    allFC = [];
+    fcSnap.forEach(function(child) { const fc = child.val(); fc.id = child.key; allFC.push(fc); });
   }
-  window.allAlternants = allAlternants;
-  window.allFC = allFC;
-  window.profil = profil;
+  // Filtrer FC selon profil
   const fcFiltered = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
   afficherListeFC('listeFC', fcFiltered);
   remplirMoisSelect();
   chargerRecap();
-  signerDistancielAuto();
+  chargerDashboard();
 }
 
 function afficherListeFC(containerId, fcs) {
@@ -525,10 +554,7 @@ function remplirMoisSelect() {
   }
 }
 
-let _recapEnCours = false;
 async function chargerRecap() {
-  if (_recapEnCours) return;
-  _recapEnCours = true;
   const container = document.getElementById('recapListe');
   container.innerHTML = '<div class="loading">Calcul en cours...</div>';
 
@@ -615,73 +641,9 @@ async function chargerRecap() {
     container.appendChild(card);
   }
 
-
-  // ── FORMATION CONTINUE ──────────────────────────────────────
-  const jourMapFC = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
-  const fcPourRecap = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
-  if (fcPourRecap.length > 0) {
-    const sep = document.createElement('div');
-    sep.style.cssText = 'padding:12px 4px 6px;font-size:12px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;border-top:2px solid #C9A227;margin-top:14px;';
-    sep.textContent = '\ud83c\udf93 Formation Continue';
-    container.appendChild(sep);
-  }
-  for (const fc of fcPourRecap) {
-    let joursFC = ['Lundi','Mardi','Mercredi','Jeudi'];
-    try {
-      const jSnap = await get(ref(db, 'stagiairesFC/' + fc.id + '/jours'));
-      if (jSnap.exists()) joursFC = Object.values(jSnap.val()).filter(Boolean);
-    } catch(e) {}
-    const joursNum = joursFC.map(j => jourMapFC[j]).filter(Boolean);
-    const pd = fc.debut ? fc.debut.split('/') : ['13','07','2026'];
-    const debutFC = new Date(parseInt(pd[2]),parseInt(pd[1])-1,parseInt(pd[0]));
-    const finFC = new Date(2027,5,30);
-    const nowRC = new Date(); nowRC.setHours(23,59,59,999);
-    let hPfc=0,hAfc=0,sfc=0,distfc=0; const motifsFC={};
-    let dfc = new Date(debutFC);
-    while (dfc <= finFC && dfc <= nowRC) {
-      if (joursNum.includes(dfc.getDay())) {
-        if (filterMode==='mois'&&(dfc.getFullYear()!==filterYear||dfc.getMonth()!==filterMonth)){dfc.setDate(dfc.getDate()+1);continue;}
-        const keyFC=fc.id+'_fc_'+dfc.getFullYear()+'_'+(dfc.getMonth()+1)+'_'+dfc.getDate();
-        const snapFC=await get(ref(db,'emargementsFC/'+keyFC));
-        const dataFC=snapFC.exists()?snapFC.val():{};
-        sfc++;
-        if(dataFC.mode==='distanciel') distfc++;
-        if(dataFC.presence==='absent'){hAfc+=(MATIN_H+AM_H);const m=dataFC.motif||'Non renseigné';motifsFC[m]=(motifsFC[m]||0)+1;}
-        else if(dataFC.auto||dataFC.mode==='distanciel'){hPfc+=(MATIN_H+AM_H);}
-        else{
-          // Si au moins une signature existe, compter comme présent même sans champ presence
-          const aSigne = dataFC.matin_alt || dataFC.am_alt;
-          if(aSigne){if(dataFC.matin_alt)hPfc+=MATIN_H;if(dataFC.am_alt)hPfc+=AM_H;}
-          // Sinon ne pas compter comme absence si presence non renseigné
-        }
-      }
-      dfc.setDate(dfc.getDate()+1);
-    }
-    totalHeuresGlobal+=hPfc; totalAbsencesGlobal+=hAfc; totalSeancesGlobal+=sfc;
-    if(sfc===0) continue;
-    const initFC=fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
-    let mhFC='';
-    if(Object.keys(motifsFC).length>0){
-      mhFC='<div class="recap-motifs"><div style="font-size:11px;font-weight:700;color:var(--rouge);margin-bottom:4px;">Motifs d\'absence :</div>';
-      for(const [m,cnt] of Object.entries(motifsFC)) mhFC+='<div class="recap-motif-item"><span>'+m+'</span><span style="font-weight:700;">'+cnt+' fois</span></div>';
-      mhFC+='</div>';
-    }
-    const cardFC=document.createElement('div'); cardFC.className='recap-card'; cardFC.style.borderLeftColor='#C9A227';
-    cardFC.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
-      +'<div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;border-color:#C9A227;">'+initFC+'</div>'
-      +'<div><div class="recap-nom">'+fc.nom+'</div><div style="font-size:11px;color:var(--gris);">'+fc.formation+' · '+joursFC.join(', ')+'</div></div></div>'
-      +'<div class="recap-grid">'
-      +'<div class="recap-item vert"><div class="recap-val vert">'+hPfc+'h</div><div class="recap-lbl">Présence</div></div>'
-      +'<div class="recap-item rouge"><div class="recap-val rouge">'+hAfc+'h</div><div class="recap-lbl">Absence</div></div>'
-      +'<div class="recap-item" style="background:#f5f2ff;"><div class="recap-val" style="color:#7C5CFF;">'+distfc+'</div><div class="recap-lbl">Distanciel</div></div>'
-      +'<div class="recap-item or"><div class="recap-val or">'+sfc+'</div><div class="recap-lbl">Séances</div></div>'
-      +'</div>'+mhFC;
-    container.appendChild(cardFC);
-  }
   document.getElementById('totalHeures').textContent = totalHeuresGlobal + 'h';
   document.getElementById('totalAbsences').textContent = totalAbsencesGlobal + 'h';
   document.getElementById('totalSeances').textContent = totalSeancesGlobal;
-  _recapEnCours = false;
 }
 
 ['filterMois','filterTotal'].forEach(function(id) {
@@ -861,32 +823,125 @@ document.getElementById('btnLogout').addEventListener('click',function(){session
 
 // Vérifier accès
 
-// ── SIGNATURE DISTANCIEL AUTOMATIQUE ────────────────────────
-async function signerDistancielAuto() {
-  const DIST={'HV01':{j:5,d:new Date(2026,6,21)},'MJ01':{j:5,d:new Date(2026,6,21)},'BC01':{j:5,d:new Date(2026,6,21)},'RE02':{j:5,d:new Date(2026,6,21)},'ML01':{j:2,d:new Date(2026,6,21)},'GM01':{j:2,d:new Date(2026,6,21)}};
-  const EXCL=['2026-07-14','2026-12-21','2026-12-22','2026-12-23','2026-12-24','2026-12-25','2026-12-28','2026-12-29','2026-12-30','2026-12-31','2027-01-01','2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08'];
-  const FIN=new Date(2027,5,30); const today=new Date(); today.setHours(0,0,0,0);
-  for(const [id,cfg] of Object.entries(DIST)){
-    let sigAlt='global_sign_auto';
-    try{const ps=await get(ref(db,'stagiairesFC/'+id+'/premiereSignature'));if(ps.exists())sigAlt=ps.val();}catch(e){}
-    let d=new Date(cfg.d);
-    while(d<today&&d<=FIN){
-      if(d.getDay()===cfg.j){
-        const y=d.getFullYear(),m=d.getMonth()+1,j=d.getDate();
-        const iso=y+'-'+String(m).padStart(2,'0')+'-'+String(j).padStart(2,'0');
-        if(!EXCL.includes(iso)){
-          const key=id+'_fc_'+y+'_'+m+'_'+j;
-          const snap=await get(ref(db,'emargementsFC/'+key));
-          const data=snap.exists()?snap.val():{};
-          if(!data.matin_alt||!data.am_alt){
-            await set(ref(db,'emargementsFC/'+key),{mode:'distanciel',presence:'present',matin_alt:data.matin_alt||sigAlt,matin_form:data.matin_form||'global_sign_auto_'+Date.now(),am_alt:data.am_alt||sigAlt,am_form:data.am_form||'global_sign_auto_'+Date.now(),auto:true});
-          }
-        }
-      }
-      d.setDate(d.getDate()+1);
+// ── TABLEAU DE BORD FORMATRICE ───────────────────────────────
+async function chargerDashboard() {
+  const today = new Date();
+  const jourNoms = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const moisNoms = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const dashDateEl = document.getElementById('dashDate');
+  if (dashDateEl) dashDateEl.textContent = jourNoms[today.getDay()]+' '+today.getDate()+' '+moisNoms[today.getMonth()]+' '+today.getFullYear();
+
+  const jourNom = jourNoms[today.getDay()];
+  const jourNum = today.getDay();
+  const jourMapFC = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  const liste = document.getElementById('dashListe');
+  if (!liste) return;
+  liste.innerHTML = '';
+  let presents=0, absents=0, distanciel=0, total=0;
+
+  // Alternants du jour selon profil
+  const altDuJour = allAlternants.filter(a => a.jourCentre === jourNom);
+  const altFiltered = profil.altIds ? altDuJour.filter(a => profil.altIds.includes(a.id)) : altDuJour;
+
+  if (altFiltered.length > 0) {
+    const sep = document.createElement('div');
+    sep.style.cssText = 'font-size:10px;font-weight:800;color:var(--bleu);text-transform:uppercase;letter-spacing:1px;padding:6px 0 4px;opacity:0.7;';
+    sep.textContent = '👥 Alternants';
+    liste.appendChild(sep);
+    for (const alt of altFiltered) {
+      total++;
+      const key = alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap = await get(ref(db,'emargements/'+key));
+      const data = snap.exists() ? snap.val() : {};
+      const absent = data.presence === 'absent';
+      if (absent) absents++; else if (data.matin_alt || data.am_alt) presents++;
+      const dot = (ok) => '<div style="width:10px;height:10px;border-radius:50%;background:'+(absent?'var(--rouge)':ok?'var(--vert)':'#e2e8f0')+'"></div>';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f5;';
+      row.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--bleu-fonce);">'+alt.nom+'</div>'
+        +'<div style="display:flex;gap:6px;">'+dot(data.matin_alt)+dot(data.matin_form)+dot(data.am_alt)+dot(data.am_form)+'</div>';
+      liste.appendChild(row);
     }
   }
+
+  // FC du jour selon profil
+  const fcFiltered2 = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
+  const fcDuJour = [];
+  for (const fc of fcFiltered2) {
+    try {
+      const jSnap = await get(ref(db,'stagiairesFC/'+fc.id+'/jours'));
+      if (jSnap.exists()) {
+        const jours = Object.values(jSnap.val()).filter(Boolean);
+        if (jours.map(j=>jourMapFC[j]).filter(Boolean).includes(jourNum)) fcDuJour.push(fc);
+      }
+    } catch(e) {}
+  }
+  if (fcDuJour.length > 0) {
+    const sep = document.createElement('div');
+    sep.style.cssText = 'font-size:10px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid #f0f2f5;margin-top:6px;';
+    sep.textContent = '🎓 Formation Continue';
+    liste.appendChild(sep);
+    for (const fc of fcDuJour) {
+      total++;
+      const key = fc.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap = await get(ref(db,'emargementsFC/'+key));
+      const data = snap.exists() ? snap.val() : {};
+      const absent = data.presence === 'absent';
+      const isAuto = !!data.auto;
+      const isDist = data.mode === 'distanciel';
+      if (absent) absents++;
+      else if (isDist) { distanciel++; presents++; }
+      else if (data.matin_alt || data.am_alt) presents++;
+      const badge = isDist ? '<span style="font-size:9px;background:#f5f2ff;color:#7C5CFF;padding:1px 5px;border-radius:4px;margin-left:5px;">📡</span>' : '';
+      const dotFC = (ok) => '<div style="width:10px;height:10px;border-radius:50%;background:'+(absent?'var(--rouge)':isAuto?'#7C5CFF':ok?'var(--vert)':'#e2e8f0')+'"></div>';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f5;';
+      row.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--bleu-fonce);">'+fc.nom+badge+'</div>'
+        +'<div style="display:flex;gap:6px;">'+dotFC(data.matin_alt)+dotFC(data.matin_form)+dotFC(data.am_alt)+dotFC(data.am_form)+'</div>';
+      liste.appendChild(row);
+    }
+  }
+  if (total === 0) {
+    liste.innerHTML = '<div style="opacity:0.6;font-size:12px;padding:10px 0;">Aucune séance prévue aujourd\'hui.</div>';
+  }
+  const setEl = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  setEl('dashPresents', presents);
+  setEl('dashAbsents', absents);
+  setEl('dashDistanciel', distanciel);
+  setEl('dashTotal', total);
+
+  // Prochaines séances (J+1 et J+2)
+  const prochainDiv = document.getElementById('dashProchain');
+  if (!prochainDiv) return;
+  let html = '';
+  for (let i=1; i<=3; i++) {
+    const d = new Date(today); d.setDate(d.getDate()+i);
+    if (d.getDay()===0||d.getDay()===6) continue; // skip WE
+    const jN = jourNoms[d.getDay()];
+    const altJ = allAlternants.filter(a=>a.jourCentre===jN);
+    const altFJ = profil.altIds ? altJ.filter(a=>profil.altIds.includes(a.id)) : altJ;
+    const fcFJ = [];
+    for (const fc of fcFiltered2) {
+      try {
+        const jSnap = await get(ref(db,'stagiairesFC/'+fc.id+'/jours'));
+        if (jSnap.exists()) {
+          const jours = Object.values(jSnap.val()).filter(Boolean);
+          if (jours.map(j=>jourMapFC[j]).filter(Boolean).includes(d.getDay())) fcFJ.push(fc);
+        }
+      } catch(e) {}
+    }
+    const t2 = altFJ.length + fcFJ.length;
+    if (t2 > 0) {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f0f2f5;">'
+        +'<div><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+jN+' '+d.getDate()+'/'+('0'+(d.getMonth()+1)).slice(-2)+'</div>'
+        +'<div style="font-size:11px;color:var(--gris);margin-top:1px;">'+[...altFJ.map(a=>a.nom),...fcFJ.map(f=>f.nom)].join(', ')+'</div></div>'
+        +'<div style="font-size:12px;font-weight:700;color:var(--or);">'+t2+' pers.</div>'
+        +'</div>';
+    }
+  }
+  prochainDiv.innerHTML = html || '<div style="opacity:0.6;font-size:12px;padding:10px 0;">Aucune séance prévue.</div>';
 }
+
 
 chargerAlternants();
 
@@ -1285,10 +1340,7 @@ document.getElementById('btnExportPDFPersonne').addEventListener('click', functi
   const menu = document.getElementById('menuPersonne');
   if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
   menu.innerHTML = '';
-
-  // Alternants
-  const alts = window.allAlternants || [];
-  alts.forEach(function(alt) {
+  allAlternants.forEach(function(alt) {
     const item = document.createElement('div');
     item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#2a3f4e;border-bottom:1px solid #f0f2f5;';
     item.textContent = alt.nom + ' — ' + alt.formation;
@@ -1300,30 +1352,6 @@ document.getElementById('btnExportPDFPersonne').addEventListener('click', functi
     });
     menu.appendChild(item);
   });
-
-  // Séparateur Formation Continue
-  const fcs = window.allFC || [];
-  const profil = window.profil || null;
-  const fcFiltres = profil && profil.fcIds ? fcs.filter(fc => profil.fcIds.includes(fc.id)) : fcs;
-  if (fcFiltres.length > 0) {
-    const sep = document.createElement('div');
-    sep.style.cssText = 'padding:8px 14px;font-size:10px;font-weight:800;color:#C9A227;background:#fdf6e3;text-transform:uppercase;letter-spacing:1px;';
-    sep.textContent = '🎓 Formation Continue';
-    menu.appendChild(sep);
-    fcFiltres.forEach(function(fc) {
-      const item = document.createElement('div');
-      item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#2a3f4e;border-bottom:1px solid #f0f2f5;';
-      item.textContent = fc.nom + ' — ' + fc.formation;
-      item.addEventListener('mouseenter', function(){ item.style.background='#fdf6e3'; });
-      item.addEventListener('mouseleave', function(){ item.style.background='#fff'; });
-      item.addEventListener('click', function() {
-        menu.style.display = 'none';
-        exporterPDFPersonneFC(fc);
-      });
-      menu.appendChild(item);
-    });
-  }
-
   menu.style.display = 'block';
 });
 document.addEventListener('click', function(e) {
@@ -1506,155 +1534,6 @@ async function exporterPDFPersonne(alt) {
   doc.save('JTCF_'+alt.nom.replace(/ /g,'_')+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
   btn.textContent='👤 Exporter PDF par personne'; btn.disabled=false;
 }
-
-async function exporterPDFPersonneFC(fc) {
-  const btn = document.getElementById('btnExportPDFPersonne');
-  btn.textContent = '⏳ Génération...'; btn.disabled = true;
-  if (!window.jspdf) {
-    await new Promise(function(resolve) {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      s.onload = resolve; document.head.appendChild(s);
-    });
-  }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  const moisNomsFr = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-  const OR=[201,162,39],BLEU=[61,90,110],BF=[42,63,78],GRIS=[113,128,150],VERT=[56,161,105],ROUGE=[229,62,62];
-  const MATIN_H=4, AM_H=3.5;
-  let pageNum=1;
-
-  const isMois = document.getElementById('filterMois').classList.contains('active');
-  const moisVal = document.getElementById('moisSelect').value.split('-').map(Number);
-  const filterYear = isMois ? moisVal[0] : null;
-  const filterMonth = isMois ? moisVal[1] : null;
-  const periodeTitre = isMois ? moisNoms[filterMonth]+' '+filterYear : 'Total formation';
-
-  function addHeader(titre) {
-    doc.setFillColor(...BF); doc.rect(0,0,210,30,'F');
-    doc.setTextColor(...OR); doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text('JT CONSEIL FORMATION',15,12);
-    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255); doc.text('Saint-Joseph · La Réunion · Formation Continue',15,18);
-    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text(titre,15,25);
-    const now=new Date(); doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(200,200,200);
-    doc.text('Généré le '+now.toLocaleDateString('fr-FR')+' à '+now.toLocaleTimeString('fr-FR'),150,25);
-  }
-  function addFooter(n) {
-    doc.setFillColor(...BF); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
-    doc.text('Page '+n,195,292,{align:'right'});
-  }
-
-  const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-  const { getApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-  const db = getDatabase(getApp());
-
-  // Jours depuis Firebase
-  const jMapFC={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
-  let joursFC=['Lundi','Mardi','Mercredi','Jeudi'];
-  try { const js=await get(ref(db,'stagiairesFC/'+fc.id+'/jours')); if(js.exists()) joursFC=Object.values(js.val()).filter(Boolean); } catch(e){}
-  const joursNum=joursFC.map(j=>jMapFC[j]).filter(Boolean);
-
-  // Séances
-  const pd=fc.debut?fc.debut.split('/'):['13','07','2026'];
-  const deb=new Date(parseInt(pd[2]),parseInt(pd[1])-1,parseInt(pd[0]));
-  const finF=new Date(2027,5,30); const nowF=new Date(); nowF.setHours(23,59,59,999);
-  let hP=0,hA=0,nbDist=0; const seancesFC=[];
-  let dF=new Date(deb);
-  while(dF<=finF&&dF<=nowF){
-    if(joursNum.includes(dF.getDay())){
-      if(isMois&&(dF.getFullYear()!==filterYear||dF.getMonth()!==filterMonth)){dF.setDate(dF.getDate()+1);continue;}
-      const key=fc.id+'_fc_'+dF.getFullYear()+'_'+(dF.getMonth()+1)+'_'+dF.getDate();
-      const snap=await get(ref(db,'emargementsFC/'+key));
-      const data=snap.exists()?snap.val():{};
-      const ab=data.presence==='absent';
-      if(data.mode==='distanciel') nbDist++;
-      if(ab){hA+=(MATIN_H+AM_H);}
-      else if(data.auto||data.mode==='distanciel'){hP+=(MATIN_H+AM_H);}
-      else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
-      seancesFC.push({date:new Date(dF),data,absent:ab});
-    }
-    dF.setDate(dF.getDate()+1);
-  }
-
-  // PAGE
-  addHeader('ÉMARGEMENT FC · '+fc.nom.toUpperCase()+' · '+periodeTitre.toUpperCase());
-  addFooter(pageNum);
-  doc.setFillColor(...OR); doc.rect(0,30,210,2,'F');
-
-  // Infos stagiaire
-  doc.setFillColor(...BF); doc.rect(15,38,180,32,'F');
-  doc.setTextColor(...OR); doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text(fc.nom,20,48);
-  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
-  doc.text('Formation : '+fc.formation,20,55);
-  doc.text('Type : Formation Continue   ·   Financement : Pass Formation — Région Réunion',20,61);
-  doc.text('Jours : '+joursFC.join(', ')+'   ·   Horaires : '+(fc.heures||'8h00 – 16h00'),20,67);
-  doc.text('Période éditée : '+periodeTitre+'   ·   Du '+fc.debut+' au '+(fc.fin||'—'),20,70.5);
-
-  // Compteurs
-  doc.setFillColor(...VERT); doc.rect(15,76,42,14,'F');
-  doc.setFillColor(229,62,62); doc.rect(61,76,42,14,'F');
-  doc.setFillColor(124,92,255); doc.rect(107,76,42,14,'F');
-  doc.setFillColor(...BLEU); doc.rect(153,76,42,14,'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
-  doc.text(hP+'h',36,84,{align:'center'}); doc.text(hA+'h',82,84,{align:'center'});
-  doc.text(String(nbDist),128,84,{align:'center'}); doc.text(String(seancesFC.length),174,84,{align:'center'});
-  doc.setFontSize(6.5); doc.setFont('helvetica','normal');
-  doc.text('Heures présence',36,88,{align:'center'}); doc.text('Heures absence',82,88,{align:'center'});
-  doc.text('Séances distanciel',128,88,{align:'center'}); doc.text('Total séances',174,88,{align:'center'});
-
-  // Tableau
-  let y=98;
-  doc.setFillColor(...BF); doc.rect(15,y,180,8,'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
-  doc.text('Date',18,y+5); doc.text('Mode',50,y+5); doc.text('Présence',75,y+5);
-  doc.text('Sig. Stagiaire',115,y+5); doc.text('Sig. Formateur',158,y+5);
-  y+=8;
-
-  for(const s of seancesFC){
-    if(y>262){
-      pageNum++; doc.addPage();
-      addHeader('ÉMARGEMENT FC · '+fc.nom.toUpperCase()+' (suite)'); addFooter(pageNum);
-      doc.setFillColor(...OR); doc.rect(0,30,210,2,'F'); y=38;
-      doc.setFillColor(...BF); doc.rect(15,y,180,8,'F');
-      doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
-      doc.text('Date',18,y+5); doc.text('Mode',50,y+5); doc.text('Présence',75,y+5);
-      doc.text('Sig. Stagiaire',115,y+5); doc.text('Sig. Formateur',158,y+5); y+=8;
-    }
-    const ds=s.date.getDate()+' '+moisNomsFr[s.date.getMonth()]+' '+s.date.getFullYear();
-    const rc=s.absent?[255,245,245]:s.data.mode==='distanciel'?[245,242,255]:(s.data.matin_alt&&s.data.matin_form?[240,255,244]:[250,250,252]);
-    doc.setFillColor(...rc); doc.rect(15,y,180,10,'F');
-    doc.setTextColor(...BF); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(ds,18,y+6);
-    doc.setFont('helvetica','normal');
-    if(s.data.mode==='distanciel'){doc.setTextColor(124,92,255);doc.text('Distanciel',50,y+6);}
-    else if(s.data.mode==='presentiel'){doc.setTextColor(...GRIS);doc.text('Présentiel',50,y+6);}
-    else{doc.setTextColor(...GRIS);doc.text('—',50,y+6);}
-    if(s.absent){doc.setTextColor(...ROUGE);doc.text('Absent(e)',75,y+6);}
-    else{doc.setTextColor(...VERT);doc.text('Présent(e)',75,y+6);}
-    const sA=s.data.matin_alt||s.data.am_alt;
-    const sF=s.data.matin_form||s.data.am_form;
-    if(!s.absent&&sA&&sA.startsWith&&sA.startsWith('data:image')){try{doc.addImage(sA,'JPEG',113,y+1,30,8);}catch(e){doc.setTextColor(...VERT);doc.text('Signé',117,y+6);}}
-    else{doc.setTextColor(sA?VERT:GRIS);doc.text(s.absent?'Absent':sA?'Signé':'En attente',117,y+6);}
-    if(!s.absent&&sF&&sF.startsWith&&sF.startsWith('data:image')){try{doc.addImage(sF,'JPEG',156,y+1,30,8);}catch(e){doc.setTextColor(...VERT);doc.text('Signé',160,y+6);}}
-    else{doc.setTextColor(sF?VERT:GRIS);doc.text(s.absent?'Absent':sF?'Signé':'En attente',160,y+6);}
-    doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10);
-    y+=10;
-  }
-
-  // Zones signature
-  y+=10;
-  if(y>235){pageNum++;doc.addPage();addHeader('ÉMARGEMENT FC · '+fc.nom.toUpperCase()+' · Validation');addFooter(pageNum);y=45;}
-  doc.setDrawColor(...OR); doc.setLineWidth(0.5); doc.rect(15,y,84,30); doc.rect(111,y,84,30);
-  doc.setTextColor(...GRIS); doc.setFontSize(8); doc.setFont('helvetica','bold');
-  doc.text('Signature Formateur / Direction',57,y+5,{align:'center'}); doc.text('Signature Stagiaire',153,y+5,{align:'center'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(7);
-  doc.text('Lu et approuvé',57,y+28,{align:'center'}); doc.text('Lu et approuvé',153,y+28,{align:'center'});
-
-  doc.save('JTCF_FC_'+fc.nom.replace(/ /g,'_')+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
-  btn.textContent='👤 Exporter PDF par personne'; btn.disabled=false;
-}
-
 </script>
 
 <script>
