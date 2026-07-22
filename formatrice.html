@@ -1131,7 +1131,7 @@ async function chargerDashboard() {
   }
 
   if (todayList.querySelectorAll('.today-row').length === 0) {
-    todayList.innerHTML = '<div style="opacity:0.7;font-size:12px;padding:8px 0;">Aucune séance prévue aujourd'hui</div>';
+    todayList.innerHTML = '<div style="opacity:0.7;font-size:12px;padding:8px 0;">Aucune s&#233;ance pr&#233;vue aujourd&#8217;hui</div>';
   }
 
   const legende = document.createElement('div');
@@ -1158,7 +1158,7 @@ if (document.getElementById('btnSignGlobalMatinFC')) {
   async function signerGlobalFC(period) {
     const today = new Date(); today.setHours(0,0,0,0);
     const jourToday = today.getDay();
-    if (jourToday < 1 || jourToday > 4) { alert('Pas de séance FC aujourd'hui.'); return; }
+    if (jourToday < 1 || jourToday > 4) { alert('Pas de séance FC aujourd’hui.'); return; }
     const debutFCg = new Date(2026, 6, 13); const finFCg = new Date(2027, 5, 30);
     if (today < debutFCg || today > finFCg) { alert('Hors période FC.'); return; }
     const fcAffich = profil.fcIds ? allFC.filter(function(fc){ return profil.fcIds.includes(fc.id); }) : allFC;
