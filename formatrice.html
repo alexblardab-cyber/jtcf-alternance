@@ -132,6 +132,10 @@
   </div>
 </div>
 
+<div id="dashboardAujourdhui" style="background:linear-gradient(135deg,#2a3f4e,#3d5a6e);padding:14px 16px;display:none;">
+  <div style="font-size:12px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📋 Présents aujourd'hui</div>
+  <div id="dashAltList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+</div>
 <div class="nav" id="mainNav">
   <a class="nav-btn active" data-target="lundi">📅 Lundi</a>
   <a class="nav-btn" data-target="mardi">📅 Mardi</a>
@@ -440,7 +444,25 @@ async function chargerAlternants() {
   const fcFiltered = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
   afficherListeFC('listeFC', fcFiltered);
   remplirMoisSelect();
-  chargerRecap();
+  // Dashboard aujourd'hui
+  var today2 = new Date();
+  var jourNom2 = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today2.getDay()];
+  var altAujourd = allAlternants.filter(function(a){ return a.jourCentre === jourNom2; });
+  var fcAujourd = (today2.getDay() >= 1 && today2.getDay() <= 4) ? allFC : [];
+  var dash = document.getElementById('dashboardAujourdhui');
+  var dashList = document.getElementById('dashAltList');
+  if (altAujourd.length > 0 || fcAujourd.length > 0) {
+    dash.style.display = 'block';
+    dashList.innerHTML = '';
+    altAujourd.forEach(function(a) {
+      var ini = a.nom.split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
+      dashList.innerHTML += '<div style="background:rgba(255,255,255,0.12);border-radius:8px;padding:6px 10px;font-size:12px;color:white;font-weight:600;display:flex;align-items:center;gap:6px;"><span style="background:#C9A227;color:#2a3f4e;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;">'+ini+'</span>'+a.nom+'</div>';
+    });
+    fcAujourd.forEach(function(fc) {
+      var ini = fc.nom.split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
+      dashList.innerHTML += '<div style="background:rgba(201,162,39,0.2);border:1px solid rgba(201,162,39,0.4);border-radius:8px;padding:6px 10px;font-size:12px;color:#C9A227;font-weight:600;display:flex;align-items:center;gap:6px;"><span style="background:#C9A227;color:#2a3f4e;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;">'+ini+'</span>'+fc.nom+' 🎓</span></div>';
+    });
+  }
 }
 
 function afficherListeFC(containerId, fcs) {
@@ -602,51 +624,46 @@ async function chargerRecap() {
     container.appendChild(card);
   }
 
-  // FC dans recapheure
-  var fcRecap = profil.fcIds ? allFC.filter(function(x){return profil.fcIds.includes(x.id);}) : allFC;
-  if (fcRecap.length > 0) {
-    var sepFC = document.createElement('div');
-    sepFC.style.cssText = 'background:linear-gradient(135deg,#2a3f4e,#3d5a6e);color:#C9A227;font-weight:800;font-size:13px;padding:12px 16px;border-radius:12px;margin:16px 0 10px;';
-    sepFC.textContent = '🎓 Formation Continue';
-    container.appendChild(sepFC);
+  var fcR = profil.fcIds ? allFC.filter(function(x){return profil.fcIds.includes(x.id);}) : allFC;
+  if (fcR.length > 0) {
+    var sepEl = document.createElement('div');
+    sepEl.style.cssText = 'background:linear-gradient(135deg,#2a3f4e,#3d5a6e);color:#C9A227;font-weight:800;font-size:13px;padding:12px 16px;border-radius:12px;margin:16px 0 10px;';
+    sepEl.textContent = '🎓 Formation Continue';
+    container.appendChild(sepEl);
   }
-  for (var ifc = 0; ifc < fcRecap.length; ifc++) {
-    var fc2 = fcRecap[ifc];
-    var hP = 0, hA = 0, nbS = 0;
-    var debut2 = new Date(2026, 6, 13);
-    var fin2 = new Date(2027, 5, 30);
-    var d2 = new Date(debut2);
-    while (d2 <= fin2) {
-      var j2 = d2.getDay();
-      if (j2 >= 1 && j2 <= 4) {
-        if (filterMode === 'mois' && (d2.getFullYear() !== filterYear || d2.getMonth() !== filterMonth)) { d2.setDate(d2.getDate()+1); continue; }
-        if (d2 <= new Date()) {
-          var k2 = fc2.id + '_fc_' + d2.getFullYear() + '_' + (d2.getMonth()+1) + '_' + d2.getDate();
-          var sn2 = await get(ref(db, 'emargementsFC/' + k2));
-          var dat2 = sn2.exists() ? sn2.val() : {};
-          nbS++;
-          if (dat2.presence === 'absent') { hA += 6; }
-          else { if (dat2.matin_alt) hP += 3.75; if (dat2.am_alt) hP += 2.25; }
+  for (var ri = 0; ri < fcR.length; ri++) {
+    var fcItem = fcR[ri];
+    var hP2=0, hA2=0, nb2=0;
+    var dFC = new Date(2026,6,13), finFC = new Date(2027,5,30);
+    while (dFC <= finFC) {
+      var jj = dFC.getDay();
+      if (jj >= 1 && jj <= 4 && dFC <= new Date()) {
+        if (!(filterMode==='mois' && (dFC.getFullYear()!==filterYear||dFC.getMonth()!==filterMonth))) {
+          var kFC = fcItem.id+'_fc_'+dFC.getFullYear()+'_'+(dFC.getMonth()+1)+'_'+dFC.getDate();
+          var snFC = await get(ref(db,'emargementsFC/'+kFC));
+          var dFC2 = snFC.exists()?snFC.val():{};
+          nb2++;
+          if (dFC2.presence==='absent'){hA2+=6;}
+          else{if(dFC2.matin_alt)hP2+=3.75;if(dFC2.am_alt)hP2+=2.25;}
         }
       }
-      d2.setDate(d2.getDate()+1);
+      dFC.setDate(dFC.getDate()+1);
     }
-    totalHeuresGlobal += hP; totalAbsencesGlobal += hA; totalSeancesGlobal += nbS;
-    if (nbS === 0) continue;
-    var ini2 = fc2.nom.split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
-    var card3 = document.createElement('div');
-    card3.className = 'recap-card';
-    card3.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
-      + '<div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;border-color:#C9A227;">' + ini2 + '</div>'
-      + '<div><div class="recap-nom">' + fc2.nom + '</div>'
-      + '<div style="font-size:11px;color:var(--gris);">' + fc2.formation + ' · 🎓 FC</div></div></div>'
-      + '<div class="recap-grid">'
-      + '<div class="recap-item vert"><div class="recap-val vert">' + hP + 'h</div><div class="recap-lbl">Présence</div></div>'
-      + '<div class="recap-item rouge"><div class="recap-val rouge">' + hA + 'h</div><div class="recap-lbl">Absence</div></div>'
-      + '<div class="recap-item or"><div class="recap-val or">' + nbS + '</div><div class="recap-lbl">Séances</div></div>'
-      + '<div class="recap-item"><div class="recap-val">' + (hP+hA) + 'h</div><div class="recap-lbl">Total</div></div>'
-      + '</div>';
-    container.appendChild(card3);
+    totalHeuresGlobal+=hP2;totalAbsencesGlobal+=hA2;totalSeancesGlobal+=nb2;
+    if(nb2===0)continue;
+    var ini3=fcItem.nom.split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
+    var crd=document.createElement('div');crd.className='recap-card';
+    crd.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+      +'<div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;border-color:#C9A227;">'+ini3+'</div>'
+      +'<div><div class="recap-nom">'+fcItem.nom+'</div>'
+      +'<div style="font-size:11px;color:var(--gris);">'+fcItem.formation+' · 🎓 FC</div></div></div>'
+      +'<div class="recap-grid">'
+      +'<div class="recap-item vert"><div class="recap-val vert">'+hP2+'h</div><div class="recap-lbl">Présence</div></div>'
+      +'<div class="recap-item rouge"><div class="recap-val rouge">'+hA2+'h</div><div class="recap-lbl">Absence</div></div>'
+      +'<div class="recap-item or"><div class="recap-val or">'+nb2+'</div><div class="recap-lbl">Séances</div></div>'
+      +'<div class="recap-item"><div class="recap-val">'+(hP2+hA2)+'h</div><div class="recap-lbl">Total</div></div>'
+      +'</div>';
+    container.appendChild(crd);
   }
   document.getElementById('totalHeures').textContent = totalHeuresGlobal + 'h';
   document.getElementById('totalAbsences').textContent = totalAbsencesGlobal + 'h';
