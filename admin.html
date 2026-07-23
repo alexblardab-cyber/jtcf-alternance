@@ -1064,7 +1064,7 @@ async function sauvegarderFC(e){
   e.preventDefault();
   const id=editingFC||document.getElementById('fcFormId').value.trim().toUpperCase();
   if(!id){alert('Identifiant requis.');return;}
-  await set(ref(db,'stagiairesFC/'+id),{
+  await update(ref(db,'stagiairesFC/'+id),{
     nom:document.getElementById('fcFormNom').value.trim(),
     formation:document.getElementById('fcFormFormation').value,
     debut:document.getElementById('fcFormDebut').value.trim(),
