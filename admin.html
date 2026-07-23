@@ -52,6 +52,7 @@
   .dot-sign.signe { background: #68d391; }
   .dot-sign.attente { background: #fc8181; }
   .dot-sign.absent { background: #a0aec0; }
+  .dot-sign.auto { background: #7C5CFF; }
   .alternant-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; margin-bottom: 8px; background: var(--gris-clair); cursor: pointer; border: 2px solid transparent; touch-action: manipulation; }
   .alternant-card:hover { border-color: var(--or); background: var(--or-pale); }
   .alternant-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
@@ -357,32 +358,71 @@ async function chargerDashboard() {
   document.getElementById('kpiTotal').textContent = allAlternants.length;
   document.getElementById('kpiFC').textContent = allFC.length;
   document.getElementById('kpiLundi').textContent = allAlternants.filter(a=>a.jourCentre==='Lundi').length;
-  const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today.getDay()];
+  const jourNum = today.getDay();
+  const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][jourNum];
   const altAujourdhui = allAlternants.filter(a => a.jourCentre === jourNom);
   const todayList = document.getElementById('todayList');
-  if (altAujourdhui.length === 0) {
-    todayList.innerHTML = '<div style="opacity:0.7;font-size:12px;">Aucune séance prévue aujourd\'hui</div>';
-  } else {
-    todayList.innerHTML = '';
-    let absentsCount = 0;
+  todayList.innerHTML = '';
+  let absentsCount = 0;
+  let totalAujourdhui = 0;
+
+  // ── Alternants ──
+  if (altAujourdhui.length > 0) {
+    const sepAlt = document.createElement('div');
+    sepAlt.style.cssText = 'font-size:10px;font-weight:800;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;padding:6px 0 4px;';
+    sepAlt.textContent = '\uD83D\uDD3A ALTERNANTS';
+    todayList.appendChild(sepAlt);
     for (const alt of altAujourdhui) {
+      totalAujourdhui++;
       const key=alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
       const snap=await get(ref(db,'emargements/'+key));
       const data=snap.exists()?snap.val():{};
       const absent=data.presence==='absent';
       if(absent) absentsCount++;
       const row=document.createElement('div'); row.className='today-row';
-      row.innerHTML=`<div class="today-nom">${alt.nom}</div><div class="today-statuts">
-        <div class="dot-sign ${absent?'absent':data.matin_alt?'signe':'attente'}"></div>
-        <div class="dot-sign ${absent?'absent':data.matin_form?'signe':'attente'}"></div>
-        <div class="dot-sign ${absent?'absent':data.am_alt?'signe':'attente'}"></div>
-        <div class="dot-sign ${absent?'absent':data.am_form?'signe':'attente'}"></div>
-      </div>`;
+      row.innerHTML='<div class="today-nom">'+alt.nom+'</div><div class="today-statuts">'+
+        '<div class="dot-sign '+(absent?'absent':data.matin_alt?'signe':'attente')+'" title="Matin alt"></div>'+
+        '<div class="dot-sign '+(absent?'absent':data.matin_form?'signe':'attente')+'" title="Matin form"></div>'+
+        '<div class="dot-sign '+(absent?'absent':data.am_alt?'signe':'attente')+'" title="AM alt"></div>'+
+        '<div class="dot-sign '+(absent?'absent':data.am_form?'signe':'attente')+'" title="AM form"></div>'+
+        '</div>';
       todayList.appendChild(row);
     }
-    document.getElementById('kpiAbsents').textContent = absentsCount;
   }
-  document.getElementById('activiteRecente').innerHTML='<div style="font-size:12px;color:var(--gris);">🟢 Signé &nbsp; 🔴 En attente &nbsp; ⚫ Absent</div>';
+
+  // ── Formation Continue ──
+  const debutFC = new Date(2026, 6, 13);
+  const finFC = new Date(2027, 5, 30);
+  const isFCDay = jourNum >= 1 && jourNum <= 4 && today >= debutFC && today <= finFC;
+  if (isFCDay && allFC.length > 0) {
+    const sepFC = document.createElement('div');
+    sepFC.style.cssText = 'font-size:10px;font-weight:800;color:var(--or);text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid rgba(255,255,255,0.15);margin-top:6px;';
+    sepFC.textContent = '\uD83C\uDF93 FORMATION CONTINUE';
+    todayList.appendChild(sepFC);
+    for (const fc of allFC) {
+      totalAujourdhui++;
+      const key=fc.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap=await get(ref(db,'emargementsFC/'+key));
+      const data=snap.exists()?snap.val():{};
+      const absent=data.presence==='absent';
+      if(absent) absentsCount++;
+      const isAuto = !!data.auto;
+      const row=document.createElement('div'); row.className='today-row';
+      row.innerHTML='<div class="today-nom">'+fc.nom+'</div><div class="today-statuts">'+
+        '<div class="dot-sign '+(absent?'absent':(data.matin_alt&&!isAuto)?'signe':isAuto?'auto':'attente')+'" title="Matin stagiaire"></div>'+
+        '<div class="dot-sign '+(absent?'absent':(data.matin_form&&!isAuto)?'signe':isAuto?'auto':'attente')+'" title="Matin formateur"></div>'+
+        '<div class="dot-sign '+(absent?'absent':(data.am_alt&&!isAuto)?'signe':isAuto?'auto':'attente')+'" title="AM stagiaire"></div>'+
+        '<div class="dot-sign '+(absent?'absent':(data.am_form&&!isAuto)?'signe':isAuto?'auto':'attente')+'" title="AM formatrice"></div>'+
+        '</div>';
+      todayList.appendChild(row);
+    }
+  }
+
+  if (totalAujourdhui === 0) {
+    todayList.innerHTML = '<div style="opacity:0.7;font-size:12px;">Aucune s&#233;ance pr&#233;vue aujourd&#8217;hui</div>';
+  }
+  document.getElementById('kpiAbsents').textContent = absentsCount;
+  document.getElementById('activiteRecente').innerHTML='<div style="font-size:12px;color:var(--gris);">&#x1F7E2; Sign&#233; &nbsp; &#x1F534; En attente &nbsp; &#x26AB; Absent &nbsp; &#x1F7E3; Auto</div>';
 }
 
 function afficherListeAlternants() {
