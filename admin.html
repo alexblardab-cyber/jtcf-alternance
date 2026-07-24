@@ -1108,14 +1108,17 @@ async function sauvegarderFC(e){
   e.preventDefault();
   const id=editingFC||document.getElementById('fcFormId').value.trim().toUpperCase();
   if(!id){alert('Identifiant requis.');return;}
-  await update(ref(db,'stagiairesFC/'+id),{
+  const fcData = {
     nom:document.getElementById('fcFormNom').value.trim(),
     formation:document.getElementById('fcFormFormation').value,
     debut:document.getElementById('fcFormDebut').value.trim(),
     fin:document.getElementById('fcFormFin').value.trim(),
-    jours:['Lundi','Mardi','Mercredi','Jeudi'],
     heures:'8h00 – 16h00', type:'fc'
-  });
+  };
+  // Ne pas écraser les jours existants (ex: GM01/LM01 avec vendredi)
+  // Seulement pour les nouveaux stagiaires, on initialise les jours
+  if (!editingFC) { fcData.jours = ['Lundi','Mardi','Mercredi','Jeudi']; }
+  await update(ref(db,'stagiairesFC/'+id), fcData);
   document.getElementById('fcFormSuccess').classList.add('visible');
   await chargerTout();
 
