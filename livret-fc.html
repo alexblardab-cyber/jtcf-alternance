@@ -380,7 +380,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -750,8 +750,23 @@ async function updateEmargement() {
   zoneEmarg.style.display = 'block';
 
   const key = getKey(d);
-  const snap = await get(ref(db, 'emargementsFC/' + key));
-  const data = snap.exists() ? snap.val() : {};
+  let snap = await get(ref(db, 'emargementsFC/' + key));
+  let data = snap.exists() ? snap.val() : {};
+
+  // ASCA : auto-sign distanciel le mardi (stagiaires avec Vendredi dans leurs jours)
+  var estMardi = new Date(d).getDay() === 2;
+  var estASCA = joursFormation.some(function(j){ return new Date(j).getDay() === 5; });
+  if (estMardi && estASCA && !data.matin_alt) {
+    var autoUpdates = {};
+    autoUpdates['emargementsFC/'+key+'/mode'] = 'distanciel';
+    autoUpdates['emargementsFC/'+key+'/presence'] = 'present';
+    autoUpdates['emargementsFC/'+key+'/matin_alt'] = 'auto';
+    autoUpdates['emargementsFC/'+key+'/am_alt'] = 'auto';
+    await update(ref(db), autoUpdates);
+    snap = await get(ref(db, 'emargementsFC/' + key));
+    data = snap.exists() ? snap.val() : {};
+  }
+
   const modeActuel = data.mode || null;
   const presenceActuelle = data.presence || null;
 
@@ -795,6 +810,7 @@ async function updateEmargement() {
     const altSigne = data[s.alt]; const formSigne = data[s.form];
     const altEl = document.getElementById(s.altEl);
     if (absent) { altEl.textContent='❌ Absent(e)'; altEl.className='emarg-status status-attente'; }
+    else if (altSigne === 'auto') { altEl.textContent='✅ Distanciel auto'; altEl.className='emarg-status status-distanciel'; }
     else { altEl.textContent=altSigne?'✅ Signé':'En attente'; altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente'); }
     const formEl = document.getElementById(s.formEl);
     formEl.textContent = formSigne?'✅ Signé':'En attente';
@@ -911,7 +927,6 @@ document.getElementById('btnSemNext').addEventListener('click',function(){semain
 async function chargerDocumentsFC() {
   const container = document.getElementById('listeDocumentsFC');
   if (!container) return;
-  // Lire le nœud complet pour avoir documents.dossier
   const snap = await get(ref(db, 'stagiairesFC/' + userId));
   const profil = snap.exists() ? snap.val() : {};
   const lien = (profil.documents && profil.documents.dossier) ? profil.documents.dossier : '';
