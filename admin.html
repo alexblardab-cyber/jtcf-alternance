@@ -127,6 +127,7 @@
   <a class="nav-btn" data-target="stagiairesfc">🎓 FC</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📈 Récap heures</a>
+  <a class="nav-btn" data-target="signatexcept">🆘 Except.</a>
 </div>
 
 <div class="content">
@@ -279,6 +280,52 @@
       <div id="menuPersonneAdmin" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #C9A227;border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:260px;overflow-y:auto;"></div>
     </div>
     <div id="adminRecapListe"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- SIGNATURE EXCEPTIONNELLE -->
+  <div class="section" id="signatexcept">
+    <div class="card" style="background:#fff3cd;border-left:4px solid #C9A227;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:#2a3f4e;">⚠️ Signature exceptionnelle</div>
+      <div style="font-size:12px;color:#718096;margin-top:4px;">En cas de panne ou défaut technique. Réservé aux administrateurs. Chaque signature est tracée dans Firebase.</div>
+    </div>
+
+    <div class="card">
+      <div class="form-group">
+        <label>Apprenant(e)</label>
+        <select id="exceptApprenant" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;">
+          <option value="">-- Sélectionner --</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>Date de la séance</label>
+        <input type="date" id="exceptDate" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;">
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>Mode</label>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button id="exceptBtnPresentiel" onclick="setExceptMode('presentiel')" style="flex:1;padding:10px;border-radius:8px;border:2px solid #C9A227;background:#fdf6e3;font-size:12px;font-weight:700;color:#2a3f4e;cursor:pointer;">🏫 Présentiel</button>
+          <button id="exceptBtnDistanciel" onclick="setExceptMode('distanciel')" style="flex:1;padding:10px;border-radius:8px;border:2px solid #e2e8f0;background:#faf5ff;font-size:12px;font-weight:700;color:#6b46c1;cursor:pointer;">💻 Distanciel</button>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>Créneaux à signer</label>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="exceptMatin" checked style="width:16px;height:16px;"> Matin
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="exceptAM" checked style="width:16px;height:16px;"> Après-midi
+          </label>
+        </div>
+      </div>
+      <button onclick="validerSignatExcept()" style="margin-top:16px;width:100%;padding:14px;background:#C9A227;color:#2a3f4e;font-weight:700;font-size:14px;border:none;border-radius:10px;cursor:pointer;">✅ Valider la signature exceptionnelle</button>
+      <div id="exceptMsg" style="margin-top:10px;font-size:13px;font-weight:700;text-align:center;"></div>
+    </div>
+
+    <div class="card" id="exceptHistorique" style="display:none;">
+      <div class="card-title">📋 Dernières signatures exceptionnelles</div>
+      <div id="exceptHistoriqueList"></div>
+    </div>
   </div>
 
   <div class="spacer"></div>
@@ -493,6 +540,89 @@ async function sauvegarder(e){
   await update(ref(db,'alternants/'+id),data);
   document.getElementById('formSuccess').classList.add('visible');
   await chargerTout();
+
+// ── SIGNATURE EXCEPTIONNELLE ──────────────────────────────────
+var exceptMode = 'presentiel';
+
+function setExceptMode(mode) {
+  exceptMode = mode;
+  document.getElementById('exceptBtnPresentiel').style.borderColor = mode==='presentiel' ? '#C9A227' : '#e2e8f0';
+  document.getElementById('exceptBtnPresentiel').style.background = mode==='presentiel' ? '#fdf6e3' : '#ffffff';
+  document.getElementById('exceptBtnDistanciel').style.borderColor = mode==='distanciel' ? '#6b46c1' : '#e2e8f0';
+  document.getElementById('exceptBtnDistanciel').style.background = mode==='distanciel' ? '#faf5ff' : '#ffffff';
+}
+
+async function chargerApprenants() {
+  var sel = document.getElementById('exceptApprenant');
+  sel.innerHTML = '<option value="">-- Chargement... --</option>';
+  var liste = [];
+  try {
+    var snapA = await get(ref(db, 'alternants'));
+    if (snapA.exists()) {
+      Object.entries(snapA.val()).forEach(function(e) {
+        if (e[1].nom) liste.push({id:e[0], nom:e[1].nom, prenom:e[1].prenom||'', type:'alt'});
+      });
+    }
+    var snapF = await get(ref(db, 'stagiairesFC'));
+    if (snapF.exists()) {
+      Object.entries(snapF.val()).forEach(function(e) {
+        if (e[1].nom) liste.push({id:e[0], nom:e[1].nom, prenom:e[1].prenom||'', type:'fc'});
+      });
+    }
+  } catch(err) { console.log(err); }
+  liste.sort(function(a,b){ return (a.nom+a.prenom).localeCompare(b.nom+b.prenom); });
+  sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+  liste.forEach(function(a) {
+    sel.innerHTML += '<option value="' + a.id + '|' + a.type + '">' + a.prenom + ' ' + a.nom + (a.type==='fc' ? ' (FC)' : '') + '</option>';
+  });
+}
+
+async function validerSignatExcept() {
+  var val = document.getElementById('exceptApprenant').value;
+  var dateVal = document.getElementById('exceptDate').value;
+  var matin = document.getElementById('exceptMatin').checked;
+  var am = document.getElementById('exceptAM').checked;
+  var msg = document.getElementById('exceptMsg');
+
+  if (!val) { msg.style.color='#e53e3e'; msg.textContent='Sélectionne un apprenant.'; return; }
+  if (!dateVal) { msg.style.color='#e53e3e'; msg.textContent='Sélectionne une date.'; return; }
+  if (!matin && !am) { msg.style.color='#e53e3e'; msg.textContent='Coche au moins un créneau.'; return; }
+
+  var parts = val.split('|');
+  var appId = parts[0];
+  var type = parts[1];
+  var d = new Date(dateVal);
+  var y = d.getFullYear();
+  var mo = String(d.getMonth()+1).padStart(2,'0');
+  var dd = String(d.getDate()).padStart(2,'0');
+  var key = type === 'fc'
+    ? appId + '_fc_' + y + '_' + mo + '_' + dd
+    : appId + '_' + y + '_' + mo + '_' + dd;
+  var base = type === 'fc' ? 'emargementsFC' : 'emargements';
+
+  try {
+    var updates = {};
+    updates[base + '/' + key + '/mode'] = exceptMode;
+    updates[base + '/' + key + '/presence'] = 'present';
+    if (matin) {
+      updates[base + '/' + key + '/matin_alt'] = 'exception';
+      updates[base + '/' + key + '/matin_form'] = 'exception';
+    }
+    if (am) {
+      updates[base + '/' + key + '/am_alt'] = 'exception';
+      updates[base + '/' + key + '/am_form'] = 'exception';
+    }
+    updates[base + '/' + key + '/exception_par'] = 'ADMIN';
+    updates[base + '/' + key + '/exception_date'] = new Date().toLocaleDateString('fr-FR');
+    await update(ref(db), updates);
+    msg.style.color = '#38a169';
+    msg.textContent = '✅ Signature enregistrée pour ' + document.getElementById('exceptApprenant').selectedOptions[0].text;
+    setTimeout(function(){ msg.textContent=''; }, 4000);
+  } catch(err) {
+    msg.style.color = '#e53e3e';
+    msg.textContent = 'Erreur : ' + err.message;
+  }
+}
 
 // ── NOTIFICATIONS ADMIN ───────────────────────────────────────
 
@@ -917,6 +1047,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn){
     document.getElementById(target).classList.add('active');
     btn.classList.add('active');
     if(target==='recap') chargerRecapAdmin();
+    if(target==='signatexcept') chargerApprenants();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
