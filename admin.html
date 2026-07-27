@@ -291,13 +291,13 @@
     <div class="card">
       <div class="form-group">
         <label>Apprenant(e)</label>
-        <select id="exceptApprenant" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;">
+        <select id="exceptApprenant" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;margin-top:4px;">
           <option value="">-- Sélectionner --</option>
         </select>
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label>Date de la séance</label>
-        <input type="date" id="exceptDate" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;">
+        <input type="date" id="exceptDate" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;margin-top:4px;">
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label>Mode</label>
@@ -420,29 +420,28 @@ async function chargerDashboard() {
     }
     document.getElementById('kpiAbsents').textContent = absentsCount;
   }
-  // Section FC (lun-jeu, du 13/07/2026 au 30/06/2027)
-  const debutFC=new Date(2026,6,13); const finFC=new Date(2027,5,30);
-  if(today>=debutFC && today<=finFC && [1,2,3,4].includes(today.getDay())){
+  const debutFC=new Date(2026,6,13);const finFC=new Date(2027,5,30);
+  if(today>=debutFC&&today<=finFC&&[1,2,3,4].includes(today.getDay())){
     const fcDiv=document.createElement('div');
     fcDiv.innerHTML='<div class="today-titre" style="margin-top:14px;">🎓 Formation Continue</div>';
     todayList.parentNode.appendChild(fcDiv);
-    const fcList=document.createElement('div'); fcDiv.appendChild(fcList);
+    const fcList=document.createElement('div');fcDiv.appendChild(fcList);
     for(const fc of allFC){
-      const key2=fc.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
-      const snap2=await get(ref(db,'emargementsFC/'+key2));
-      const d2=snap2.exists()?snap2.val():{};
-      const abs2=d2.presence==='absent';
-      const row2=document.createElement('div'); row2.className='today-row';
+      var key2=fc.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      var snap2=await get(ref(db,'emargementsFC/'+key2));
+      var d2=snap2.exists()?snap2.val():{};
+      var abs2=d2.presence==='absent';
+      var row2=document.createElement('div');row2.className='today-row';
       row2.innerHTML='<div class="today-nom">'+fc.nom+'</div><div class="today-statuts">'+
-        '<div class="dot-sign '+(abs2?'absent':d2.matin_alt==='auto'?'auto':d2.matin_alt?'signe':'attente')+'"></div>'+
+        '<div class="dot-sign '+(abs2?'absent':d2.matin_alt==='auto'||d2.matin_alt==='exception'?'auto':d2.matin_alt?'signe':'attente')+'"></div>'+
         '<div class="dot-sign '+(abs2?'absent':d2.matin_form?'signe':'attente')+'"></div>'+
-        '<div class="dot-sign '+(abs2?'absent':d2.am_alt==='auto'?'auto':d2.am_alt?'signe':'attente')+'"></div>'+
+        '<div class="dot-sign '+(abs2?'absent':d2.am_alt==='auto'||d2.am_alt==='exception'?'auto':d2.am_alt?'signe':'attente')+'"></div>'+
         '<div class="dot-sign '+(abs2?'absent':d2.am_form?'signe':'attente')+'"></div>'+
       '</div>';
       fcList.appendChild(row2);
     }
   }
-  document.getElementById('activiteRecente').innerHTML='<div style="font-size:12px;color:var(--gris);">🟢 Signé &nbsp; 🔴 En attente &nbsp; ⚫ Absent &nbsp; 🟣 Auto</div>';
+  document.getElementById('activiteRecente').innerHTML='<div style="font-size:12px;color:var(--gris);">🟢 Signé &nbsp; 🔴 En attente &nbsp; ⚫ Absent &nbsp; 🟣 Auto/Except.</div>';
 }
 
 function afficherListeAlternants() {
@@ -513,79 +512,6 @@ async function sauvegarder(e){
   await update(ref(db,'alternants/'+id),data);
   document.getElementById('formSuccess').classList.add('visible');
   await chargerTout();
-
-// ── SIGNATURE EXCEPTIONNELLE ──────────────────────────────────
-var exceptMode = 'presentiel';
-
-document.getElementById('exceptBtnPresentiel').addEventListener('click', function(){
-  exceptMode='presentiel';
-  document.getElementById('exceptBtnPresentiel').style.borderColor='#C9A227';
-  document.getElementById('exceptBtnPresentiel').style.background='#fdf6e3';
-  document.getElementById('exceptBtnDistanciel').style.borderColor='#e2e8f0';
-  document.getElementById('exceptBtnDistanciel').style.background='#faf5ff';
-});
-document.getElementById('exceptBtnDistanciel').addEventListener('click', function(){
-  exceptMode='distanciel';
-  document.getElementById('exceptBtnDistanciel').style.borderColor='#6b46c1';
-  document.getElementById('exceptBtnDistanciel').style.background='#faf5ff';
-  document.getElementById('exceptBtnPresentiel').style.borderColor='#e2e8f0';
-  document.getElementById('exceptBtnPresentiel').style.background='#ffffff';
-});
-
-async function chargerApprenants() {
-  var sel = document.getElementById('exceptApprenant');
-  if(!sel) return;
-  sel.innerHTML = '<option value="">-- Chargement... --</option>';
-  var liste = [];
-  allAlternants.forEach(function(a){ if(a.nom) liste.push({id:a.id,nom:a.nom,prenom:'',type:'alt'}); });
-  allFC.forEach(function(f){ if(f.nom) liste.push({id:f.id,nom:f.nom,prenom:'',type:'fc'}); });
-  if(liste.length === 0) {
-    try {
-      var snapA = await get(ref(db,'alternants'));
-      if(snapA.exists()) Object.entries(snapA.val()).forEach(function(e){ if(e[1].nom) liste.push({id:e[0],nom:e[1].nom,type:'alt'}); });
-      var snapF = await get(ref(db,'stagiairesFC'));
-      if(snapF.exists()) Object.entries(snapF.val()).forEach(function(e){ if(e[1].nom) liste.push({id:e[0],nom:e[1].nom,type:'fc'}); });
-    } catch(err){ console.log(err); }
-  }
-  liste.sort(function(a,b){ return a.nom.localeCompare(b.nom); });
-  sel.innerHTML = '<option value="">-- Sélectionner --</option>';
-  liste.forEach(function(a){
-    var opt = document.createElement('option');
-    opt.value = a.id+'|'+a.type;
-    opt.textContent = a.nom + (a.type==='fc'?' (FC)':'');
-    sel.appendChild(opt);
-  });
-}
-
-document.getElementById('btnValiderExcept').addEventListener('click', async function(){
-  var val = document.getElementById('exceptApprenant').value;
-  var dateVal = document.getElementById('exceptDate').value;
-  var matin = document.getElementById('exceptMatin').checked;
-  var am = document.getElementById('exceptAM').checked;
-  var msg = document.getElementById('exceptMsg');
-  if(!val){ msg.style.color='#e53e3e'; msg.textContent='Sélectionne un apprenant.'; return; }
-  if(!dateVal){ msg.style.color='#e53e3e'; msg.textContent='Sélectionne une date.'; return; }
-  if(!matin&&!am){ msg.style.color='#e53e3e'; msg.textContent='Coche au moins un créneau.'; return; }
-  var parts=val.split('|'); var appId=parts[0]; var type=parts[1];
-  var d=new Date(dateVal);
-  var y=d.getFullYear(); var mo=String(d.getMonth()+1).padStart(2,'0'); var dd=String(d.getDate()).padStart(2,'0');
-  var key=type==='fc' ? appId+'_fc_'+y+'_'+mo+'_'+dd : appId+'_'+y+'_'+mo+'_'+dd;
-  var base=type==='fc'?'emargementsFC':'emargements';
-  try {
-    var upd={};
-    upd[base+'/'+key+'/mode']=exceptMode;
-    upd[base+'/'+key+'/presence']='present';
-    if(matin){ upd[base+'/'+key+'/matin_alt']='exception'; upd[base+'/'+key+'/matin_form']='exception'; }
-    if(am){ upd[base+'/'+key+'/am_alt']='exception'; upd[base+'/'+key+'/am_form']='exception'; }
-    upd[base+'/'+key+'/exception_par']='ADMIN';
-    upd[base+'/'+key+'/exception_date']=new Date().toLocaleDateString('fr-FR');
-    await update(ref(db),upd);
-    msg.style.color='#38a169';
-    var sel=document.getElementById('exceptApprenant');
-    msg.textContent='✅ Signé pour '+sel.options[sel.selectedIndex].text;
-    setTimeout(function(){ msg.textContent=''; },4000);
-  } catch(err){ msg.style.color='#e53e3e'; msg.textContent='Erreur : '+err.message; }
-});
 
 // ── NOTIFICATIONS ADMIN ───────────────────────────────────────
 
@@ -1020,6 +946,83 @@ document.getElementById('btnLogout').addEventListener('click',function(){session
 
 chargerTout();
 
+// ── SIGNATURE EXCEPTIONNELLE ──────────────────────────────────
+var exceptMode = 'presentiel';
+
+async function chargerApprenants() {
+  var sel = document.getElementById('exceptApprenant');
+  if(!sel) return;
+  var liste = [];
+  // Use already-loaded data first
+  if(allAlternants && allAlternants.length > 0) {
+    allAlternants.forEach(function(a){ if(a.nom) liste.push({id:a.id,nom:a.nom,type:'alt'}); });
+  }
+  if(allFC && allFC.length > 0) {
+    allFC.forEach(function(f){ if(f.nom) liste.push({id:f.id,nom:f.nom,type:'fc'}); });
+  }
+  // Fallback: read from Firebase
+  if(liste.length === 0) {
+    try {
+      var snapA = await get(ref(db,'alternants'));
+      if(snapA.exists()) Object.entries(snapA.val()).forEach(function(kv){ if(kv[1].nom) liste.push({id:kv[0],nom:kv[1].nom,type:'alt'}); });
+      var snapF = await get(ref(db,'stagiairesFC'));
+      if(snapF.exists()) Object.entries(snapF.val()).forEach(function(kv){ if(kv[1].nom) liste.push({id:kv[0],nom:kv[1].nom,type:'fc'}); });
+    } catch(err){ console.log('chargerApprenants err:', err); }
+  }
+  liste.sort(function(a,b){ return a.nom.localeCompare(b.nom); });
+  sel.innerHTML = '<option value="">-- Sélectionner --</option>';
+  liste.forEach(function(a){
+    var opt = document.createElement('option');
+    opt.value = a.id+'|'+a.type;
+    opt.textContent = a.nom + (a.type==='fc' ? ' (FC)' : '');
+    sel.appendChild(opt);
+  });
+}
+
+var btnPres = document.getElementById('exceptBtnPresentiel');
+var btnDist = document.getElementById('exceptBtnDistanciel');
+if(btnPres) btnPres.addEventListener('click', function(){
+  exceptMode='presentiel';
+  btnPres.style.borderColor='#C9A227'; btnPres.style.background='#fdf6e3';
+  btnDist.style.borderColor='#e2e8f0'; btnDist.style.background='#faf5ff';
+});
+if(btnDist) btnDist.addEventListener('click', function(){
+  exceptMode='distanciel';
+  btnDist.style.borderColor='#6b46c1'; btnDist.style.background='#faf5ff';
+  btnPres.style.borderColor='#e2e8f0'; btnPres.style.background='#ffffff';
+});
+
+var btnVal = document.getElementById('btnValiderExcept');
+if(btnVal) btnVal.addEventListener('click', async function(){
+  var sel=document.getElementById('exceptApprenant');
+  var val=sel?sel.value:'';
+  var dateVal=document.getElementById('exceptDate').value;
+  var matin=document.getElementById('exceptMatin').checked;
+  var am=document.getElementById('exceptAM').checked;
+  var msg=document.getElementById('exceptMsg');
+  if(!val){msg.style.color='#e53e3e';msg.textContent='Sélectionne un apprenant.';return;}
+  if(!dateVal){msg.style.color='#e53e3e';msg.textContent='Sélectionne une date.';return;}
+  if(!matin&&!am){msg.style.color='#e53e3e';msg.textContent='Coche au moins un créneau.';return;}
+  var parts=val.split('|');var appId=parts[0];var type=parts[1];
+  var d=new Date(dateVal);
+  var y=d.getFullYear();var mo=String(d.getMonth()+1).padStart(2,'0');var dd=String(d.getDate()).padStart(2,'0');
+  var key=type==='fc'?appId+'_fc_'+y+'_'+mo+'_'+dd:appId+'_'+y+'_'+mo+'_'+dd;
+  var base=type==='fc'?'emargementsFC':'emargements';
+  try{
+    var upd={};
+    upd[base+'/'+key+'/mode']=exceptMode;
+    upd[base+'/'+key+'/presence']='present';
+    if(matin){upd[base+'/'+key+'/matin_alt']='exception';upd[base+'/'+key+'/matin_form']='exception';}
+    if(am){upd[base+'/'+key+'/am_alt']='exception';upd[base+'/'+key+'/am_form']='exception';}
+    upd[base+'/'+key+'/exception_par']='ADMIN';
+    upd[base+'/'+key+'/exception_date']=new Date().toLocaleDateString('fr-FR');
+    await update(ref(db),upd);
+    msg.style.color='#38a169';
+    msg.textContent='✅ Signé pour '+sel.options[sel.selectedIndex].text;
+    setTimeout(function(){msg.textContent='';},4000);
+  }catch(err){msg.style.color='#e53e3e';msg.textContent='Erreur : '+err.message;}
+});
+
 // ── NOTIFICATIONS ADMIN ───────────────────────────────────────
 
 // ============================================================
@@ -1148,9 +1151,7 @@ function ajouterBadgeOnglet(target, count) {
 
 async function sauvegarderDocs(e){
   e.preventDefault(); if(!editingId)return;
-  const updatesAlt={};
-  updatesAlt['alternants/'+editingId+'/documents/dossier']=document.getElementById('docDossier').value.trim()||null;
-  await update(ref(db),updatesAlt);
+  const ua={};ua['alternants/'+editingId+'/documents/dossier']=document.getElementById('docDossier').value.trim()||null;await update(ref(db),ua);
   document.getElementById('docsSuccess').classList.add('visible');
   setTimeout(function(){document.getElementById('docsSuccess').classList.remove('visible');},2000);
 }
@@ -1200,14 +1201,8 @@ async function sauvegarderFC(e){
   e.preventDefault();
   const id=editingFC||document.getElementById('fcFormId').value.trim().toUpperCase();
   if(!id){alert('Identifiant requis.');return;}
-  const fcData={
-    nom:document.getElementById('fcFormNom').value.trim(),
-    formation:document.getElementById('fcFormFormation').value,
-    debut:document.getElementById('fcFormDebut').value.trim(),
-    fin:document.getElementById('fcFormFin').value.trim(),
-    heures:'8h00 – 16h00', type:'fc'
-  };
-  if(!editingFC){ fcData.jours=['Lundi','Mardi','Mercredi','Jeudi']; }
+  const fcData={nom:document.getElementById('fcFormNom').value.trim(),formation:document.getElementById('fcFormFormation').value,debut:document.getElementById('fcFormDebut').value.trim(),fin:document.getElementById('fcFormFin').value.trim(),heures:'8h00 – 16h00',type:'fc'};
+  if(!editingFC){fcData.jours=['Lundi','Mardi','Mercredi','Jeudi'];}
   await update(ref(db,'stagiairesFC/'+id),fcData);
   document.getElementById('fcFormSuccess').classList.add('visible');
   await chargerTout();
@@ -1475,9 +1470,7 @@ function ajouterBadgeOnglet(target, count) {
 
 async function sauvegarderDocsFC(e){
   e.preventDefault(); if(!editingFC)return;
-  const updatesFC={};
-  updatesFC['stagiairesFC/'+editingFC+'/documents/dossier']=document.getElementById('docDossierFC').value.trim()||null;
-  await update(ref(db),updatesFC);
+  const uf={};uf['stagiairesFC/'+editingFC+'/documents/dossier']=document.getElementById('docDossierFC').value.trim()||null;await update(ref(db),uf);
   document.getElementById('docsFCSuccess').classList.add('visible');
   setTimeout(function(){document.getElementById('docsFCSuccess').classList.remove('visible');},2000);
 }
