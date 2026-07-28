@@ -95,6 +95,7 @@
   <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
   <a class="nav-btn" data-target="jeudi">📅 Jeudi</a>
   <a class="nav-btn" data-target="fc">🎓 FC</a>
+  <a class="nav-btn" data-target="drive">📁 Drive</a>
 </div>
 
 <div class="content" id="mainContent">
@@ -135,6 +136,19 @@
     <button class="btn-global" id="btnSignGlobalAMFC" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les stagiaires FC</button>
     <div class="jour-titre">Stagiaires FC</div>
     <div id="listeFC"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- DRIVE -->
+  <div class="section" id="drive">
+    <h2 style="color:#2a3f4e;margin-bottom:16px;">📁 Dossiers Google Drive</h2>
+    <div style="margin-bottom:24px;">
+      <h3 style="color:#3d5a6e;font-size:14px;margin-bottom:10px;">🎓 Alternants</h3>
+      <div id="driveAltContent"><div class="loading">Chargement…</div></div>
+    </div>
+    <div>
+      <h3 style="color:#3d5a6e;font-size:14px;margin-bottom:10px;">📚 Stagiaires FC</h3>
+      <div id="driveFCContent"><div class="loading">Chargement…</div></div>
+    </div>
   </div>
 </div>
 
@@ -599,11 +613,57 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
     document.getElementById(target).classList.add('active');
     btn.classList.add('active');
+    if (target==='drive') chargerDrive();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
 
 charger();
+
+async function chargerDrive() {
+  var altContent = document.getElementById('driveAltContent');
+  var fcContent = document.getElementById('driveFCContent');
+  if (!altContent) return;
+  altContent.innerHTML = '<div class="loading">Chargement…</div>';
+  fcContent.innerHTML = '<div class="loading">Chargement…</div>';
+  try {
+    var snapA = await get(ref(db, 'alternants'));
+    if (snapA.exists()) {
+      var html = '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+      var entries = Object.entries(snapA.val()).sort(function(a,b){ return (a[1].nom||'').localeCompare(b[1].nom||''); });
+      entries.forEach(function(kv){
+        var a = kv[1];
+        var lien = (a.documents && a.documents.dossier) ? a.documents.dossier : '';
+        if (lien) {
+          html += '<a href="' + lien + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#2a3f4e;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;">📁 ' + (a.nom||kv[0]) + '</a>';
+        } else {
+          html += '<span style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#eee;color:#999;border-radius:8px;font-size:13px;">📂 ' + (a.nom||kv[0]) + '</span>';
+        }
+      });
+      html += '</div>';
+      altContent.innerHTML = html;
+    } else { altContent.innerHTML = '<div class="loading">Aucun alternant.</div>'; }
+  } catch(err) { altContent.innerHTML = '<div class="loading">Erreur chargement.</div>'; }
+  try {
+    var snapF = await get(ref(db, 'stagiairesFC'));
+    if (snapF.exists()) {
+      var htmlF = '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+      var entriesF = Object.entries(snapF.val()).sort(function(a,b){ return (a[1].nom||'').localeCompare(b[1].nom||''); });
+      entriesF.forEach(function(kv){
+        var f = kv[1];
+        var lien = (f.documents && f.documents.dossier) ? f.documents.dossier : '';
+        if (lien) {
+          htmlF += '<a href="' + lien + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#38a169;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;">📁 ' + (f.nom||kv[0]) + '</a>';
+        } else {
+          htmlF += '<span style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#eee;color:#999;border-radius:8px;font-size:13px;">📂 ' + (f.nom||kv[0]) + '</span>';
+        }
+      });
+      htmlF += '</div>';
+      fcContent.innerHTML = htmlF;
+    } else { fcContent.innerHTML = '<div class="loading">Aucun stagiaire FC.</div>'; }
+  } catch(err) { fcContent.innerHTML = '<div class="loading">Erreur chargement.</div>'; }
+}
+
 </script>
 </body>
 </html>
