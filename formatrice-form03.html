@@ -93,6 +93,7 @@
   <a class="nav-btn active" data-target="lundi">📅 Lundi</a>
   <a class="nav-btn" data-target="mardi">📅 Mardi</a>
   <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
+  <a class="nav-btn" data-target="jeudi">📅 Jeudi</a>
   <a class="nav-btn" data-target="fc">🎓 FC</a>
 </div>
 
@@ -118,6 +119,14 @@
     <button class="btn-global" id="btnSignGlobalAMMercredi" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les mercredis</button>
     <div class="jour-titre">Alternants du Mercredi</div>
     <div id="listeMercredi"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <!-- JEUDI -->
+  <div class="section" id="jeudi">
+    <button class="btn-global" id="btnSignGlobalMatinJeudi">✍️ Signer MATIN — Tous les jeudis</button>
+    <button class="btn-global" id="btnSignGlobalAMJeudi" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les jeudis</button>
+    <div class="jour-titre">Alternants du Jeudi</div>
+    <div id="listeJeudi"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- FC -->
@@ -234,17 +243,9 @@ function getFCKey(fc, d) {
   return fc.id + '_fc_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
 }
 
-// Vérifier accès FORM03 — 6 jours en août uniquement
-const JOURS_AUTORISES = ['2026-08-03','2026-08-04','2026-08-05','2026-08-10','2026-08-11','2026-08-12'];
-const today = new Date();
-const isoToday = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
-if (!JOURS_AUTORISES.includes(isoToday)) {
-  document.getElementById('mainContent').innerHTML = '<div style="padding:40px 20px;text-align:center;"><div style="font-size:48px;">🔒</div><div style="font-size:18px;font-weight:700;color:#2a3f4e;margin-top:16px;">Accès non disponible</div><div style="font-size:13px;color:#718096;margin-top:8px;">Votre accès est réservé aux 3, 4, 5, 10, 11 et 12 août 2026.</div></div>';
-  document.getElementById('mainNav').style.display = 'none';
-} else {
-  charger();
-  chargerAlternants();
-}
+// Accès FORM03 — Faconnier Elodie (présente du 03 au 12 août 2026)
+charger();
+chargerAlternants();
 
 let allAlts = [];
 
@@ -255,6 +256,7 @@ async function chargerAlternants() {
   afficherAlts('listeLundi', allAlts.filter(a => a.jourCentre === 'Lundi'));
   afficherAlts('listeMardi', allAlts.filter(a => a.jourCentre === 'Mardi'));
   afficherAlts('listeMercredi', allAlts.filter(a => a.jourCentre === 'Mercredi'));
+  afficherAlts('listeJeudi', allAlts.filter(a => a.jourCentre === 'Jeudi'));
 }
 
 function getSeances(alt) {
@@ -383,9 +385,9 @@ async function signerGlobalAlt(jour, period) {
   });
 }
 
-['btnSignGlobalMatinLundi','btnSignGlobalAMLundi','btnSignGlobalMatinMercredi','btnSignGlobalAMMercredi'].forEach(function(id){
+['btnSignGlobalMatinLundi','btnSignGlobalAMLundi','btnSignGlobalMatinMercredi','btnSignGlobalAMMercredi','btnSignGlobalMatinJeudi','btnSignGlobalAMJeudi'].forEach(function(id){
   const el=document.getElementById(id); if(!el) return;
-  const jour=id.includes('Lundi')?'Lundi':'Mercredi';
+  const jour=id.includes('Lundi')?'Lundi':id.includes('Mercredi')?'Mercredi':'Jeudi';
   const period=id.includes('Matin')?'matin':'am';
   el.addEventListener('click',function(){signerGlobalAlt(jour,period);});
   el.addEventListener('touchend',function(e){e.preventDefault();signerGlobalAlt(jour,period);},{passive:false});
