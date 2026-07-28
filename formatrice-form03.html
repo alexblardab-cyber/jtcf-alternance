@@ -590,7 +590,6 @@ document.getElementById('btnSignGlobalAMFC').addEventListener('touchend',functio
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';},{passive:false});
 
-}
 
 document.querySelectorAll('.nav-btn').forEach(function(btn) {
   function activate(e) {
