@@ -801,6 +801,7 @@ document.getElementById('btnLogout').addEventListener('touchend',function(e){e.p
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 
 // Vérifier accès
+appliquerAcces();
 chargerAlternants();
 
 // ── NOTIFICATIONS ────────────────────────────────────────────
@@ -1022,6 +1023,51 @@ if (document.getElementById('btnSignGlobalMatinFC')) {
   document.getElementById('btnSignGlobalMatinFC').addEventListener('click', function(){ signerGlobalFC('matin'); });
   document.getElementById('btnSignGlobalAMFC').addEventListener('click', function(){ signerGlobalFC('am'); });
 }
+
+async function chargerDrive() {
+  var altContent = document.getElementById('driveAltContent');
+  var fcContent = document.getElementById('driveFCContent');
+  if (!altContent) return;
+  altContent.innerHTML = 'Chargement…';
+  fcContent.innerHTML = 'Chargement…';
+  try {
+    var snapA = await get(ref(db, 'alternants'));
+    if (snapA.exists()) {
+      var html = '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+      var entries = Object.entries(snapA.val()).sort(function(a,b){ return (a[1].nom||'').localeCompare(b[1].nom||''); });
+      entries.forEach(function(kv){
+        var a = kv[1];
+        var lien = (a.documents && a.documents.dossier) ? a.documents.dossier : '';
+        if (lien) {
+          html += '<a href="' + lien + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#2a3f4e;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;">📁 ' + (a.nom||kv[0]) + '</a>';
+        } else {
+          html += '<span style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#eee;color:#999;border-radius:8px;font-size:14px;">📂 ' + (a.nom||kv[0]) + ' <em style=\'font-size:11px\'>(pas de lien)</em></span>';
+        }
+      });
+      html += '</div>';
+      altContent.innerHTML = html;
+    } else { altContent.innerHTML = '<em>Aucun alternant trouvé.</em>'; }
+  } catch(err) { altContent.innerHTML = '<em>Erreur chargement.</em>'; console.error(err); }
+  try {
+    var snapF = await get(ref(db, 'stagiairesFC'));
+    if (snapF.exists()) {
+      var htmlF = '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+      var entriesF = Object.entries(snapF.val()).sort(function(a,b){ return (a[1].nom||'').localeCompare(b[1].nom||''); });
+      entriesF.forEach(function(kv){
+        var f = kv[1];
+        var lien = (f.documents && f.documents.dossier) ? f.documents.dossier : '';
+        if (lien) {
+          htmlF += '<a href="' + lien + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#38a169;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;">📁 ' + (f.nom||kv[0]) + '</a>';
+        } else {
+          htmlF += '<span style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#eee;color:#999;border-radius:8px;font-size:14px;">📂 ' + (f.nom||kv[0]) + ' <em style=\'font-size:11px\'>(pas de lien)</em></span>';
+        }
+      });
+      htmlF += '</div>';
+      fcContent.innerHTML = htmlF;
+    } else { fcContent.innerHTML = '<em>Aucun stagiaire FC trouvé.</em>'; }
+  } catch(err) { fcContent.innerHTML = '<em>Erreur chargement.</em>'; console.error(err); }
+}
+
 
 </script>
 
@@ -1422,50 +1468,6 @@ document.querySelectorAll('.nav-btn').forEach(function(btn){
     btn.addEventListener('touchend',chargerGroupesForm,{passive:false});
   }
 });
-
-async function chargerDrive() {
-  var altContent = document.getElementById('driveAltContent');
-  var fcContent = document.getElementById('driveFCContent');
-  if (!altContent) return;
-  altContent.innerHTML = 'Chargement…';
-  fcContent.innerHTML = 'Chargement…';
-  try {
-    var snapA = await get(ref(db, 'alternants'));
-    if (snapA.exists()) {
-      var html = '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
-      var entries = Object.entries(snapA.val()).sort(function(a,b){ return (a[1].nom||'').localeCompare(b[1].nom||''); });
-      entries.forEach(function(kv){
-        var a = kv[1];
-        var lien = (a.documents && a.documents.dossier) ? a.documents.dossier : '';
-        if (lien) {
-          html += '<a href="' + lien + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#2a3f4e;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;">📁 ' + (a.nom||kv[0]) + '</a>';
-        } else {
-          html += '<span style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#eee;color:#999;border-radius:8px;font-size:14px;">📂 ' + (a.nom||kv[0]) + ' <em style=\'font-size:11px\'>(pas de lien)</em></span>';
-        }
-      });
-      html += '</div>';
-      altContent.innerHTML = html;
-    } else { altContent.innerHTML = '<em>Aucun alternant trouvé.</em>'; }
-  } catch(err) { altContent.innerHTML = '<em>Erreur chargement.</em>'; console.error(err); }
-  try {
-    var snapF = await get(ref(db, 'stagiairesFC'));
-    if (snapF.exists()) {
-      var htmlF = '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
-      var entriesF = Object.entries(snapF.val()).sort(function(a,b){ return (a[1].nom||'').localeCompare(b[1].nom||''); });
-      entriesF.forEach(function(kv){
-        var f = kv[1];
-        var lien = (f.documents && f.documents.dossier) ? f.documents.dossier : '';
-        if (lien) {
-          htmlF += '<a href="' + lien + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#38a169;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;">📁 ' + (f.nom||kv[0]) + '</a>';
-        } else {
-          htmlF += '<span style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;background:#eee;color:#999;border-radius:8px;font-size:14px;">📂 ' + (f.nom||kv[0]) + ' <em style=\'font-size:11px\'>(pas de lien)</em></span>';
-        }
-      });
-      htmlF += '</div>';
-      fcContent.innerHTML = htmlF;
-    } else { fcContent.innerHTML = '<em>Aucun stagiaire FC trouvé.</em>'; }
-  } catch(err) { fcContent.innerHTML = '<em>Erreur chargement.</em>'; console.error(err); }
-}
 
 
 </script>
