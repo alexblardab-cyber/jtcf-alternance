@@ -1627,20 +1627,21 @@ async function exporterPDFAdmin() {
     pageNum++;doc.addPage();
     addHeader('ÉMARGEMENT · '+r.alt.nom.toUpperCase()+' · '+periodeTitre.toUpperCase());addFooter(pageNum);
     doc.setFillColor(...OR);doc.rect(0,30,210,2,'F');
-    doc.setFillColor(...BLEU_FONCE);doc.rect(15,38,180,28,'F');
+    doc.setFillColor(...BLEU_FONCE);doc.rect(15,38,180,32,'F');
     doc.setTextColor(...OR);doc.setFontSize(13);doc.setFont('helvetica','bold');doc.text(r.alt.nom,20,48);
     doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','normal');
     doc.text('Formation : '+r.alt.formation,20,55);
-    doc.text('Entreprise : '+(r.alt.entreprise||'—')+'   ·   Maître : '+(r.alt.maitre||'—'),20,61);
-    doc.text('Jour : '+r.alt.jourCentre+'   ·   Contrat : '+r.alt.debut+' → '+r.alt.fin,20,67);
-    doc.setFillColor(...VERT);doc.rect(15,72,57,14,'F');
-    doc.setFillColor(229,62,62);doc.rect(76,72,57,14,'F');
-    doc.setFillColor(...BLEU);doc.rect(137,72,58,14,'F');
+    doc.text('Entreprise : '+(r.alt.entreprise||'—'),20,61);
+    doc.text('Maître : '+(r.alt.maitre||'—'),20,66);
+    doc.text('Jour : '+r.alt.jourCentre+'   ·   Contrat : '+r.alt.debut+' → '+r.alt.fin+'   ·   Période : '+periodeTitre,20,71);
+    doc.setFillColor(...VERT);doc.rect(15,76,57,14,'F');
+    doc.setFillColor(229,62,62);doc.rect(76,76,57,14,'F');
+    doc.setFillColor(...BLEU);doc.rect(137,76,58,14,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
-    doc.text(r.hP+'h',43,81,{align:'center'});doc.text(r.hA+'h',104,81,{align:'center'});doc.text(String(r.seances),166,81,{align:'center'});
+    doc.text(r.hP+'h',43,85,{align:'center'});doc.text(r.hA+'h',104,85,{align:'center'});doc.text(String(r.seances),166,85,{align:'center'});
     doc.setFontSize(7);doc.setFont('helvetica','normal');
-    doc.text('Heures présence',43,84,{align:'center'});doc.text('Heures absence',104,84,{align:'center'});doc.text('Séances',166,84,{align:'center'});
-    let y=95;
+    doc.text('Heures présence',43,88,{align:'center'});doc.text('Heures absence',104,88,{align:'center'});doc.text('Séances',166,88,{align:'center'});
+    let y=99;
     doc.setFillColor(...BLEU_FONCE);doc.rect(15,y,180,8,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont('helvetica','bold');
     doc.text('Date',18,y+5);doc.text('Mode',55,y+5);doc.text('Présence',80,y+5);doc.text('Motif',110,y+5);doc.text('Sig. Alternant',145,y+5);doc.text('Sig. Formatrice',172,y+5);
@@ -1662,14 +1663,6 @@ async function exporterPDFAdmin() {
       if(s.data.matin_form&&!s.absent){try{doc.addImage(s.data.matin_form,'JPEG',170,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓',172,y+6);}}
       else{doc.setTextColor(s.absent?ROUGE[0]:GRIS[0],s.absent?ROUGE[1]:GRIS[1],s.absent?ROUGE[2]:GRIS[2]);doc.text(s.absent?'Absent':'En attente',172,y+6);}
       doc.setDrawColor(230,230,230);doc.line(15,y+10,195,y+10);y+=10;
-    }
-    y+=10;
-    if(y<240){
-      doc.setDrawColor(...OR);doc.setLineWidth(0.5);doc.rect(15,y,84,30);doc.rect(111,y,84,30);
-      doc.setTextColor(...GRIS);doc.setFontSize(8);doc.setFont('helvetica','bold');
-      doc.text('Signature Formatrice',57,y+5,{align:'center'});doc.text('Signature Alternant',153,y+5,{align:'center'});
-      doc.setFont('helvetica','normal');doc.setFontSize(7);
-      doc.text('Lu et approuvé',57,y+28,{align:'center'});doc.text('Lu et approuvé',153,y+28,{align:'center'});
     }
   }
   doc.save('JTCF_Emargements_'+periodeTitre.replace(' ','_')+'.pdf');
