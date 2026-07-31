@@ -237,7 +237,7 @@
       <div class="verrou-box" id="verouJour" style="display:none;">
         <div style="font-size:20px;margin-bottom:6px;">🔒</div>
         <div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">Signature disponible</div>
-        <div style="font-size:13px;font-weight:700;color:var(--or);">uniquement du lundi au jeudi</div>
+        <div style="font-size:13px;font-weight:700;color:var(--or);">uniquement les jours de formation</div>
         <div style="font-size:11px;color:var(--gris);margin-top:4px;">Vous pouvez consulter vos autres informations librement</div>
       </div>
 
@@ -407,14 +407,21 @@ let jourIdx = 0;
 let semainePlanIdx = 0;
 
 // ── Jours de formation FC — lundi à jeudi ──────────────────
+function isASCA() {
+  return user && user.jours && user.jours.includes('Vendredi');
+}
+
 function getJoursFC() {
   const jours = [];
   const debut = new Date(2026, 6, 13);
   const fin = new Date(2027, 5, 30);
   let d = new Date(debut);
+  const asca = isASCA();
   while (d <= fin) {
     const j = d.getDay();
-    if (j >= 1 && j <= 4) jours.push(new Date(d));
+    // ASCA : lundi(1) mardi(2) mercredi(3) jeudi(4) vendredi(5)
+    // Autres FC : lundi au jeudi seulement
+    if (asca ? (j >= 1 && j <= 5) : (j >= 1 && j <= 4)) jours.push(new Date(d));
     d.setDate(d.getDate() + 1);
   }
   return jours;
@@ -445,7 +452,7 @@ const PLANNINGS_FC = {
     vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
   },
   ACA: {
-    stages: [{debut:'2026-10-10', fin:'2026-11-06'}],
+    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
     vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
   }
 };
@@ -501,12 +508,10 @@ function getEtapeJour(iso) {
     '2027-02-16': { label: 'Examen', icone: '🎓' },
   };
   const etapesACA = {
-    '2026-08-27': { label: 'Évaluation 1', icone: '📝' },
     '2026-11-09': { label: 'DP Dossier Pro.', icone: '📁' },
     '2026-11-10': { label: 'DP Dossier Pro.', icone: '📁' },
     '2026-11-11': { label: 'DP Dossier Pro.', icone: '📁' },
     '2026-11-12': { label: 'DP Dossier Pro.', icone: '📁' },
-    '2026-11-19': { label: 'Évaluation 2', icone: '📝' },
     '2027-02-02': { label: 'Évaluation 3', icone: '📝' },
     '2027-02-09': { label: 'Bilan Final', icone: '🏁' },
     '2027-02-16': { label: 'Examen', icone: '🎓' },
@@ -720,8 +725,22 @@ async function updateEmargement() {
   zoneEmarg.style.display = 'block';
 
   const key = getKey(d);
-  const snap = await get(ref(db, 'emargementsFC/' + key));
-  const data = snap.exists() ? snap.val() : {};
+  let snap = await get(ref(db, 'emargementsFC/' + key));
+  let data = snap.exists() ? snap.val() : {};
+
+  // ASCA : mardi = distanciel automatique
+  const estMardi = new Date(d).getDay() === 2;
+  if (isASCA() && estMardi && !data.matin_alt) {
+    const autoUp = {};
+    autoUp['emargementsFC/' + key + '/mode'] = 'distanciel';
+    autoUp['emargementsFC/' + key + '/presence'] = 'present';
+    autoUp['emargementsFC/' + key + '/matin_alt'] = 'auto';
+    autoUp['emargementsFC/' + key + '/am_alt'] = 'auto';
+    await update(ref(db), autoUp);
+    snap = await get(ref(db, 'emargementsFC/' + key));
+    data = snap.exists() ? snap.val() : {};
+  }
+
   const modeActuel = data.mode || null;
   const presenceActuelle = data.presence || null;
 
@@ -765,6 +784,7 @@ async function updateEmargement() {
     const altSigne = data[s.alt]; const formSigne = data[s.form];
     const altEl = document.getElementById(s.altEl);
     if (absent) { altEl.textContent='❌ Absent(e)'; altEl.className='emarg-status status-attente'; }
+    else if (altSigne === 'auto') { altEl.textContent='✅ Distanciel auto'; altEl.className='emarg-status status-distanciel'; }
     else { altEl.textContent=altSigne?'✅ Signé':'En attente'; altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente'); }
     const formEl = document.getElementById(s.formEl);
     formEl.textContent = formSigne?'✅ Signé':'En attente';
