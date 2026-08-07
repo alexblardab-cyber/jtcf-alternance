@@ -868,7 +868,9 @@ document.getElementById('btnLogout').addEventListener('touchend',function(e){e.p
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 
 // Vérifier accès
-chargerAlternants();
+appliquerAcces();
+initVerrouJours();
+chargerAlternants().then(function(){chargerDashboard();});
 
 // ── NOTIFICATIONS ────────────────────────────────────────────
 
