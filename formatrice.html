@@ -1,3 +1,7 @@
+https://raw.githubusercontent.com/alexblardab-cyber/jtcf-alternance/main/formatrice.html
+→ https://raw.githubusercontent.com/alexblardab-cyber/jtcf-alternance/main/formatrice.html
+Content-Type: text/plain; charset=utf-8
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -117,17 +121,28 @@
   .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
   .kpi-card{background:var(--blanc);border-radius:12px;padding:14px;text-align:center;box-shadow:0 1px 6px rgba(61,90,110,0.1);}
   .kpi-val{font-size:28px;font-weight:800;color:var(--bleu-fonce);}
-  .kpi-val.or{color:var(--or);} .kpi-val.vert{color:var(--vert);} .kpi-val.rouge{color:var(--rouge);}
+  .kpi-val.or{color:var(--or);}.kpi-val.vert{color:var(--vert);}.kpi-val.rouge{color:var(--rouge);}
   .kpi-lbl{font-size:11px;color:var(--gris);margin-top:4px;}
   .today-card{background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));border-radius:14px;padding:16px;margin-bottom:14px;color:var(--blanc);}
-  .today-titre{font-size:12px;font-weight:700;color:var(--or);margin-bottom:10px;text-transform:uppercase;}
-  .today-date{font-size:15px;font-weight:700;margin-bottom:12px;}
+  .today-titre-dash{font-size:12px;font-weight:700;color:var(--or);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;}
+  .today-date-dash{font-size:15px;font-weight:700;margin-bottom:12px;}
   .today-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1);}
   .today-row:last-child{border-bottom:none;}
   .today-nom{font-size:13px;font-weight:600;}
   .today-statuts{display:flex;gap:4px;}
   .dot-sign{width:10px;height:10px;border-radius:50%;}
-  .dot-sign.signe{background:#68d391;} .dot-sign.attente{background:#fc8181;} .dot-sign.absent{background:#a0aec0;} .dot-sign.auto{background:#7C5CFF;}
+  .dot-sign.signe{background:#68d391;}.dot-sign.attente{background:#fc8181;}.dot-sign.absent{background:#a0aec0;}.dot-sign.auto{background:#7C5CFF;}
+  .verrou-banner{background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .verrou-txt{font-size:12px;color:#856404;font-weight:600;}
+  .btn-exception{padding:8px 14px;background:var(--or);color:var(--bleu-fonce);border:none;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:white;border-radius:16px;padding:24px;width:300px;max-width:90vw;}
+  .modal-titre{font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:16px;}
+  .modal-date-input{width:100%;padding:10px;border:2px solid var(--bleu);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;}
+  .modal-btns{display:flex;gap:10px;}
+  .btn-modal-ok{flex:1;padding:10px;background:var(--bleu-fonce);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;}
+  .btn-modal-cancel{flex:1;padding:10px;background:#e2e8f0;color:var(--bleu-fonce);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -147,12 +162,12 @@
 </div>
 
 <div class="nav" id="mainNav">
-  <a class="nav-btn active" data-target="dashboard">Tableau de bord</a>
+  <a class="nav-btn active" data-target="dashboard">🏠 Tableau de bord</a>
   <a class="nav-btn" data-target="lundi">📅 Lundi</a>
   <a class="nav-btn" data-target="mardi">📅 Mardi</a>
   <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
   <a class="nav-btn" data-target="jeudi">📅 Jeudi</a>
-  <a class="nav-btn" data-target="vendredi">Vendredi</a>
+  <a class="nav-btn" data-target="vendredi">📅 Vendredi</a>
   <a class="nav-btn" data-target="fc">🎓 FC</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📊 Récap heures</a>
@@ -163,13 +178,13 @@
   <!-- TABLEAU DE BORD -->
   <div class="section active" id="dashboard">
     <div class="today-card">
-      <div class="today-titre-dash">Seances aujourd'hui</div>
-      <div class="today-date-dash" id="dashDate">--</div>
+      <div class="today-titre-dash">📅 Séances aujourd'hui</div>
+      <div class="today-date-dash" id="dashDate">—</div>
       <div id="dashList"><div style="opacity:0.7;font-size:12px;">Chargement...</div></div>
     </div>
     <div class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-val or" id="kpiDashTotal">--</div><div class="kpi-lbl">Alternants actifs</div></div>
-      <div class="kpi-card"><div class="kpi-val" style="color:#C9A227;" id="kpiDashFC">--</div><div class="kpi-lbl">Stagiaires FC</div></div>
+      <div class="kpi-card"><div class="kpi-val or" id="kpiDashTotal">—</div><div class="kpi-lbl">Alternants actifs</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:#C9A227;" id="kpiDashFC">—</div><div class="kpi-lbl">Stagiaires FC</div></div>
       <div class="kpi-card"><div class="kpi-val vert" id="kpiDashJour">0</div><div class="kpi-lbl">Apprenants ce jour</div></div>
       <div class="kpi-card"><div class="kpi-val rouge" id="kpiDashAbsents">0</div><div class="kpi-lbl">Absences ce jour</div></div>
     </div>
@@ -185,8 +200,8 @@
 
   <!-- MARDI -->
   <div class="section" id="mardi">
-    <button class="btn-global" id="btnSignGlobalMatinMardi">Signer MATIN - Mardis</button>
-    <button class="btn-global" id="btnSignGlobalAMMardi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">Signer APRES-MIDI - Mardis</button>
+    <button class="btn-global" id="btnSignGlobalMatinMardi">✍️ Signer MATIN — Tous les mardis</button>
+    <button class="btn-global" id="btnSignGlobalAMMardi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les mardis</button>
     <div class="jour-titre">Alternants du Mardi</div>
     <div id="listeMardi"><div class="loading">Aucun alternant pour l'instant.</div></div>
   </div>
@@ -201,24 +216,26 @@
 
   <!-- JEUDI -->
   <div class="section" id="jeudi">
-    <button class="btn-global" id="btnSignGlobalMatinJeudi">Signer MATIN - Jeudis</button>
-    <button class="btn-global" id="btnSignGlobalAMJeudi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">Signer APRES-MIDI - Jeudis</button>
+    <button class="btn-global" id="btnSignGlobalMatinJeudi">✍️ Signer MATIN — Tous les jeudis</button>
+    <button class="btn-global" id="btnSignGlobalAMJeudi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les jeudis</button>
     <div class="jour-titre">Alternants du Jeudi</div>
     <div id="listeJeudi"><div class="loading">Aucun alternant pour l'instant.</div></div>
   </div>
 
   <!-- VENDREDI -->
   <div class="section" id="vendredi">
-    <button class="btn-global" id="btnSignGlobalMatinVendredi">Signer MATIN - Vendredis</button>
-    <button class="btn-global" id="btnSignGlobalAMVendredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">Signer APRES-MIDI - Vendredis</button>
-    <div class="jour-titre">Alternants du Vendredi</div>
-    <div id="listeVendredi"><div class="loading">Aucun alternant pour l'instant.</div></div>
+    <button class="btn-global" id="btnSignGlobalMatinVendredi">✍️ Signer MATIN — Tous les vendredis</button>
+    <button class="btn-global" id="btnSignGlobalAMVendredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les vendredis</button>
+    <div class="jour-titre">Alternants du Vendredi (ASCA)</div>
+    <div id="listeVendredi"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- FORMATION CONTINUE -->
   <div class="section" id="fc">
-    <button class="btn-global" id="btnSignGlobalMatinFC">✍️ Signer MATIN — Tous les stagiaires FC</button>
-    <button class="btn-global" id="btnSignGlobalAMFC" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les stagiaires FC</button>
+    <button class="btn-global" id="btnSignGlobalMatinFC">✍️ Signer MATIN — CV / AD (Lun–Jeu)</button>
+    <button class="btn-global" id="btnSignGlobalAMFC" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — CV / AD (Lun–Jeu)</button>
+    <button class="btn-global" id="btnSignGlobalMatinASCA" style="background:linear-gradient(135deg,#553c9a,#6b46c1);margin-top:6px;">✍️ Signer MATIN — ASCA (Lun/Mer/Jeu/Ven)</button>
+    <button class="btn-global" id="btnSignGlobalAMASCA" style="background:linear-gradient(135deg,#553c9a,#6b46c1);margin-bottom:14px;">✍️ Signer APRÈS-MIDI — ASCA (Lun/Mer/Jeu/Ven)</button>
     <div class="jour-titre">Stagiaires Formation Continue</div>
     <div id="listeFC"><div class="loading">Chargement...</div></div>
   </div>
@@ -818,6 +835,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     btn.classList.add('active');
     if (target==='recap') chargerRecap();
     if (target==='dashboard') chargerDashboard();
+    if (['lundi','mardi','mercredi','jeudi','vendredi'].includes(target)) initVerrouJours();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
@@ -826,8 +844,7 @@ document.getElementById('btnLogout').addEventListener('touchend',function(e){e.p
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 
 // Vérifier accès
-appliquerAcces();
-chargerAlternants().then(function(){chargerDashboard();});
+chargerAlternants();
 
 // ── NOTIFICATIONS ────────────────────────────────────────────
 
@@ -1034,122 +1051,215 @@ document.querySelectorAll('.btn-valider').forEach(function(btn) {
   }, {passive:false});
 });
 
-// Signature globale alternants
-async function signerGlobalAlt(jour,period){
-  var joursMap={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
-  var jourNum=joursMap[jour];
+// ========== VERROU JOURS ==========
+var dateException = null;
+var joursDeSemaine = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+
+function getDatePourJour(jourNom){
+  if(dateException){
+    var de=new Date(dateException+'T00:00:00');
+    if(de.getDay()===joursDeSemaine[jourNom]) return de;
+    return null;
+  }
   var today=new Date();today.setHours(0,0,0,0);
-  var jourDate=null;
-  for(var i=-6;i<=6;i++){var d2=new Date(today);d2.setDate(today.getDate()+i);if(d2.getDay()===jourNum){jourDate=d2;break;}}
-  if(!jourDate){alert('Aucune date pour '+jour);return;}
+  var jourNum=joursDeSemaine[jourNom];
+  for(var i=-6;i<=6;i++){var d2=new Date(today);d2.setDate(today.getDate()+i);if(d2.getDay()===jourNum){return d2;}}
+  return null;
+}
+
+function initVerrouJours(){
+  var today=new Date();
+  var todayNum=today.getDay();
+  ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'].forEach(function(jourCap){
+    var jourLow=jourCap.toLowerCase();
+    var jourNum=joursDeSemaine[jourCap];
+    var section=document.getElementById(jourLow);
+    if(!section) return;
+    var oldB=section.querySelector('.verrou-banner');
+    if(oldB) oldB.remove();
+    var isAujourdhui=(todayNum===jourNum);
+    if(!isAujourdhui && !dateException){
+      var banner=document.createElement('div');
+      banner.className='verrou-banner';
+      var next=new Date(today);
+      for(var i=1;i<=7;i++){var d2=new Date(today);d2.setDate(today.getDate()+i);if(d2.getDay()===jourNum){next=d2;break;}}
+      banner.innerHTML='<span class="verrou-txt">🔒 Séance '+jourCap+' — prochaine fois le '
+        +next.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</span>'
+        +'<button class="btn-exception" data-jour="'+jourCap+'">⚠️ Régulariser</button>';
+      section.insertBefore(banner,section.firstChild);
+      ['btnSignGlobalMatin','btnSignGlobalAM'].forEach(function(p){
+        var b=document.getElementById(p+jourCap);
+        if(b){b.disabled=true;b.style.opacity='0.4';b.style.cursor='not-allowed';}
+      });
+      banner.querySelector('.btn-exception').addEventListener('click',function(){
+        ouvrirModalException(jourCap);
+      });
+    } else {
+      ['btnSignGlobalMatin','btnSignGlobalAM'].forEach(function(p){
+        var b=document.getElementById(p+jourCap);
+        if(b){b.disabled=false;b.style.opacity='';b.style.cursor='';}
+      });
+      if(dateException){
+        var de=new Date(dateException+'T00:00:00');
+        if(de.getDay()===jourNum){
+          var banEx=document.createElement('div');
+          banEx.className='verrou-banner';
+          banEx.style.background='#e8f5e9';banEx.style.borderColor='#68d391';
+          banEx.innerHTML='<span class="verrou-txt" style="color:#276749;">✅ Régularisation — '
+            +de.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</span>'
+            +'<button class="btn-exception" style="background:#e53e3e;color:white;" id="btnAnnExc'+jourCap+'">Annuler</button>';
+          section.insertBefore(banEx,section.firstChild);
+          document.getElementById('btnAnnExc'+jourCap).addEventListener('click',function(){
+            dateException=null;initVerrouJours();
+          });
+        }
+      }
+    }
+  });
+}
+
+document.addEventListener('exceptionDateSet',function(e){
+  dateException=e.detail.date;
+  initVerrouJours();
+});
+
+function ouvrirModalException(jourNom){
+  var modal=document.getElementById('modalException');
+  modal.dataset.jourCible=jourNom;
+  var today=new Date();today.setHours(0,0,0,0);
+  var jourNum=joursDeSemaine[jourNom];
+  var last=new Date(today);
+  for(var i=1;i<=7;i++){var d2=new Date(today);d2.setDate(today.getDate()-i);if(d2.getDay()===jourNum){last=d2;break;}}
+  document.getElementById('inputDateException').value=last.toISOString().split('T')[0];
+  modal.classList.add('open');
+}
+
+// ========== SIGNATURE GLOBALE ALTERNANTS ==========
+async function signerGlobalAlt(jour,period){
+  var jourDate=getDatePourJour(jour);
+  if(!jourDate){alert('⚠️ La date d\'exception ne correspond pas à un '+jour+'.');return;}
   var yyyy=jourDate.getFullYear(),mm=jourDate.getMonth()+1,dd=jourDate.getDate();
   var count=0;
   for(var j=0;j<allAlternants.length;j++){
     var alt2=allAlternants[j];
-    if(!alt2.jourCentre||alt2.jourCentre!==jour)continue;
+    if(!alt2.jourCentre||alt2.jourCentre!==jour) continue;
     var key2=alt2.id+'_'+yyyy+'_'+mm+'_'+dd;
     await set(ref(db,'emargements/'+key2+'/'+period+'_form'),'global_sign_'+Date.now());
     count++;
   }
-  alert(count+' signature(s) enregistree(s) pour '+jour);
+  alert(count+' signature(s) enregistrée(s) pour '+jour);
 }
 ['btnSignGlobalMatinLundi','btnSignGlobalAMLundi','btnSignGlobalMatinMardi','btnSignGlobalAMMardi',
  'btnSignGlobalMatinMercredi','btnSignGlobalAMMercredi','btnSignGlobalMatinJeudi','btnSignGlobalAMJeudi',
  'btnSignGlobalMatinVendredi','btnSignGlobalAMVendredi'
 ].forEach(function(btnId){
   var el=document.getElementById(btnId);if(!el)return;
-  var j2=btnId.indexOf('Vendredi')>-1?'Vendredi':btnId.indexOf('Lundi')>-1?'Lundi':btnId.indexOf('Mardi')>-1?'Mardi':btnId.indexOf('Mercredi')>-1?'Mercredi':'Jeudi';
-  var p2=btnId.indexOf('Matin')>-1?'matin':'am';
+  var j2=btnId.replace('btnSignGlobalMatin','').replace('btnSignGlobalAM','');
+  j2=j2.charAt(0).toUpperCase()+j2.slice(1).toLowerCase();
+  if(j2==='Lundi'||j2==='Mardi'||j2==='Mercredi'||j2==='Jeudi'||j2==='Vendredi'){}
+  else{
+    if(btnId.includes('Vendredi'))j2='Vendredi';
+    else if(btnId.includes('Lundi'))j2='Lundi';
+    else if(btnId.includes('Mardi'))j2='Mardi';
+    else if(btnId.includes('Mercredi'))j2='Mercredi';
+    else j2='Jeudi';
+  }
+  var p2=btnId.includes('Matin')?'matin':'am';
   el.addEventListener('click',function(){signerGlobalAlt(j2,p2);});
   el.addEventListener('touchend',function(e){e.preventDefault();signerGlobalAlt(j2,p2);},{passive:false});
 });
 
-// Tableau de bord
-async function chargerDashboard(){
-  var moisN=['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
-  var jrsN=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-  var today=new Date();
-  var elDate=document.getElementById('dashDate');
-  var elList=document.getElementById('dashList');
-  if(!elDate)return;
-  elDate.textContent=jrsN[today.getDay()]+' '+today.getDate()+' '+moisN[today.getMonth()]+' '+today.getFullYear();
-  document.getElementById('kpiDashTotal').textContent=allAlternants.length;
-  document.getElementById('kpiDashFC').textContent=allFC.length;
-  elList.innerHTML='';
-  var jourNom=jrsN[today.getDay()],jourNum2=today.getDay();
-  var jmFC={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
-  var altDuJour=allAlternants.filter(function(a){return a.jourCentre===jourNom;});
-  var total=0,absTotal=0;
-  if(altDuJour.length>0){
-    var sep=document.createElement('div');sep.textContent='Alternants';
-    sep.style.cssText='font-size:10px;font-weight:800;color:rgba(255,255,255,0.5);text-transform:uppercase;padding:4px 0 6px;letter-spacing:1px;';
-    elList.appendChild(sep);
-    for(var i=0;i<altDuJour.length;i++){
-      var a2=altDuJour[i];total++;
-      var k2=a2.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
-      var sn2=await get(ref(db,'emargements/'+k2));
-      var dat=sn2.exists()?sn2.val():{};
-      var abs=dat.presence==='absent'||dat.absence===true;
-      if(abs)absTotal++;
-      var row=document.createElement('div');row.className='today-row';
-      row.innerHTML='<div class="today-nom">'+a2.nom+'</div><div class="today-statuts">'
-        +'<div class="dot-sign '+(abs?'absent':dat.matin_alt?'signe':'attente')+'" title="Matin alt"></div>'
-        +'<div class="dot-sign '+(abs?'absent':dat.matin_form?'signe':'attente')+'" title="Matin form"></div>'
-        +'<div class="dot-sign '+(abs?'absent':dat.am_alt?'signe':'attente')+'" title="AM alt"></div>'
-        +'<div class="dot-sign '+(abs?'absent':dat.am_form?'signe':'attente')+'" title="AM form"></div>'
-        +'</div>';
-      elList.appendChild(row);
-    }
+// ========== SIGNATURE GLOBALE FC (par groupe) ==========
+async function signerGroupeFC(period, groupeFiltre){
+  // groupeFiltre: 'CVAD' ou 'ASCA'
+  // ASCA = jours.includes('Vendredi'), CV/AD = les autres
+  var today=new Date();today.setHours(0,0,0,0);
+  var todayNum=today.getDay();
+  // Jours autorisés: CVAD=1,2,3,4 / ASCA=1,3,4,5
+  var joursASCA=[1,3,4,5]; var joursCVAD=[1,2,3,4];
+  if(groupeFiltre==='ASCA'&&!joursASCA.includes(todayNum)){
+    alert('Les stagiaires ASCA ne sont pas en présentiel ce jour (Mardi = auto-signature).'); return;
   }
-  var fcDuJour=[];
-  for(var fi=0;fi<allFC.length;fi++){
-    var fc2=allFC[fi];
-    try{
-      var jSn=await get(ref(db,'stagiairesFC/'+fc2.id+'/jours'));
-      if(jSn.exists()){var nums=Object.values(jSn.val()).filter(Boolean).map(function(j3){return jmFC[j3];}).filter(Boolean);if(nums.indexOf(jourNum2)>-1)fcDuJour.push(fc2);}
-      else if(fc2.formation&&fc2.formation.indexOf('Comptabilit')>-1&&jourNum2>=1&&jourNum2<=5)fcDuJour.push(fc2);
-    }catch(e2){if(fc2.formation&&fc2.formation.indexOf('Comptabilit')>-1&&jourNum2>=1&&jourNum2<=5)fcDuJour.push(fc2);}
+  if(groupeFiltre==='CVAD'&&!joursCVAD.includes(todayNum)){
+    alert('Les stagiaires CV/AD ne sont pas en présentiel ce jour (Vendredi = auto-signature).'); return;
   }
-  if(fcDuJour.length>0){
-    var sep2=document.createElement('div');sep2.textContent='Formation Continue';
-    sep2.style.cssText='font-size:10px;font-weight:800;color:var(--or);text-transform:uppercase;padding:10px 0 6px;letter-spacing:1px;';
-    elList.appendChild(sep2);
-    for(var mi=0;mi<fcDuJour.length;mi++){
-      var fc3=fcDuJour[mi];total++;
-      var k3=fc3.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
-      var sn3=await get(ref(db,'emargementsFC/'+k3));
-      var dat3=sn3.exists()?sn3.val():{};
-      var abs3=dat3.presence==='absent';
-      var isAuto=dat3.matin_alt==='auto';
-      if(abs3)absTotal++;
-      var row3=document.createElement('div');row3.className='today-row';
-      row3.innerHTML='<div class="today-nom">'+fc3.nom+'</div><div class="today-statuts">'
-        +'<div class="dot-sign '+(abs3?'absent':isAuto?'auto':dat3.matin_alt?'signe':'attente')+'" title="Matin stagiaire"></div>'
-        +'<div class="dot-sign '+(abs3?'absent':isAuto?'auto':dat3.matin_form?'signe':'attente')+'" title="Matin formateur"></div>'
-        +'<div class="dot-sign '+(abs3?'absent':isAuto?'auto':dat3.am_alt?'signe':'attente')+'" title="AM stagiaire"></div>'
-        +'<div class="dot-sign '+(abs3?'absent':isAuto?'auto':dat3.am_form?'signe':'attente')+'" title="AM formateur"></div>'
-        +'</div>';
-      elList.appendChild(row3);
-    }
+  var count=0;
+  for(var i=0;i<allFC.length;i++){
+    var fc=allFC[i];
+    var isASCA2=(fc.jours&&fc.jours.includes&&fc.jours.includes('Vendredi'))||(fc.formation&&fc.formation.includes('Comptabilité'));
+    if(groupeFiltre==='ASCA'&&!isASCA2) continue;
+    if(groupeFiltre==='CVAD'&&isASCA2) continue;
+    var seances2=seances||[];
+    var jourFC=seances2.find(function(s){var d=new Date(s);d.setHours(0,0,0,0);return d.getTime()===today.getTime();});
+    if(!jourFC) continue;
+    var key=fc.id+'_fc_'+jourFC.getFullYear()+'_'+(jourFC.getMonth()+1)+'_'+jourFC.getDate();
+    await set(ref(db,'emargementsFC/'+key+'/'+period+'_form'),'global_sign_'+Date.now());
+    count++;
   }
-  if(total===0)elList.innerHTML='<div style="opacity:0.7;font-size:12px;">Aucune seance prevue aujourd\'hui</div>';
-  document.getElementById('kpiDashJour').textContent=total;
-  document.getElementById('kpiDashAbsents').textContent=absTotal;
+  alert(count+' signature(s) FC '+groupeFiltre+' enregistrée(s) !');
 }
+var bFCmap=[
+  ['btnSignGlobalMatinFC','matin','CVAD'],['btnSignGlobalAMFC','am','CVAD'],
+  ['btnSignGlobalMatinASCA','matin','ASCA'],['btnSignGlobalAMASCA','am','ASCA']
+];
+bFCmap.forEach(function(row){
+  var el=document.getElementById(row[0]);if(!el)return;
+  el.addEventListener('click',function(){signerGroupeFC(row[1],row[2]);});
+  el.addEventListener('touchend',function(e){e.preventDefault();signerGroupeFC(row[1],row[2]);},{passive:false});
+});
 
-if (document.getElementById('btnSignGlobalMatinFC')) {
-  async function signerGlobalFC(period) {
-    const today = new Date(); today.setHours(0,0,0,0);
-    for (const fc of allFC) {
-      const jourFC = seances.find(function(s) { const d=new Date(s); d.setHours(0,0,0,0); return d.getTime()===today.getTime(); });
-      if (!jourFC) continue;
-      const key = fc.id + '_fc_' + jourFC.getFullYear()+'_'+(jourFC.getMonth()+1)+'_'+jourFC.getDate();
-      await set(ref(db,'emargementsFC/'+key+'/'+period+'_form'), 'global_sign_'+Date.now());
-    }
-    alert('✅ Signature globale FC enregistrée !');
+// ========== TABLEAU DE BORD ==========
+async function chargerDashboard(){
+  var moisN=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  var jrsN=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var now=new Date();
+  var el=document.getElementById('dashDate');
+  if(el) el.textContent=jrsN[now.getDay()]+' '+now.getDate()+' '+moisN[now.getMonth()]+' '+now.getFullYear();
+  var kT=document.getElementById('kpiDashTotal');
+  var kF=document.getElementById('kpiDashFC');
+  var kJ=document.getElementById('kpiDashJour');
+  var kA=document.getElementById('kpiDashAbsents');
+  if(kT) kT.textContent=allAlternants.length;
+  if(kF) kF.textContent=allFC.length;
+  var todayNum=now.getDay();
+  var nomJour=jrsN[todayNum];
+  var yyyy=now.getFullYear(),mm=now.getMonth()+1,dd=now.getDate();
+  var altJour=allAlternants.filter(function(a){return a.jourCentre===nomJour;});
+  // FC du jour
+  var fcJour=allFC.filter(function(fc){
+    var isASCA2=(fc.jours&&fc.jours.includes&&fc.jours.includes('Vendredi'))||(fc.formation&&fc.formation.includes('Comptabilité'));
+    if(isASCA2) return [1,3,4,5].includes(todayNum);
+    return [1,2,3,4].includes(todayNum);
+  });
+  var apprenants=altJour.concat(fcJour);
+  if(kJ) kJ.textContent=apprenants.length;
+  var listEl=document.getElementById('dashList');
+  if(!listEl) return;
+  var absCount=0;
+  var rows='';
+  for(var i=0;i<apprenants.length;i++){
+    var ap=apprenants[i];
+    var isFC=!!ap.formation;
+    var dbPath=isFC?'emargementsFC/':'emargements/';
+    var key=isFC?ap.id+'_fc_'+yyyy+'_'+mm+'_'+dd:ap.id+'_'+yyyy+'_'+mm+'_'+dd;
+    var snap=await get(ref(db,dbPath+key)).catch(function(){return null;});
+    var dat=snap&&snap.val()?snap.val():{};
+    var abs=dat.absent===true||dat.absent==='true'||dat.absent==='matin'||dat.absent==='total';
+    if(abs) absCount++;
+    var nomAff=(ap.prenom||'')+' '+(ap.nom||ap.id);
+    var isAuto2=!!(dat.matin_form&&typeof dat.matin_form==='string'&&dat.matin_form.startsWith('auto'));
+    rows+='<div class="today-row">'
+      +'<div class="today-nom">'+nomAff+(isFC?' <span style="font-size:10px;opacity:0.7;">[FC]</span>':'')+'</div>'
+      +'<div class="today-statuts">'
+      +'<div class="dot-sign '+(abs?'absent':dat.matin_alt?'signe':'attente')+'" title="Matin apprenant"></div>'
+      +'<div class="dot-sign '+(abs?'absent':isAuto2?'auto':dat.matin_form?'signe':'attente')+'" title="Matin formateur"></div>'
+      +'<div class="dot-sign '+(abs?'absent':dat.am_alt?'signe':'attente')+'" title="AM apprenant"></div>'
+      +'<div class="dot-sign '+(abs?'absent':isAuto2?'auto':dat.am_form?'signe':'attente')+'" title="AM formateur"></div>'
+      +'</div></div>';
   }
-  document.getElementById('btnSignGlobalMatinFC').addEventListener('click', function(){ signerGlobalFC('matin'); });
-  document.getElementById('btnSignGlobalAMFC').addEventListener('click', function(){ signerGlobalFC('am'); });
+  if(rows==='') rows='<div style="opacity:0.7;font-size:12px;padding:8px 0;">Aucun apprenant aujourd'hui.</div>';
+  listEl.innerHTML=rows;
+  if(kA) kA.textContent=absCount;
 }
 
 </script>
@@ -1548,4 +1658,41 @@ function chargerGroupesForm() {
 document.querySelectorAll('.nav-btn').forEach(function(btn){
   if(btn.getAttribute('data-target')==='groupes'){
     btn.addEventListener('click',chargerGroupesForm);
-    btn.add
+    btn.addEventListener('touchend',function(e){e.preventDefault();chargerGroupesForm();},{passive:false});
+  }
+});
+</script>
+
+  <!-- MODAL EXCEPTION -->
+  <div class="modal-overlay" id="modalException">
+    <div class="modal-box">
+      <div class="modal-titre">🗓️ Régularisation / Exception</div>
+      <p style="font-size:12px;color:#666;margin-bottom:14px;">Sélectionnez la date à régulariser.</p>
+      <input type="date" class="modal-date-input" id="inputDateException">
+      <div class="modal-btns">
+        <button class="btn-modal-ok" id="btnModalOk">Valider</button>
+        <button class="btn-modal-cancel" id="btnModalCancel">Annuler</button>
+      </div>
+    </div>
+  </div>
+  <script>
+  document.addEventListener('DOMContentLoaded',function(){
+    document.getElementById('btnModalCancel').addEventListener('click',function(){
+      document.getElementById('modalException').classList.remove('open');
+    });
+    document.getElementById('btnModalOk').addEventListener('click',function(){
+      var val=document.getElementById('inputDateException').value;
+      if(!val){alert('Veuillez sélectionner une date.');return;}
+      var de=new Date(val+'T00:00:00');
+      var jourCible=document.getElementById('modalException').dataset.jourCible;
+      var joursMap2={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+      if(de.getDay()!==joursMap2[jourCible]){
+        alert('⚠️ La date '+de.toLocaleDateString('fr-FR')+' n\'est pas un '+jourCible+'.');return;
+      }
+      // Expose to module scope via window
+      window._dateException=val;
+      document.getElementById('modalException').classList.remove('open');
+      document.dispatchEvent(new CustomEvent('exceptionDateSet',{detail:{date:val,jour:jourCible}}));
+    });
+  });
+  </script>
