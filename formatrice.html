@@ -107,6 +107,10 @@ Content-Type: text/plain; charset=utf-8
   .btn-sign { padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
   .btn-valider { background: var(--vert); color: white; }
   .btn-effacer { background: #e2e8f0; color: var(--bleu-fonce); }
+  .pill { margin-left:auto; font-size:10px; font-weight:800; padding:3px 9px; border-radius:20px; background:#edf2f7; color:#4a5568; letter-spacing:0; }
+  .pill.ok { background:#c6f6d5; color:#22543d; }
+  .pill.or { background:#fef5e0; color:#8a6d1f; }
+  .dash-date { font-size:12px; font-weight:800; color:#2a3f4e; background:#fff; border-radius:10px; padding:9px 12px; margin-bottom:12px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.06); }
   .btn-global { width: 100%; padding: 13px; background: linear-gradient(135deg, #276749, #38a169); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; letter-spacing: 0.5px; }
   .btn-annuler-sign { width: 100%; padding: 8px; background: #fff5f5; color: var(--rouge); border: 1px solid #fed7d7; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; margin-top: 8px; }
   .btn-signature-globale { width: 100%; padding: 13px; background: linear-gradient(135deg, #2a3f4e, #3d5a6e); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; letter-spacing: 0.5px; }
@@ -161,52 +165,92 @@ Content-Type: text/plain; charset=utf-8
 
   <!-- LUNDI -->
   <div class="section" id="lundi">
-    <button class="btn-global" id="btnSignGlobalMatinLundi">✍️ Signer MATIN — Lundi (alternants + FC)</button>
-    <button class="btn-global" id="btnSignGlobalAMLundi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Lundi (alternants + FC)</button>
-    <div class="jour-titre">Alternants du Lundi</div>
-    <div id="listeLundi"><div class="loading">Chargement...</div></div>
-    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Lundi</div>
-    <div id="fcLundi"><div class="loading">Chargement...</div></div>
+    <div class="dash-date" id="dateJourLundi"></div>
+
+    <button class="btn-global" id="btnSignGlobalMatinLundi">✍️ Signer MATIN — tout le monde</button>
+    <button class="btn-global" id="btnSignGlobalAMLundi" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — tout le monde</button>
+
+    <div class="card">
+      <div class="card-title">👨‍🎓 Alternants du Lundi <span class="pill" id="hdr_listeLundi">—</span></div>
+      <div id="listeLundi"><div class="loading">Chargement...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="border-bottom-color:#C9A227;">🎓 Formation Continue <span class="pill or" id="hdr_fcLundi">—</span></div>
+      <div id="fcLundi"><div class="loading">Chargement...</div></div>
+    </div>
   </div>
 
   <!-- MARDI -->
   <div class="section" id="mardi">
-    <button class="btn-global" id="btnSignGlobalMatinMardi">✍️ Signer MATIN — Mardi (alternants + FC)</button>
-    <button class="btn-global" id="btnSignGlobalAMMardi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Mardi (alternants + FC)</button>
-    <div class="jour-titre">Alternants du Mardi</div>
-    <div id="listeMardi"><div class="loading">Aucun alternant pour l'instant.</div></div>
-    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Mardi</div>
-    <div id="fcMardi"><div class="loading">Chargement...</div></div>
+    <div class="dash-date" id="dateJourMardi"></div>
+
+    <button class="btn-global" id="btnSignGlobalMatinMardi">✍️ Signer MATIN — tout le monde</button>
+    <button class="btn-global" id="btnSignGlobalAMMardi" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — tout le monde</button>
+
+    <div class="card">
+      <div class="card-title">👨‍🎓 Alternants du Mardi <span class="pill" id="hdr_listeMardi">—</span></div>
+      <div id="listeMardi"><div class="loading">Chargement...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="border-bottom-color:#C9A227;">🎓 Formation Continue <span class="pill or" id="hdr_fcMardi">—</span></div>
+      <div id="fcMardi"><div class="loading">Chargement...</div></div>
+    </div>
   </div>
 
   <!-- MERCREDI -->
   <div class="section" id="mercredi">
-    <button class="btn-global" id="btnSignGlobalMatinMercredi">✍️ Signer MATIN — Mercredi (alternants + FC)</button>
-    <button class="btn-global" id="btnSignGlobalAMMercredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Mercredi (alternants + FC)</button>
-    <div class="jour-titre">Alternants du Mercredi</div>
-    <div id="listeMercredi"><div class="loading">Chargement...</div></div>
-    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Mercredi</div>
-    <div id="fcMercredi"><div class="loading">Chargement...</div></div>
+    <div class="dash-date" id="dateJourMercredi"></div>
+
+    <button class="btn-global" id="btnSignGlobalMatinMercredi">✍️ Signer MATIN — tout le monde</button>
+    <button class="btn-global" id="btnSignGlobalAMMercredi" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — tout le monde</button>
+
+    <div class="card">
+      <div class="card-title">👨‍🎓 Alternants du Mercredi <span class="pill" id="hdr_listeMercredi">—</span></div>
+      <div id="listeMercredi"><div class="loading">Chargement...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="border-bottom-color:#C9A227;">🎓 Formation Continue <span class="pill or" id="hdr_fcMercredi">—</span></div>
+      <div id="fcMercredi"><div class="loading">Chargement...</div></div>
+    </div>
   </div>
 
   <!-- JEUDI -->
   <div class="section" id="jeudi">
-    <button class="btn-global" id="btnSignGlobalMatinJeudi">✍️ Signer MATIN — Jeudi (alternants + FC)</button>
-    <button class="btn-global" id="btnSignGlobalAMJeudi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Jeudi (alternants + FC)</button>
-    <div class="jour-titre">Alternants du Jeudi</div>
-    <div id="listeJeudi"><div class="loading">Aucun alternant pour l'instant.</div></div>
-    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Jeudi</div>
-    <div id="fcJeudi"><div class="loading">Chargement...</div></div>
+    <div class="dash-date" id="dateJourJeudi"></div>
+
+    <button class="btn-global" id="btnSignGlobalMatinJeudi">✍️ Signer MATIN — tout le monde</button>
+    <button class="btn-global" id="btnSignGlobalAMJeudi" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — tout le monde</button>
+
+    <div class="card">
+      <div class="card-title">👨‍🎓 Alternants du Jeudi <span class="pill" id="hdr_listeJeudi">—</span></div>
+      <div id="listeJeudi"><div class="loading">Chargement...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="border-bottom-color:#C9A227;">🎓 Formation Continue <span class="pill or" id="hdr_fcJeudi">—</span></div>
+      <div id="fcJeudi"><div class="loading">Chargement...</div></div>
+    </div>
   </div>
 
   <!-- VENDREDI -->
   <div class="section" id="vendredi">
-    <button class="btn-global" id="btnSignGlobalMatinVendredi">✍️ Signer MATIN — Vendredi (alternants + FC)</button>
-    <button class="btn-global" id="btnSignGlobalAMVendredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Vendredi (alternants + FC)</button>
-    <div class="jour-titre">Alternants du Vendredi</div>
-    <div id="listeVendredi"><div class="loading">Chargement...</div></div>
-    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Vendredi</div>
-    <div id="fcVendredi"><div class="loading">Chargement...</div></div>
+    <div class="dash-date" id="dateJourVendredi"></div>
+
+    <button class="btn-global" id="btnSignGlobalMatinVendredi">✍️ Signer MATIN — tout le monde</button>
+    <button class="btn-global" id="btnSignGlobalAMVendredi" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — tout le monde</button>
+
+    <div class="card">
+      <div class="card-title">👨‍🎓 Alternants du Vendredi <span class="pill" id="hdr_listeVendredi">—</span></div>
+      <div id="listeVendredi"><div class="loading">Chargement...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="border-bottom-color:#C9A227;">🎓 Formation Continue <span class="pill or" id="hdr_fcVendredi">—</span></div>
+      <div id="fcVendredi"><div class="loading">Chargement...</div></div>
+    </div>
   </div>
 
   <!-- DRIVE -->
@@ -557,11 +601,11 @@ async function chargerAlternants() {
     allAlternants = [];
     snap.forEach(function(child) { const alt = child.val(); alt.id = child.key; allAlternants.push(alt); });
   }
-  afficherListe('listeLundi', allAlternants.filter(a => a.jourCentre === 'Lundi'));
-  afficherListe('listeMardi', allAlternants.filter(a => a.jourCentre === 'Mardi'));
-  afficherListe('listeMercredi', allAlternants.filter(a => a.jourCentre === 'Mercredi'));
-  afficherListe('listeJeudi', allAlternants.filter(a => a.jourCentre === 'Jeudi'));
-  afficherListe('listeVendredi', allAlternants.filter(a => a.jourCentre === 'Vendredi'));
+  afficherListe('listeLundi', allAlternants.filter(a => a.jourCentre === 'Lundi'), 'Lundi');
+  afficherListe('listeMardi', allAlternants.filter(a => a.jourCentre === 'Mardi'), 'Mardi');
+  afficherListe('listeMercredi', allAlternants.filter(a => a.jourCentre === 'Mercredi'), 'Mercredi');
+  afficherListe('listeJeudi', allAlternants.filter(a => a.jourCentre === 'Jeudi'), 'Jeudi');
+  afficherListe('listeVendredi', allAlternants.filter(a => a.jourCentre === 'Vendredi'), 'Vendredi');
 
   const fcSnap = await get(ref(db, 'stagiairesFC'));
   if (fcSnap.exists()) {
@@ -572,43 +616,87 @@ async function chargerAlternants() {
   const fcFiltered = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
   afficherListeFC('listeFC', fcFiltered);
   ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'].forEach(function(J){
-    afficherListeFC('fc'+J, fcDuJour(J).filter(function(fc){return profil.fcIds?profil.fcIds.includes(fc.id):true;}));
+    afficherListeFC('fc'+J, fcDuJour(J).filter(function(fc){return profil.fcIds?profil.fcIds.includes(fc.id):true;}), J);
   });
   remplirMoisSelect();
   chargerRecap();
 }
 
-function afficherListeFC(containerId, fcs) {
+
+// ===== ÉTAT DE PRÉSENCE PAR JOUR =====
+function dateDuJour(jour){
+  var n={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5}[jour];
+  var t=new Date(); t.setHours(0,0,0,0);
+  for(var i=0;i<=6;i++){ var d=new Date(t); d.setDate(t.getDate()-i); if(d.getDay()===n) return d; }
+  return t;
+}
+function badgeHTML(v){
+  var pres = v.matin_form||v.am_form||v.matin||v.am;
+  var abs  = v.absence||v.motif||v.matin_absence||v.am_absence;
+  function pt(ok,lbl){return '<span style="display:block;font-size:9px;font-weight:800;line-height:1.35;color:'+(ok?'#38a169':'#cbd5e0')+';">'+(ok?'●':'○')+' '+lbl+'</span>';}
+  var tag='';
+  if(abs) tag='<span style="display:block;font-size:9px;font-weight:800;color:#e53e3e;line-height:1.35;">✕ Absent</span>';
+  else if((v.matin_form||v.matin)&&(v.am_form||v.am)) tag='<span style="display:block;font-size:9px;font-weight:800;color:#38a169;line-height:1.35;">✓ Présent</span>';
+  else if(pres) tag='<span style="display:block;font-size:9px;font-weight:800;color:#C9A227;line-height:1.35;">◐ Partiel</span>';
+  else tag='<span style="display:block;font-size:9px;font-weight:800;color:#a0aec0;line-height:1.35;">— À signer</span>';
+  return tag+pt(!!(v.matin_form||v.matin),'Matin')+pt(!!(v.am_form||v.am),'A-M');
+}
+async function chargerEtats(containerId, items, jour, isFC){
+  if(!jour) return;
+  var c=document.getElementById(containerId); if(!c) return;
+  var d=dateDuJour(jour), y=d.getFullYear(), m=d.getMonth()+1, dd=d.getDate();
+  var nP=0;
+  for(var i=0;i<items.length;i++){
+    var it=items[i];
+    var path = isFC ? ('emargementsFC/'+it.id+'_fc_'+y+'_'+m+'_'+dd) : ('emargements/'+it.id+'_'+y+'_'+m+'_'+dd);
+    var snap=await get(ref(db,path)).catch(function(){return null;});
+    var v=(snap&&snap.exists())?snap.val():{};
+    if(v.matin_form||v.am_form||v.matin||v.am) nP++;
+    var el=c.querySelector('[data-etat="'+it.id+'"]');
+    if(el) el.innerHTML=badgeHTML(v);
+  }
+  var hdr=document.getElementById('hdr_'+containerId);
+  if(hdr){
+    hdr.textContent = nP+'/'+items.length+' signé';
+    hdr.className = 'pill' + (items.length>0 && nP===items.length ? ' ok' : (isFC?' or':''));
+  }
+  var dj=document.getElementById('dateJour'+jour);
+  if(dj) dj.textContent = '📅 '+jour+' '+('0'+dd).slice(-2)+'/'+('0'+m).slice(-2)+'/'+y;
+}
+
+function afficherListeFC(containerId, fcs, jour) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  if (fcs.length === 0) { container.innerHTML = '<div class="loading">Aucun stagiaire FC.</div>'; return; }
+  if (fcs.length === 0) { container.innerHTML = '<div class="loading">Aucun stagiaire FC ce jour.</div>'; var h=document.getElementById('hdr_'+containerId); if(h){h.textContent='0/0';h.className='pill or';} return; }
   container.innerHTML = '';
   fcs.forEach(function(fc) {
     const initiales = fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
     const card = document.createElement('div');
     card.className = 'alternant-card';
-    card.innerHTML = '<div class="alternant-avatar" style="border-color:#C9A227;">'+initiales+'</div><div style="flex:1"><div class="alternant-nom">'+fc.nom+'</div><div class="alternant-formation">'+fc.formation+'</div><div style="font-size:10px;color:#C9A227;font-weight:700;margin-top:2px;">🎓 Formation Continue</div></div><div class="alternant-arrow">›</div>';
+    card.innerHTML = '<div class="alternant-avatar" style="border-color:#C9A227;">'+initiales+'</div><div style="flex:1;min-width:0;"><div class="alternant-nom">'+fc.nom+'</div><div class="alternant-formation">'+fc.formation+'</div><div style="font-size:10px;color:#C9A227;font-weight:700;margin-top:2px;">🎓 Formation Continue</div></div><div data-etat="'+fc.id+'" style="text-align:right;min-width:66px;padding-right:4px;"></div><div class="alternant-arrow">›</div>';
     function open(e) { e.preventDefault(); ouvrirFicheFC(fc); }
     card.addEventListener('touchend', open, {passive:false});
     card.addEventListener('click', open);
     container.appendChild(card);
   });
+  chargerEtats(containerId, fcs, jour, true).catch(console.error);
 }
 
-function afficherListe(containerId, alts) {
+function afficherListe(containerId, alts, jour) {
   const container = document.getElementById(containerId);
-  if (alts.length === 0) { container.innerHTML = '<div class="loading">Aucun alternant.</div>'; return; }
+  if (alts.length === 0) { container.innerHTML = '<div class="loading">Aucun alternant ce jour.</div>'; var h=document.getElementById('hdr_'+containerId); if(h){h.textContent='0/0';h.className='pill';} return; }
   container.innerHTML = '';
   alts.forEach(function(alt) {
     const initiales = alt.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
     const card = document.createElement('div');
     card.className = 'alternant-card';
-    card.innerHTML = `<div class="alternant-avatar">${initiales}</div><div style="flex:1"><div class="alternant-nom">${alt.nom}</div><div class="alternant-formation">${alt.formation}</div></div><div class="alternant-arrow">›</div>`;
+    card.innerHTML = `<div class="alternant-avatar">${initiales}</div><div style="flex:1;min-width:0;"><div class="alternant-nom">${alt.nom}</div><div class="alternant-formation">${alt.formation}</div></div><div data-etat="${alt.id}" style="text-align:right;min-width:66px;padding-right:4px;"></div><div class="alternant-arrow">›</div>`;
     function open(e) { e.preventDefault(); ouvrirFiche(alt).catch(console.error); }
     card.addEventListener('touchend', open, {passive:false});
     card.addEventListener('click', open);
     container.appendChild(card);
   });
+  chargerEtats(containerId, alts, jour, false).catch(console.error);
 }
 
 function getSeances(alt) {
@@ -913,6 +1001,10 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     if (target==='recap') chargerRecap();
     if (target==='drive') chargerDrive();
     if (target==='dashboard') chargerDashboard();
+    var mapJ={lundi:'Lundi',mardi:'Mardi',mercredi:'Mercredi',jeudi:'Jeudi',vendredi:'Vendredi'};
+    if (mapJ[target]) { var J=mapJ[target];
+      chargerEtats('liste'+J, allAlternants.filter(function(a){return a.jourCentre===J;}), J, false);
+      chargerEtats('fc'+J, fcDuJour(J), J, true); }
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
@@ -1145,6 +1237,8 @@ async function signerGlobalJour(jour, period) {
     await set(ref(db,'emargementsFC/'+lesFC[i].id+'_fc_'+yyyy+'_'+mm+'_'+dd+'/'+period+'_form'),'global_sign_'+Date.now());nF++;
   }
   alert('✅ '+jour+' '+dd+'/'+mm+' — '+(period==='matin'?'Matin':'Après-midi')+'\n'+nA+' alternant(s) + '+nF+' stagiaire(s) FC signé(s).');
+  chargerEtats('liste'+jour, allAlternants.filter(function(a){return a.jourCentre===jour;}), jour, false);
+  chargerEtats('fc'+jour, lesFC, jour, true);
 }
 var signerGlobalAlt = signerGlobalJour;
 ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'].forEach(function(j){
