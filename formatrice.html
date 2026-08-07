@@ -114,6 +114,20 @@
     background: #e53e3e; color: white; border-radius: 50%; width: 18px; height: 18px;
     font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
   .spacer { height: 20px; }
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .kpi-card{background:var(--blanc);border-radius:12px;padding:14px;text-align:center;box-shadow:0 1px 6px rgba(61,90,110,0.1);}
+  .kpi-val{font-size:28px;font-weight:800;color:var(--bleu-fonce);}
+  .kpi-val.or{color:var(--or);} .kpi-val.vert{color:var(--vert);} .kpi-val.rouge{color:var(--rouge);}
+  .kpi-lbl{font-size:11px;color:var(--gris);margin-top:4px;}
+  .today-card{background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));border-radius:14px;padding:16px;margin-bottom:14px;color:var(--blanc);}
+  .today-titre{font-size:12px;font-weight:700;color:var(--or);margin-bottom:10px;text-transform:uppercase;}
+  .today-date{font-size:15px;font-weight:700;margin-bottom:12px;}
+  .today-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1);}
+  .today-row:last-child{border-bottom:none;}
+  .today-nom{font-size:13px;font-weight:600;}
+  .today-statuts{display:flex;gap:4px;}
+  .dot-sign{width:10px;height:10px;border-radius:50%;}
+  .dot-sign.signe{background:#68d391;} .dot-sign.attente{background:#fc8181;} .dot-sign.absent{background:#a0aec0;} .dot-sign.auto{background:#7C5CFF;}
 </style>
 </head>
 <body>
@@ -138,6 +152,7 @@
   <a class="nav-btn" data-target="mardi">📅 Mardi</a>
   <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
   <a class="nav-btn" data-target="jeudi">📅 Jeudi</a>
+  <a class="nav-btn" data-target="vendredi">Vendredi</a>
   <a class="nav-btn" data-target="fc">🎓 FC</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📊 Récap heures</a>
@@ -145,25 +160,18 @@
 
 <div class="content" id="mainContent">
 
+  <!-- TABLEAU DE BORD -->
   <div class="section active" id="dashboard">
-    <div style="background:#1a2f3e;border-radius:12px;padding:14px 16px;margin-bottom:14px;color:white;">
-      <div style="font-size:10px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Seances du jour</div>
-      <div id="dashDate" style="font-size:16px;font-weight:700;"></div>
-      <div id="dashMsg" style="font-size:12px;opacity:0.7;margin-top:2px;"></div>
+    <div class="today-card">
+      <div class="today-titre-dash">Seances aujourd'hui</div>
+      <div class="today-date-dash" id="dashDate">--</div>
+      <div id="dashList"><div style="opacity:0.7;font-size:12px;">Chargement...</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-      <div style="background:white;border-radius:10px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
-        <div id="kpiDashTotal" style="font-size:22px;font-weight:800;color:#C9A227;">-</div>
-        <div style="font-size:10px;color:#718096;">Alternants actifs</div>
-      </div>
-      <div style="background:white;border-radius:10px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
-        <div id="kpiDashFC" style="font-size:22px;font-weight:800;color:#C9A227;">-</div>
-        <div style="font-size:10px;color:#718096;">Stagiaires FC</div>
-      </div>
-    </div>
-    <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
-      <div style="font-size:11px;font-weight:800;color:#2a3f4e;margin-bottom:10px;text-transform:uppercase;">Presences du jour</div>
-      <div id="dashList"><div class="loading">Chargement...</div></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-val or" id="kpiDashTotal">--</div><div class="kpi-lbl">Alternants actifs</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:#C9A227;" id="kpiDashFC">--</div><div class="kpi-lbl">Stagiaires FC</div></div>
+      <div class="kpi-card"><div class="kpi-val vert" id="kpiDashJour">0</div><div class="kpi-lbl">Apprenants ce jour</div></div>
+      <div class="kpi-card"><div class="kpi-val rouge" id="kpiDashAbsents">0</div><div class="kpi-lbl">Absences ce jour</div></div>
     </div>
   </div>
 
@@ -177,8 +185,8 @@
 
   <!-- MARDI -->
   <div class="section" id="mardi">
-    <button class="btn-global" id="btnSignGlobalMatinMardi">Signer MATIN - Tous les mardis</button>
-    <button class="btn-global" id="btnSignGlobalAMMardi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">Signer APRES-MIDI - Tous les mardis</button>
+    <button class="btn-global" id="btnSignGlobalMatinMardi">Signer MATIN - Mardis</button>
+    <button class="btn-global" id="btnSignGlobalAMMardi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">Signer APRES-MIDI - Mardis</button>
     <div class="jour-titre">Alternants du Mardi</div>
     <div id="listeMardi"><div class="loading">Aucun alternant pour l'instant.</div></div>
   </div>
@@ -193,10 +201,18 @@
 
   <!-- JEUDI -->
   <div class="section" id="jeudi">
-    <button class="btn-global" id="btnSignGlobalMatinJeudi">Signer MATIN - Tous les jeudis</button>
-    <button class="btn-global" id="btnSignGlobalAMJeudi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">Signer APRES-MIDI - Tous les jeudis</button>
+    <button class="btn-global" id="btnSignGlobalMatinJeudi">Signer MATIN - Jeudis</button>
+    <button class="btn-global" id="btnSignGlobalAMJeudi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">Signer APRES-MIDI - Jeudis</button>
     <div class="jour-titre">Alternants du Jeudi</div>
     <div id="listeJeudi"><div class="loading">Aucun alternant pour l'instant.</div></div>
+  </div>
+
+  <!-- VENDREDI -->
+  <div class="section" id="vendredi">
+    <button class="btn-global" id="btnSignGlobalMatinVendredi">Signer MATIN - Vendredis</button>
+    <button class="btn-global" id="btnSignGlobalAMVendredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">Signer APRES-MIDI - Vendredis</button>
+    <div class="jour-titre">Alternants du Vendredi</div>
+    <div id="listeVendredi"><div class="loading">Aucun alternant pour l'instant.</div></div>
   </div>
 
   <!-- FORMATION CONTINUE -->
@@ -348,7 +364,7 @@ const PROFILS = {
   'FORM01': {
     nom: 'Fontaine Emilie',
     acces: 'total',
-    onglets: ['dashboard','lundi','mardi','mercredi','jeudi','fc','groupes','recap'],
+    onglets: ['dashboard','lundi','mardi','mercredi','jeudi','vendredi','fc','groupes','recap'],
     fcIds: null, // tous
     debut: null, fin: null // illimité
   },
@@ -386,7 +402,7 @@ function verifierAcces() {
 // Masquer les onglets non autorisés
 function appliquerAcces() {
   document.getElementById('headerNom').textContent = '👩‍🏫 ' + profil.nom;
-  const tousOnglets = ['dashboard','lundi','mardi','mercredi','jeudi','fc','groupes','recap'];
+  const tousOnglets = ['dashboard','lundi','mardi','mercredi','jeudi','vendredi','fc','groupes','recap'];
   tousOnglets.forEach(function(id) {
     const btn = document.querySelector('.nav-btn[data-target="' + id + '"]');
     const section = document.getElementById(id);
@@ -455,6 +471,7 @@ async function chargerAlternants() {
   afficherListe('listeMardi', allAlternants.filter(a => a.jourCentre === 'Mardi'));
   afficherListe('listeMercredi', allAlternants.filter(a => a.jourCentre === 'Mercredi'));
   afficherListe('listeJeudi', allAlternants.filter(a => a.jourCentre === 'Jeudi'));
+  afficherListe('listeVendredi', allAlternants.filter(a => a.jourCentre === 'Vendredi'));
 
   const fcSnap = await get(ref(db, 'stagiairesFC'));
   if (fcSnap.exists()) {
@@ -1017,22 +1034,19 @@ document.querySelectorAll('.btn-valider').forEach(function(btn) {
   }, {passive:false});
 });
 
-// ── Signature globale alternants
-async function signerGlobalAlt(jour, period) {
-  var joursMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4};
-  var jourNum = joursMap[jour];
-  var today = new Date(); today.setHours(0,0,0,0);
-  var jourDate = null;
-  for (var i=-6; i<=6; i++) {
-    var d2 = new Date(today); d2.setDate(today.getDate()+i);
-    if (d2.getDay()===jourNum) { jourDate=d2; break; }
-  }
-  if (!jourDate) { alert('Aucune date pour '+jour); return; }
-  var yyyy=jourDate.getFullYear(), mm=jourDate.getMonth()+1, dd=jourDate.getDate();
+// Signature globale alternants
+async function signerGlobalAlt(jour,period){
+  var joursMap={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  var jourNum=joursMap[jour];
+  var today=new Date();today.setHours(0,0,0,0);
+  var jourDate=null;
+  for(var i=-6;i<=6;i++){var d2=new Date(today);d2.setDate(today.getDate()+i);if(d2.getDay()===jourNum){jourDate=d2;break;}}
+  if(!jourDate){alert('Aucune date pour '+jour);return;}
+  var yyyy=jourDate.getFullYear(),mm=jourDate.getMonth()+1,dd=jourDate.getDate();
   var count=0;
-  for (var j=0; j<allAlternants.length; j++) {
+  for(var j=0;j<allAlternants.length;j++){
     var alt2=allAlternants[j];
-    if (!alt2.jourCentre || alt2.jourCentre!==jour) continue;
+    if(!alt2.jourCentre||alt2.jourCentre!==jour)continue;
     var key2=alt2.id+'_'+yyyy+'_'+mm+'_'+dd;
     await set(ref(db,'emargements/'+key2+'/'+period+'_form'),'global_sign_'+Date.now());
     count++;
@@ -1040,87 +1054,87 @@ async function signerGlobalAlt(jour, period) {
   alert(count+' signature(s) enregistree(s) pour '+jour);
 }
 ['btnSignGlobalMatinLundi','btnSignGlobalAMLundi','btnSignGlobalMatinMardi','btnSignGlobalAMMardi',
- 'btnSignGlobalMatinMercredi','btnSignGlobalAMMercredi','btnSignGlobalMatinJeudi','btnSignGlobalAMJeudi'
-].forEach(function(btnId) {
-  var el = document.getElementById(btnId); if (!el) return;
-  var j2 = btnId.indexOf('Lundi')>-1?'Lundi':btnId.indexOf('Mardi')>-1?'Mardi':btnId.indexOf('Mercredi')>-1?'Mercredi':'Jeudi';
-  var p2 = btnId.indexOf('Matin')>-1?'matin':'am';
-  el.addEventListener('click', function(){signerGlobalAlt(j2,p2);});
-  el.addEventListener('touchend', function(e){e.preventDefault();signerGlobalAlt(j2,p2);},{passive:false});
+ 'btnSignGlobalMatinMercredi','btnSignGlobalAMMercredi','btnSignGlobalMatinJeudi','btnSignGlobalAMJeudi',
+ 'btnSignGlobalMatinVendredi','btnSignGlobalAMVendredi'
+].forEach(function(btnId){
+  var el=document.getElementById(btnId);if(!el)return;
+  var j2=btnId.indexOf('Vendredi')>-1?'Vendredi':btnId.indexOf('Lundi')>-1?'Lundi':btnId.indexOf('Mardi')>-1?'Mardi':btnId.indexOf('Mercredi')>-1?'Mercredi':'Jeudi';
+  var p2=btnId.indexOf('Matin')>-1?'matin':'am';
+  el.addEventListener('click',function(){signerGlobalAlt(j2,p2);});
+  el.addEventListener('touchend',function(e){e.preventDefault();signerGlobalAlt(j2,p2);},{passive:false});
 });
 
-// ── Tableau de bord
-async function chargerDashboard() {
+// Tableau de bord
+async function chargerDashboard(){
   var moisN=['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
   var jrsN=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
   var today=new Date();
   var elDate=document.getElementById('dashDate');
-  var elMsg=document.getElementById('dashMsg');
   var elList=document.getElementById('dashList');
-  if (!elDate) return;
+  if(!elDate)return;
   elDate.textContent=jrsN[today.getDay()]+' '+today.getDate()+' '+moisN[today.getMonth()]+' '+today.getFullYear();
   document.getElementById('kpiDashTotal').textContent=allAlternants.length;
   document.getElementById('kpiDashFC').textContent=allFC.length;
   elList.innerHTML='';
-  var jourNom=jrsN[today.getDay()], jourNum2=today.getDay();
-  var jourMapFC2={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  var jourNom=jrsN[today.getDay()],jourNum2=today.getDay();
+  var jmFC={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   var altDuJour=allAlternants.filter(function(a){return a.jourCentre===jourNom;});
-  var total=0;
-  if (altDuJour.length>0) {
-    var sep=document.createElement('div');
-    sep.textContent='Alternants';
-    sep.style.cssText='font-size:10px;font-weight:800;color:#3d5a6e;text-transform:uppercase;padding:4px 0;';
+  var total=0,absTotal=0;
+  if(altDuJour.length>0){
+    var sep=document.createElement('div');sep.textContent='Alternants';
+    sep.style.cssText='font-size:10px;font-weight:800;color:rgba(255,255,255,0.5);text-transform:uppercase;padding:4px 0 6px;letter-spacing:1px;';
     elList.appendChild(sep);
-    for (var i=0;i<altDuJour.length;i++) {
-      var a2=altDuJour[i]; total++;
+    for(var i=0;i<altDuJour.length;i++){
+      var a2=altDuJour[i];total++;
       var k2=a2.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
-      var snap2=await get(ref(db,'emargements/'+k2));
-      var dat=snap2.exists()?snap2.val():{};
+      var sn2=await get(ref(db,'emargements/'+k2));
+      var dat=sn2.exists()?sn2.val():{};
       var abs=dat.presence==='absent'||dat.absence===true;
-      var stat=abs?'ABSENT':(dat.matin_form&&dat.am_form)?'Complet':(dat.matin_form)?'Matin OK':'En attente';
-      var col=abs?'#e53e3e':(dat.matin_form&&dat.am_form)?'#38a169':(dat.matin_form)?'#C9A227':'#a0aec0';
-      var row=document.createElement('div');
-      row.style.cssText='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5;font-size:13px;';
-      row.innerHTML='<span style="font-weight:600;">'+a2.nom+'</span><span style="font-size:11px;font-weight:700;color:'+col+';">'+stat+'</span>';
+      if(abs)absTotal++;
+      var row=document.createElement('div');row.className='today-row';
+      row.innerHTML='<div class="today-nom">'+a2.nom+'</div><div class="today-statuts">'
+        +'<div class="dot-sign '+(abs?'absent':dat.matin_alt?'signe':'attente')+'" title="Matin alt"></div>'
+        +'<div class="dot-sign '+(abs?'absent':dat.matin_form?'signe':'attente')+'" title="Matin form"></div>'
+        +'<div class="dot-sign '+(abs?'absent':dat.am_alt?'signe':'attente')+'" title="AM alt"></div>'
+        +'<div class="dot-sign '+(abs?'absent':dat.am_form?'signe':'attente')+'" title="AM form"></div>'
+        +'</div>';
       elList.appendChild(row);
     }
   }
-  var fcDuJour2=[];
-  for (var fi=0;fi<allFC.length;fi++) {
+  var fcDuJour=[];
+  for(var fi=0;fi<allFC.length;fi++){
     var fc2=allFC[fi];
-    try {
-      var jSnap2=await get(ref(db,'stagiairesFC/'+fc2.id+'/jours'));
-      if (jSnap2.exists()) {
-        var nums2=Object.values(jSnap2.val()).filter(Boolean).map(function(j3){return jourMapFC2[j3];}).filter(Boolean);
-        if (nums2.indexOf(jourNum2)>-1) fcDuJour2.push(fc2);
-      } else if (fc2.formation&&fc2.formation.indexOf('Comptabilit')>-1&&jourNum2>=1&&jourNum2<=5) {
-        fcDuJour2.push(fc2);
-      }
-    } catch(e2) {
-      if (fc2.formation&&fc2.formation.indexOf('Comptabilit')>-1&&jourNum2>=1&&jourNum2<=5) fcDuJour2.push(fc2);
-    }
+    try{
+      var jSn=await get(ref(db,'stagiairesFC/'+fc2.id+'/jours'));
+      if(jSn.exists()){var nums=Object.values(jSn.val()).filter(Boolean).map(function(j3){return jmFC[j3];}).filter(Boolean);if(nums.indexOf(jourNum2)>-1)fcDuJour.push(fc2);}
+      else if(fc2.formation&&fc2.formation.indexOf('Comptabilit')>-1&&jourNum2>=1&&jourNum2<=5)fcDuJour.push(fc2);
+    }catch(e2){if(fc2.formation&&fc2.formation.indexOf('Comptabilit')>-1&&jourNum2>=1&&jourNum2<=5)fcDuJour.push(fc2);}
   }
-  if (fcDuJour2.length>0) {
-    var sep2=document.createElement('div');
-    sep2.textContent='Formation Continue';
-    sep2.style.cssText='font-size:10px;font-weight:800;color:#C9A227;text-transform:uppercase;padding:8px 0 4px;border-top:1px solid #f0f2f5;margin-top:6px;';
+  if(fcDuJour.length>0){
+    var sep2=document.createElement('div');sep2.textContent='Formation Continue';
+    sep2.style.cssText='font-size:10px;font-weight:800;color:var(--or);text-transform:uppercase;padding:10px 0 6px;letter-spacing:1px;';
     elList.appendChild(sep2);
-    for (var mi=0;mi<fcDuJour2.length;mi++) {
-      var fc3=fcDuJour2[mi]; total++;
+    for(var mi=0;mi<fcDuJour.length;mi++){
+      var fc3=fcDuJour[mi];total++;
       var k3=fc3.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
-      var snap3=await get(ref(db,'emargementsFC/'+k3));
-      var dat3=snap3.exists()?snap3.val():{};
+      var sn3=await get(ref(db,'emargementsFC/'+k3));
+      var dat3=sn3.exists()?sn3.val():{};
       var abs3=dat3.presence==='absent';
-      var stat3=abs3?'ABSENT':(dat3.matin_alt&&dat3.am_alt)?'Signe':'En attente';
-      var col3=abs3?'#e53e3e':(dat3.matin_alt&&dat3.am_alt)?'#38a169':'#a0aec0';
-      var row3=document.createElement('div');
-      row3.style.cssText='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5;font-size:13px;';
-      row3.innerHTML='<span style="font-weight:600;">'+fc3.nom+'</span><span style="font-size:11px;font-weight:700;color:'+col3+';">'+stat3+'</span>';
+      var isAuto=dat3.matin_alt==='auto';
+      if(abs3)absTotal++;
+      var row3=document.createElement('div');row3.className='today-row';
+      row3.innerHTML='<div class="today-nom">'+fc3.nom+'</div><div class="today-statuts">'
+        +'<div class="dot-sign '+(abs3?'absent':isAuto?'auto':dat3.matin_alt?'signe':'attente')+'" title="Matin stagiaire"></div>'
+        +'<div class="dot-sign '+(abs3?'absent':isAuto?'auto':dat3.matin_form?'signe':'attente')+'" title="Matin formateur"></div>'
+        +'<div class="dot-sign '+(abs3?'absent':isAuto?'auto':dat3.am_alt?'signe':'attente')+'" title="AM stagiaire"></div>'
+        +'<div class="dot-sign '+(abs3?'absent':isAuto?'auto':dat3.am_form?'signe':'attente')+'" title="AM formateur"></div>'
+        +'</div>';
       elList.appendChild(row3);
     }
   }
-  if (total===0) elList.innerHTML='<div style="font-size:12px;color:#a0aec0;padding:8px 0;">Aucune seance prevue aujourd\'hui</div>';
-  if (elMsg) elMsg.textContent=total+' apprenant'+(total>1?'s':'')+' aujourd\'hui';
+  if(total===0)elList.innerHTML='<div style="opacity:0.7;font-size:12px;">Aucune seance prevue aujourd\'hui</div>';
+  document.getElementById('kpiDashJour').textContent=total;
+  document.getElementById('kpiDashAbsents').textContent=absTotal;
 }
 
 if (document.getElementById('btnSignGlobalMatinFC')) {
