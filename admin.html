@@ -49,10 +49,10 @@
   .today-nom { font-size: 13px; font-weight: 600; }
   .today-statuts { display: flex; gap: 4px; }
   .dot-sign { width: 10px; height: 10px; border-radius: 50%; }
+.dot-sign.auto { background: #7C5CFF; }
   .dot-sign.signe { background: #68d391; }
   .dot-sign.attente { background: #fc8181; }
   .dot-sign.absent { background: #a0aec0; }
-  .dot-sign.auto { background: #7C5CFF; }
   .alternant-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; margin-bottom: 8px; background: var(--gris-clair); cursor: pointer; border: 2px solid transparent; touch-action: manipulation; }
   .alternant-card:hover { border-color: var(--or); background: var(--or-pale); }
   .alternant-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
@@ -127,7 +127,6 @@
   <a class="nav-btn" data-target="stagiairesfc">🎓 FC</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📈 Récap heures</a>
-  <a class="nav-btn" data-target="signatexcept">🆘 Except.</a>
 </div>
 
 <div class="content">
@@ -168,33 +167,15 @@
         <div class="form-field"><label class="form-label">Nom complet</label><input class="form-input" id="formNom" placeholder="Prénom Nom" /></div>
         <div class="form-field"><label class="form-label">Formation</label>
           <select class="form-select" id="formFormation">
-            <option value="">-- Choisir --</option>
-            <optgroup label="Aide à la personne">
-              <option value="TP Responsable Coordinateur Services au Domicile">TP Responsable Coordinateur Services au Domicile</option>
-              <option value="TP Assistant(e) de Vie aux Familles">TP Assistant(e) de Vie aux Familles</option>
-            </optgroup>
-            <optgroup label="Tourisme">
-              <option value="TP Chargé(e) d'Accueil Touristique et de Loisirs">TP Chargé(e) d'Accueil Touristique et de Loisirs</option>
-              <option value="TP Guide Accompagnateur Touristique">TP Guide Accompagnateur Touristique</option>
-            </optgroup>
-            <optgroup label="Administration">
-              <option value="TP Chargé(e) d'Accueil et de Gestion Administrative">TP Chargé(e) d'Accueil et de Gestion Administrative</option>
-              <option value="TP Assistant(e) de Comptabilité et d'Administration">TP Assistant(e) de Comptabilité et d'Administration</option>
-              <option value="TP Secrétaire Assistant(e) Médico-Administratif(ve)">TP Secrétaire Assistant(e) Médico-Administratif(ve)</option>
-              <option value="TP Assistant(e) de Direction">TP Assistant(e) de Direction</option>
-              <option value="TP Assistant(e) Ressources Humaines - ARH">TP Assistant(e) Ressources Humaines - ARH</option>
-            </optgroup>
-            <optgroup label="Médiation">
-              <option value="TP Agent de Médiation, Information et Services">TP Agent de Médiation, Information et Services</option>
-              <option value="TP Conseiller(ère) en Insertion Professionnelle">TP Conseiller(ère) en Insertion Professionnelle</option>
-            </optgroup>
-            <optgroup label="Commerce">
-              <option value="TP Manager des Établissements Marchands">TP Manager des Établissements Marchands</option>
-              <option value="TP Responsable des Établissements Marchands">TP Responsable des Établissements Marchands</option>
-              <option value="TP Conseiller(ère) de Vente">TP Conseiller(ère) de Vente</option>
-              <option value="TP Assistant(e) Commercial(e)">TP Assistant(e) Commercial(e)</option>
-              <option value="TP Employé(e) Commercial(e)">TP Employé(e) Commercial(e)</option>
-            </optgroup>
+            <option value="TP Assistant de Direction">TP Assistant de Direction</option>
+            <option value="TP Secrétaire Comptable">TP Secrétaire Comptable</option>
+            <option value="TP Conseiller de Vente">TP Conseiller de Vente</option>
+            <option value="TP Employé Commercial">TP Employé Commercial</option>
+            <option value="TP Secrétaire Assistant">TP Secrétaire Assistant</option>
+            <option value="TP Manager d'Unité Marchande">TP Manager d'Unité Marchande</option>
+            <option value="TP Manager d'Établissement Marchand">TP Manager d'Établissement Marchand</option>
+            <option value="TP Assistant Commercial">TP Assistant Commercial</option>
+            <option value="TP Secrétaire Assistant(e) Médico-Administratif">TP Secrétaire Assistant(e) Médico-Administratif</option>
           </select>
         </div>
         <div class="form-field"><label class="form-label">Entreprise</label><input class="form-input" id="formEntreprise" placeholder="Nom de l'entreprise" /></div>
@@ -239,34 +220,10 @@
         <div class="form-field"><label class="form-label">Nom complet</label><input class="form-input" id="fcFormNom" placeholder="Prénom Nom" /></div>
         <div class="form-field"><label class="form-label">Formation</label>
           <select class="form-select" id="fcFormFormation">
-            <option value="">-- Choisir --</option>
-            <optgroup label="Aide à la personne">
-              <option value="TP Responsable Coordinateur Services au Domicile">TP Responsable Coordinateur Services au Domicile</option>
-              <option value="TP Assistant(e) de Vie aux Familles">TP Assistant(e) de Vie aux Familles</option>
-            </optgroup>
-            <optgroup label="Tourisme">
-              <option value="TP Chargé(e) d'Accueil Touristique et de Loisirs">TP Chargé(e) d'Accueil Touristique et de Loisirs</option>
-              <option value="TP Guide Accompagnateur Touristique">TP Guide Accompagnateur Touristique</option>
-            </optgroup>
-            <optgroup label="Administration">
-              <option value="TP Chargé(e) d'Accueil et de Gestion Administrative">TP Chargé(e) d'Accueil et de Gestion Administrative</option>
-              <option value="TP Assistant(e) de Comptabilité et d'Administration">TP Assistant(e) de Comptabilité et d'Administration</option>
-              <option value="Assistant Comptabilité et Administration en TPE PME">Assistant Comptabilité et Administration en TPE PME</option>
-              <option value="TP Secrétaire Assistant(e) Médico-Administratif(ve)">TP Secrétaire Assistant(e) Médico-Administratif(ve)</option>
-              <option value="TP Assistant(e) de Direction">TP Assistant(e) de Direction</option>
-              <option value="TP Assistant(e) Ressources Humaines - ARH">TP Assistant(e) Ressources Humaines - ARH</option>
-            </optgroup>
-            <optgroup label="Médiation">
-              <option value="TP Agent de Médiation, Information et Services">TP Agent de Médiation, Information et Services</option>
-              <option value="TP Conseiller(ère) en Insertion Professionnelle">TP Conseiller(ère) en Insertion Professionnelle</option>
-            </optgroup>
-            <optgroup label="Commerce">
-              <option value="TP Manager des Établissements Marchands">TP Manager des Établissements Marchands</option>
-              <option value="TP Responsable des Établissements Marchands">TP Responsable des Établissements Marchands</option>
-              <option value="TP Conseiller(ère) de Vente">TP Conseiller(ère) de Vente</option>
-              <option value="TP Assistant(e) Commercial(e)">TP Assistant(e) Commercial(e)</option>
-              <option value="TP Employé(e) Commercial(e)">TP Employé(e) Commercial(e)</option>
-            </optgroup>
+            <option value="TP Assistant de Direction">TP Assistant de Direction</option>
+            <option value="TP Conseiller de Vente">TP Conseiller de Vente</option>
+            <option value="Assistant Comptabilité et Administration en TPE PME">Assistant Comptabilité TPE PME</option>
+            <option value="TP Secrétaire Comptable">TP Secrétaire Comptable</option>
           </select>
         </div>
         <div class="form-field"><label class="form-label">Date de début</label><input class="form-input" id="fcFormDebut" placeholder="JJ/MM/AAAA" value="13/07/2026" /></div>
@@ -324,48 +281,12 @@
     <div id="adminRecapListe"><div class="loading">Chargement...</div></div>
   </div>
 
-  <!-- SIGNATURE EXCEPTIONNELLE -->
-  <div class="section" id="signatexcept">
-    <div class="card" style="background:#fff3cd;border-left:4px solid #C9A227;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:700;color:#2a3f4e;">⚠️ Signature exceptionnelle</div>
-      <div style="font-size:12px;color:#718096;margin-top:4px;">En cas de panne ou défaut technique. Réservé aux administrateurs. Chaque signature est tracée dans Firebase.</div>
-    </div>
-    <div class="card">
-      <div class="form-group">
-        <label>Apprenant(e)</label>
-        <select id="exceptApprenant" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;margin-top:4px;">
-          <option value="">-- Sélectionner --</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label>Date de la séance</label>
-        <input type="date" id="exceptDate" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;margin-top:4px;">
-      </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label>Mode</label>
-        <div style="display:flex;gap:8px;margin-top:6px;">
-          <button id="exceptBtnPresentiel" style="flex:1;padding:10px;border-radius:8px;border:2px solid #C9A227;background:#fdf6e3;font-size:12px;font-weight:700;color:#2a3f4e;cursor:pointer;">🏫 Présentiel</button>
-          <button id="exceptBtnDistanciel" style="flex:1;padding:10px;border-radius:8px;border:2px solid #e2e8f0;background:#faf5ff;font-size:12px;font-weight:700;color:#6b46c1;cursor:pointer;">💻 Distanciel</button>
-        </div>
-      </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label>Créneaux à signer</label>
-        <div style="display:flex;gap:8px;margin-top:6px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="exceptMatin" checked style="width:16px;height:16px;"> Matin</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="exceptAM" checked style="width:16px;height:16px;"> Après-midi</label>
-        </div>
-      </div>
-      <button id="btnValiderExcept" style="margin-top:16px;width:100%;padding:14px;background:#C9A227;color:#2a3f4e;font-weight:700;font-size:14px;border:none;border-radius:10px;cursor:pointer;">✅ Valider la signature exceptionnelle</button>
-      <div id="exceptMsg" style="margin-top:10px;font-size:13px;font-weight:700;text-align:center;"></div>
-    </div>
-  </div>
-
   <div class="spacer"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -418,6 +339,17 @@ async function chargerTout() {
   const fcSnap = await get(ref(db, 'stagiairesFC'));
   allFC = [];
   if (fcSnap.exists()) { fcSnap.forEach(function(c){ const a=c.val(); a.id=c.key; allFC.push(a); }); }
+  // Migration ASCA : s'assurer que Vendredi est dans leurs jours
+  for (const fc of allFC) {
+    if (fc.formation && fc.formation.includes('Comptabilité')) {
+      const jRef = ref(db, 'stagiairesFC/'+fc.id+'/jours');
+      const jSnap = await get(jRef);
+      const jours = jSnap.exists() ? Object.values(jSnap.val()) : [];
+      if (!jours.includes('Vendredi')) {
+        await set(jRef, ['Lundi','Mardi','Mercredi','Jeudi','Vendredi']);
+      }
+    }
+  }
   chargerDashboard();
   afficherListeAlternants();
   afficherListeFC();
@@ -438,14 +370,26 @@ async function chargerDashboard() {
   document.getElementById('kpiFC').textContent = allFC.length;
   document.getElementById('kpiLundi').textContent = allAlternants.filter(a=>a.jourCentre==='Lundi').length;
   const jourNom = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][today.getDay()];
+  const jourNum = today.getDay();
   const altAujourdhui = allAlternants.filter(a => a.jourCentre === jourNom);
+  const jourMapFC = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  const fcAujourdhui = allFC.filter(fc => {
+    const jSnap = fc._joursNum; // sera chargé ci-dessous
+    return true; // filtrage après chargement
+  });
   const todayList = document.getElementById('todayList');
-  if (altAujourdhui.length === 0) {
-    todayList.innerHTML = '<div style="opacity:0.7;font-size:12px;">Aucune séance prévue aujourd\'hui</div>';
-  } else {
-    todayList.innerHTML = '';
-    let absentsCount = 0;
+  todayList.innerHTML = '';
+  let absentsCount = 0;
+  let totalAujourdhui = 0;
+
+  // ── Alternants ───────────────────────────────────────────
+  if (altAujourdhui.length > 0) {
+    const sepAlt = document.createElement('div');
+    sepAlt.style.cssText = 'font-size:10px;font-weight:800;color:#3d5a6e;text-transform:uppercase;letter-spacing:1px;padding:6px 0 4px;opacity:0.7;';
+    sepAlt.textContent = '👥 Alternants';
+    todayList.appendChild(sepAlt);
     for (const alt of altAujourdhui) {
+      totalAujourdhui++;
       const key=alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
       const snap=await get(ref(db,'emargements/'+key));
       const data=snap.exists()?snap.val():{};
@@ -453,35 +397,66 @@ async function chargerDashboard() {
       if(absent) absentsCount++;
       const row=document.createElement('div'); row.className='today-row';
       row.innerHTML=`<div class="today-nom">${alt.nom}</div><div class="today-statuts">
-        <div class="dot-sign ${absent?'absent':data.matin_alt?'signe':'attente'}"></div>
-        <div class="dot-sign ${absent?'absent':data.matin_form?'signe':'attente'}"></div>
-        <div class="dot-sign ${absent?'absent':data.am_alt?'signe':'attente'}"></div>
-        <div class="dot-sign ${absent?'absent':data.am_form?'signe':'attente'}"></div>
+        <div class="dot-sign ${absent?'absent':data.matin_alt?'signe':'attente'}" title="Matin alt"></div>
+        <div class="dot-sign ${absent?'absent':data.matin_form?'signe':'attente'}" title="Matin form"></div>
+        <div class="dot-sign ${absent?'absent':data.am_alt?'signe':'attente'}" title="AM alt"></div>
+        <div class="dot-sign ${absent?'absent':data.am_form?'signe':'attente'}" title="AM form"></div>
       </div>`;
       todayList.appendChild(row);
     }
-    document.getElementById('kpiAbsents').textContent = absentsCount;
   }
-  const debutFC=new Date(2026,6,13);const finFC=new Date(2027,5,30);
-  if(today>=debutFC&&today<=finFC&&[1,2,3,4].includes(today.getDay())){
-    const fcDiv=document.createElement('div');
-    fcDiv.innerHTML='<div class="today-titre" style="margin-top:14px;">🎓 Formation Continue</div>';
-    todayList.parentNode.appendChild(fcDiv);
-    const fcList=document.createElement('div');fcDiv.appendChild(fcList);
-    for(const fc of allFC){
-      var key2=fc.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
-      var snap2=await get(ref(db,'emargementsFC/'+key2));
-      var d2=snap2.exists()?snap2.val():{};var abs2=d2.presence==='absent';
-      var row2=document.createElement('div');row2.className='today-row';
-      row2.innerHTML='<div class="today-nom">'+fc.nom+'</div><div class="today-statuts">'+
-        '<div class="dot-sign '+(abs2?'absent':d2.matin_alt==='auto'||d2.matin_alt==='exception'?'auto':d2.matin_alt?'signe':'attente')+'"></div>'+
-        '<div class="dot-sign '+(abs2?'absent':d2.matin_form?'signe':'attente')+'"></div>'+
-        '<div class="dot-sign '+(abs2?'absent':d2.am_alt==='auto'||d2.am_alt==='exception'?'auto':d2.am_alt?'signe':'attente')+'"></div>'+
-        '<div class="dot-sign '+(abs2?'absent':d2.am_form?'signe':'attente')+'"></div>'+
-      '</div>';fcList.appendChild(row2);
+
+  // ── Formation Continue ────────────────────────────────────
+  const fcDuJour = [];
+  for (const fc of allFC) {
+    try {
+      const jSnap = await get(ref(db,'stagiairesFC/'+fc.id+'/jours'));
+      if (jSnap.exists()) {
+        const joursFC = Object.values(jSnap.val()).filter(Boolean);
+        const nums = joursFC.map(j=>jourMapFC[j]).filter(Boolean);
+        if (nums.includes(jourNum)) fcDuJour.push(fc);
+      } else if (fc.formation && fc.formation.includes('Comptabilité') && jourNum >= 1 && jourNum <= 5) {
+        // ASCA : Lun-Ven même si jours non défini en DB
+        fcDuJour.push(fc);
+      }
+    } catch(e) {
+      if (fc.formation && fc.formation.includes('Comptabilité') && jourNum >= 1 && jourNum <= 5) {
+        fcDuJour.push(fc);
+      }
     }
   }
-  document.getElementById('activiteRecente').innerHTML='<div style="font-size:12px;color:var(--gris);">🟢 Signé &nbsp; 🔴 En attente &nbsp; ⚫ Absent &nbsp; 🟣 Auto/Except.</div>';
+  if (fcDuJour.length > 0) {
+    const sepFC = document.createElement('div');
+    sepFC.style.cssText = 'font-size:10px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid #f0f2f5;margin-top:6px;';
+    sepFC.textContent = '🎓 Formation Continue';
+    todayList.appendChild(sepFC);
+    for (const fc of fcDuJour) {
+      totalAujourdhui++;
+      const key=fc.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap=await get(ref(db,'emargementsFC/'+key));
+      const data=snap.exists()?snap.val():{};
+      const absent=data.presence==='absent';
+      if(absent) absentsCount++;
+      const isAuto = !!data.auto;
+      const modeBadge = data.mode==='distanciel'
+        ? '<span style="font-size:9px;background:#f5f2ff;color:#7C5CFF;padding:1px 4px;border-radius:4px;margin-left:4px;">📡 dist.</span>'
+        : '';
+      const row=document.createElement('div'); row.className='today-row';
+      row.innerHTML=`<div class="today-nom">${fc.nom}${modeBadge}</div><div class="today-statuts">
+        <div class="dot-sign ${absent?'absent':(data.matin_alt&&!isAuto)?'signe':isAuto?'auto':'attente'}" title="Matin stagiaire"></div>
+        <div class="dot-sign ${absent?'absent':(data.matin_form&&!isAuto)?'signe':isAuto?'auto':'attente'}" title="Matin formateur"></div>
+        <div class="dot-sign ${absent?'absent':(data.am_alt&&!isAuto)?'signe':isAuto?'auto':'attente'}" title="AM stagiaire"></div>
+        <div class="dot-sign ${absent?'absent':(data.am_form&&!isAuto)?'signe':isAuto?'auto':'attente'}" title="AM formateur"></div>
+      </div>`;
+      todayList.appendChild(row);
+    }
+  }
+
+  if (totalAujourdhui === 0) {
+    todayList.innerHTML = '<div style="opacity:0.7;font-size:12px;">Aucune séance prévue aujourd\'hui</div>';
+  }
+  document.getElementById('kpiAbsents').textContent = absentsCount;
+  document.getElementById('activiteRecente').innerHTML='<div style="font-size:12px;color:var(--gris);">🟢 Signé &nbsp; 🔴 En attente &nbsp; ⚫ Absent &nbsp; 🟣 Auto (distanciel)</div>';
 }
 
 function afficherListeAlternants() {
@@ -549,7 +524,7 @@ async function sauvegarder(e){
     debut:document.getElementById('formDebut').value.trim(),
     fin:document.getElementById('formFin').value.trim()
   };
-  await update(ref(db,'alternants/'+id),data);
+  await set(ref(db,'alternants/'+id),data);
   document.getElementById('formSuccess').classList.add('visible');
   await chargerTout();
 
@@ -976,7 +951,6 @@ document.querySelectorAll('.nav-btn').forEach(function(btn){
     document.getElementById(target).classList.add('active');
     btn.classList.add('active');
     if(target==='recap') chargerRecapAdmin();
-    if(target==='signatexcept') chargerApprenants();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
@@ -985,80 +959,6 @@ document.getElementById('btnLogout').addEventListener('touchend',function(e){e.p
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_admin_user');window.location.href='index.html';});
 
 chargerTout();
-
-// ── SIGNATURE EXCEPTIONNELLE ────────────────────────────────────
-var exceptMode = 'presentiel';
-
-async function chargerApprenants() {
-  var sel = document.getElementById('exceptApprenant');
-  if(!sel) return;
-  var liste = [];
-  if(allAlternants && allAlternants.length > 0) {
-    allAlternants.forEach(function(a){ if(a.nom) liste.push({id:a.id,nom:a.nom,type:'alt'}); });
-  }
-  if(allFC && allFC.length > 0) {
-    allFC.forEach(function(f){ if(f.nom) liste.push({id:f.id,nom:f.nom,type:'fc'}); });
-  }
-  if(liste.length === 0) {
-    try {
-      var snapA = await get(ref(db,'alternants'));
-      if(snapA.exists()) Object.entries(snapA.val()).forEach(function(kv){ if(kv[1].nom) liste.push({id:kv[0],nom:kv[1].nom,type:'alt'}); });
-      var snapF = await get(ref(db,'stagiairesFC'));
-      if(snapF.exists()) Object.entries(snapF.val()).forEach(function(kv){ if(kv[1].nom) liste.push({id:kv[0],nom:kv[1].nom,type:'fc'}); });
-    } catch(err){ console.log('chargerApprenants err:', err); }
-  }
-  liste.sort(function(a,b){ return a.nom.localeCompare(b.nom); });
-  sel.innerHTML = '<option value="">― Sélectionner ―</option>';
-  liste.forEach(function(a){
-    var opt = document.createElement('option');
-    opt.value = a.id+'|'+a.type;
-    opt.textContent = a.nom + (a.type==='fc' ? ' (FC)' : '');
-    sel.appendChild(opt);
-  });
-}
-
-var btnPres=document.getElementById('exceptBtnPresentiel');
-var btnDist=document.getElementById('exceptBtnDistanciel');
-if(btnPres) btnPres.addEventListener('click',function(){
-  exceptMode='presentiel';
-  btnPres.style.borderColor='#C9A227';btnPres.style.background='#fdf6e3';
-  btnDist.style.borderColor='#e2e8f0';btnDist.style.background='#faf5ff';
-});
-if(btnDist) btnDist.addEventListener('click',function(){
-  exceptMode='distanciel';
-  btnDist.style.borderColor='#6b46c1';btnDist.style.background='#faf5ff';
-  btnPres.style.borderColor='#e2e8f0';btnPres.style.background='#ffffff';
-});
-var btnVal=document.getElementById('btnValiderExcept');
-if(btnVal) btnVal.addEventListener('click',async function(){
-  var sel=document.getElementById('exceptApprenant');
-  var val=sel?sel.value:'';
-  var dateVal=document.getElementById('exceptDate').value;
-  var matin=document.getElementById('exceptMatin').checked;
-  var am=document.getElementById('exceptAM').checked;
-  var msg=document.getElementById('exceptMsg');
-  if(!val){msg.style.color='#e53e3e';msg.textContent='Sélectionne un apprenant.';return;}
-  if(!dateVal){msg.style.color='#e53e3e';msg.textContent='Sélectionne une date.';return;}
-  if(!matin&&!am){msg.style.color='#e53e3e';msg.textContent='Coche au moins un créneau.';return;}
-  var parts=val.split('|');var appId=parts[0];var type=parts[1];
-  var d=new Date(dateVal);
-  var y=d.getFullYear();var mo=String(d.getMonth()+1).padStart(2,'0');var dd=String(d.getDate()).padStart(2,'0');
-  var key=type==='fc'?appId+'_fc_'+y+'_'+mo+'_'+dd:appId+'_'+y+'_'+mo+'_'+dd;
-  var base=type==='fc'?'emargementsFC':'emargements';
-  try{
-    var upd={};
-    upd[base+'/'+key+'/mode']=exceptMode;
-    upd[base+'/'+key+'/presence']='present';
-    if(matin){upd[base+'/'+key+'/matin_alt']='exception';upd[base+'/'+key+'/matin_form']='exception';}
-    if(am){upd[base+'/'+key+'/am_alt']='exception';upd[base+'/'+key+'/am_form']='exception';}
-    upd[base+'/'+key+'/exception_par']='ADMIN';
-    upd[base+'/'+key+'/exception_date']=new Date().toLocaleDateString('fr-FR');
-    await update(ref(db),upd);
-    msg.style.color='#38a169';
-    msg.textContent='✅ Signé pour '+sel.options[sel.selectedIndex].text;
-    setTimeout(function(){msg.textContent='';},4000);
-  }catch(err){msg.style.color='#e53e3e';msg.textContent='Erreur : '+err.message;}
-});
 
 // ── NOTIFICATIONS ADMIN ───────────────────────────────────────
 
@@ -1188,7 +1088,7 @@ function ajouterBadgeOnglet(target, count) {
 
 async function sauvegarderDocs(e){
   e.preventDefault(); if(!editingId)return;
-  const ua={};ua['alternants/'+editingId+'/documents/dossier']=document.getElementById('docDossier').value.trim()||null;await update(ref(db),ua);
+  await set(ref(db,'alternants/'+editingId+'/documents/dossier'),document.getElementById('docDossier').value.trim()||null);
   document.getElementById('docsSuccess').classList.add('visible');
   setTimeout(function(){document.getElementById('docsSuccess').classList.remove('visible');},2000);
 }
@@ -1238,9 +1138,14 @@ async function sauvegarderFC(e){
   e.preventDefault();
   const id=editingFC||document.getElementById('fcFormId').value.trim().toUpperCase();
   if(!id){alert('Identifiant requis.');return;}
-  const fcData={nom:document.getElementById('fcFormNom').value.trim(),formation:document.getElementById('fcFormFormation').value,debut:document.getElementById('fcFormDebut').value.trim(),fin:document.getElementById('fcFormFin').value.trim(),heures:'8h00 – 16h00',type:'fc'};
-  if(!editingFC){fcData.jours=['Lundi','Mardi','Mercredi','Jeudi'];}
-  await update(ref(db,'stagiairesFC/'+id),fcData);
+  await set(ref(db,'stagiairesFC/'+id),{
+    nom:document.getElementById('fcFormNom').value.trim(),
+    formation:document.getElementById('fcFormFormation').value,
+    debut:document.getElementById('fcFormDebut').value.trim(),
+    fin:document.getElementById('fcFormFin').value.trim(),
+    jours: (document.getElementById('formFCFormation')?.value||'').includes('Comptabilité') ? ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'] : ['Lundi','Mardi','Mercredi','Jeudi'],
+    heures:'8h00 – 16h00', type:'fc'
+  });
   document.getElementById('fcFormSuccess').classList.add('visible');
   await chargerTout();
 
@@ -1507,7 +1412,7 @@ function ajouterBadgeOnglet(target, count) {
 
 async function sauvegarderDocsFC(e){
   e.preventDefault(); if(!editingFC)return;
-  const uf={};uf['stagiairesFC/'+editingFC+'/documents/dossier']=document.getElementById('docDossierFC').value.trim()||null;await update(ref(db),uf);
+  await set(ref(db,'stagiairesFC/'+editingFC+'/documents/dossier'),document.getElementById('docDossierFC').value.trim()||null);
   document.getElementById('docsFCSuccess').classList.add('visible');
   setTimeout(function(){document.getElementById('docsFCSuccess').classList.remove('visible');},2000);
 }
@@ -1627,227 +1532,5 @@ async function exporterPDFAdmin() {
     pageNum++;doc.addPage();
     addHeader('ÉMARGEMENT · '+r.alt.nom.toUpperCase()+' · '+periodeTitre.toUpperCase());addFooter(pageNum);
     doc.setFillColor(...OR);doc.rect(0,30,210,2,'F');
-    doc.setFillColor(...BLEU_FONCE);doc.rect(15,38,180,36,'F');
-    doc.setTextColor(...OR);doc.setFontSize(13);doc.setFont('helvetica','bold');doc.text(r.alt.nom,20,48);
-    doc.setTextColor(255,255,255);doc.setFontSize(7.5);doc.setFont('helvetica','normal');
-    doc.text('Formation : '+r.alt.formation,20,55);
-    doc.text(('Entreprise : '+(r.alt.entreprise||'—')).substring(0,60),20,61);
-    doc.text(('Maître : '+(r.alt.maitre||'—')).substring(0,60),20,67);
-    doc.text('Jour : '+r.alt.jourCentre+'   ·   Contrat : '+r.alt.debut+' → '+r.alt.fin+'   ·   Période : '+periodeTitre,20,73);
-    doc.setFillColor(...VERT);doc.rect(15,80,57,14,'F');
-    doc.setFillColor(229,62,62);doc.rect(76,80,57,14,'F');
-    doc.setFillColor(...BLEU);doc.rect(137,80,58,14,'F');
-    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
-    doc.text(r.hP+'h',43,89,{align:'center'});doc.text(r.hA+'h',104,89,{align:'center'});doc.text(String(r.seances),166,89,{align:'center'});
-    doc.setFontSize(7);doc.setFont('helvetica','normal');
-    doc.text('Heures présence',43,92,{align:'center'});doc.text('Heures absence',104,92,{align:'center'});doc.text('Séances',166,92,{align:'center'});
-    let y=103;
-    doc.setFillColor(...BLEU_FONCE);doc.rect(15,y,180,8,'F');
-    doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont('helvetica','bold');
-    doc.text('Date',18,y+5);doc.text('Mode',55,y+5);doc.text('Présence',80,y+5);doc.text('Motif',110,y+5);doc.text('Sig. Alternant',145,y+5);doc.text('Sig. Formatrice',172,y+5);
-    y+=8;
-    for(const s of r.seancesDetail){
-      if(y>265){addFooter(pageNum);pageNum++;doc.addPage();addHeader('ÉMARGEMENT · '+r.alt.nom.toUpperCase()+' (suite)');addFooter(pageNum);y=38;}
-      const dateStr=s.date.getDate()+' '+moisNomsFr[s.date.getMonth()];
-      const mode=s.data.mode||'—';const present=!s.absent;const motif=s.data.motif||(present?'—':'Non renseigné');
-      const altSigne=s.data.matin_alt||s.data.am_alt;const formSigne=s.data.matin_form||s.data.am_form;
-      const rowColor=s.absent?[255,245,245]:(altSigne&&formSigne?[240,255,244]:[250,250,252]);
-      doc.setFillColor(...rowColor);doc.rect(15,y,180,10,'F');
-      doc.setTextColor(...BLEU_FONCE);doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.text(dateStr,18,y+6);
-      doc.setFont('helvetica','normal');doc.setTextColor(...GRIS);
-      doc.text(mode==='presentiel'?'Présentiel':mode==='distanciel'?'Distanciel':'—',55,y+6);
-      if(s.absent){doc.setTextColor(...ROUGE);doc.text('Absent(e)',80,y+6);doc.setTextColor(...GRIS);doc.text(motif.substring(0,25),110,y+6);}
-      else{doc.setTextColor(...VERT);doc.text('Présent(e)',80,y+6);doc.setTextColor(...GRIS);doc.text('—',110,y+6);}
-      if(s.data.matin_alt&&!s.absent){try{doc.addImage(s.data.matin_alt,'JPEG',143,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓',145,y+6);}}
-      else{doc.setTextColor(s.absent?ROUGE[0]:GRIS[0],s.absent?ROUGE[1]:GRIS[1],s.absent?ROUGE[2]:GRIS[2]);doc.text(s.absent?'Absent':'En attente',145,y+6);}
-      if(s.data.matin_form&&!s.absent){try{doc.addImage(s.data.matin_form,'JPEG',170,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓',172,y+6);}}
-      else{doc.setTextColor(s.absent?ROUGE[0]:GRIS[0],s.absent?ROUGE[1]:GRIS[1],s.absent?ROUGE[2]:GRIS[2]);doc.text(s.absent?'Absent':'En attente',172,y+6);}
-      doc.setDrawColor(230,230,230);doc.line(15,y+10,195,y+10);y+=10;
-    }
-  }
-  doc.save('JTCF_Emargements_'+periodeTitre.replace(' ','_')+'.pdf');
-  btn.textContent='📄 Exporter le PDF mensuel'; btn.disabled=false;
-}
-
-// ── PDF PAR PERSONNE ADMIN ─────────────────────────────────────
-document.getElementById('btnExportPDFAdminPersonne').addEventListener('click', function(e) {
-  e.preventDefault();
-  const menu = document.getElementById('menuPersonneAdmin');
-  if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
-  menu.innerHTML = '';
-  // Charger la liste depuis Firebase
-  (async function() {
-    const {getDatabase,ref,get} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-    const {getApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const db = getDatabase(getApp());
-    const snap = await get(ref(db,'alternants'));
-    const alts = [];
-    if (snap.exists()) { snap.forEach(function(c){ const a=c.val(); a.id=c.key; alts.push(a); }); }
-    alts.forEach(function(alt) {
-      const item = document.createElement('div');
-      item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#2a3f4e;border-bottom:1px solid #f0f2f5;';
-      item.textContent = alt.nom + ' — ' + alt.formation;
-      item.addEventListener('mouseenter', function(){ item.style.background='#fdf6e3'; });
-      item.addEventListener('mouseleave', function(){ item.style.background='#fff'; });
-      item.addEventListener('click', function() { menu.style.display='none'; exporterPDFAdminPersonne(alt); });
-      menu.appendChild(item);
-    });
-    menu.style.display = 'block';
-  })();
-});
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('#btnExportPDFAdminPersonne') && !e.target.closest('#menuPersonneAdmin')) {
-    const m = document.getElementById('menuPersonneAdmin');
-    if (m) m.style.display = 'none';
-  }
-});
-
-async function exporterPDFAdminPersonne(alt) {
-  const btn = document.getElementById('btnExportPDFAdminPersonne');
-  btn.textContent = '⏳ Génération...'; btn.disabled = true;
-  if (!window.jspdf) {
-    await new Promise(function(resolve) {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      s.onload = resolve; document.head.appendChild(s);
-    });
-  }
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const moisNoms=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  const moisNomsFr=['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-  const OR=[201,162,39],BLEU=[61,90,110],BLEU_FONCE=[42,63,78],GRIS=[113,128,150],VERT=[56,161,105],ROUGE=[229,62,62];
-  const MATIN_H=4, AM_H=3.5;
-  let pageNum=1;
-
-  const isMois = document.getElementById('adminFilterMois').classList.contains('active');
-  const moisVal = document.getElementById('adminMoisSelect').value.split('-').map(Number);
-  const filterYear = isMois ? moisVal[0] : null;
-  const filterMonth = isMois ? moisVal[1] : null;
-  const periodeTitre = isMois ? moisNoms[filterMonth]+' '+filterYear : 'Total contrat';
-
-  function addHeader(titre) {
-    doc.setFillColor(...BLEU_FONCE); doc.rect(0,0,210,30,'F');
-    doc.setTextColor(...OR); doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text('JT CONSEIL FORMATION',15,12);
-    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255); doc.text('Saint-Joseph · La Réunion',15,18);
-    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text(titre,15,25);
-    const now=new Date(); doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(200,200,200);
-    doc.text('Généré le '+now.toLocaleDateString('fr-FR')+' à '+now.toLocaleTimeString('fr-FR'),150,25);
-  }
-  function addFooter(n) {
-    doc.setFillColor(...BLEU_FONCE); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
-    doc.text('Page '+n,195,292,{align:'right'});
-  }
-
-  const {getDatabase,ref,get} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-  const {getApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-  const db = getDatabase(getApp());
-
-  const parts=alt.debut?alt.debut.split('/'):['10','06','2026'];
-  const debutContrat=new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
-  const jourMap={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
-  const jourNum=jourMap[alt.jourCentre]||1;
-  const fin=new Date(2028,5,10);
-  let d=new Date(debutContrat);
-  while(d.getDay()!==jourNum) d.setDate(d.getDate()+1);
-  const seancesFiltrees=[];
-  while(d<=fin){
-    if(isMois){if(d.getFullYear()===filterYear&&d.getMonth()===filterMonth&&d<=new Date())seancesFiltrees.push(new Date(d));}
-    else{if(d<=new Date())seancesFiltrees.push(new Date(d));}
-    d.setDate(d.getDate()+7);
-  }
-
-  let hP=0,hA=0; const seancesDetail=[];
-  for(const s of seancesFiltrees){
-    const key=alt.id+'_'+s.getFullYear()+'_'+(s.getMonth()+1)+'_'+s.getDate();
-    const yyyy=s.getFullYear(),mm=String(s.getMonth()+1).padStart(2,'0'),dd=String(s.getDate()).padStart(2,'0');
-    const keyRetro=`emargements/${alt.id}/${yyyy}-${mm}-${dd}`;
-    const [snapN,snapM,snapA]=await Promise.all([
-      get(ref(db,'emargements/'+key)),
-      get(ref(db,keyRetro+'/matin')),
-      get(ref(db,keyRetro+'/apres-midi')),
-    ]);
-    const dataN=snapN.exists()?snapN.val():null;
-    const dataM=snapM.exists()?snapM.val():null;
-    const dataA=snapA.exists()?snapA.val():null;
-    const isRetro=!dataN&&(dataM||dataA);
-    let hPs=0,hAs=0,absent=false,mode='—',altSigne=false,formSigne=false;
-    if(isRetro){
-      mode=(dataM&&dataM.mode)||(dataA&&dataA.mode)||'—';
-      if(dataM){if(dataM.statut==='present'){hPs+=MATIN_H;altSigne=true;}else{hAs+=MATIN_H;absent=true;}}
-      if(dataA){if(dataA.statut==='present'){hPs+=AM_H;altSigne=true;}else{hAs+=AM_H;absent=true;}}
-    }else{
-      const data=dataN||{};
-      absent=data.presence==='absent'; mode=data.mode||'—';
-      altSigne=!!(data.matin_alt||data.am_alt); formSigne=!!(data.matin_form||data.am_form);
-      if(absent){hAs=MATIN_H+AM_H;}else{if(data.matin_alt)hPs+=MATIN_H;if(data.am_alt)hPs+=AM_H;}
-    }
-    hP+=hPs; hA+=hAs;
-    seancesDetail.push({date:s,absent,mode,altSigne,formSigne,hP:hPs,hA:hAs,isRetro,dataN,dataM,dataA});
-  }
-
-  addHeader('ÉMARGEMENT · '+alt.nom.toUpperCase()+' · '+periodeTitre.toUpperCase());
-  addFooter(pageNum);
-  doc.setFillColor(...OR); doc.rect(0,30,210,2,'F');
-  doc.setFillColor(...BLEU_FONCE); doc.rect(15,38,180,36,'F');
-  doc.setTextColor(...OR); doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text(alt.nom,20,48);
-  doc.setTextColor(255,255,255); doc.setFontSize(7.5); doc.setFont('helvetica','normal');
-  doc.text('Formation : '+alt.formation,20,55);
-  const entrepriseTxt='Entreprise : '+(alt.entreprise||'—');
-  const maitreTxt='Maître : '+(alt.maitre||'—');
-  doc.text(entrepriseTxt.substring(0,60),20,61);
-  doc.text(maitreTxt.substring(0,60),20,67);
-  doc.text('Jour : '+alt.jourCentre+'   ·   Contrat : '+alt.debut+' → '+alt.fin+'   ·   Période : '+periodeTitre,20,73);
-  doc.setFillColor(...VERT); doc.rect(15,80,57,14,'F');
-  doc.setFillColor(229,62,62); doc.rect(76,80,57,14,'F');
-  doc.setFillColor(...BLEU); doc.rect(137,80,58,14,'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
-  doc.text(hP+'h',43,89,{align:'center'}); doc.text(hA+'h',104,89,{align:'center'}); doc.text(String(seancesFiltrees.length),166,89,{align:'center'});
-  doc.setFontSize(7); doc.setFont('helvetica','normal');
-  doc.text('Heures présence',43,92,{align:'center'}); doc.text('Heures absence',104,92,{align:'center'}); doc.text('Séances',166,92,{align:'center'});
-
-  let y=103;
-  doc.setFillColor(...BLEU_FONCE); doc.rect(15,y,180,8,'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
-  doc.text('Date',18,y+5); doc.text('Mode',55,y+5); doc.text('Présence',80,y+5);
-  doc.text('H.Prés.',110,y+5); doc.text('H.Abs.',128,y+5);
-  doc.text('Sig. Alternant',145,y+5); doc.text('Sig. Formatrice',172,y+5);
-  y+=8;
-
-  for(const s of seancesDetail){
-    if(y>265){addFooter(pageNum);pageNum++;doc.addPage();addHeader('ÉMARGEMENT · '+alt.nom.toUpperCase()+' (suite)');addFooter(pageNum);y=38;}
-    const dateStr=s.date.getDate()+' '+moisNomsFr[s.date.getMonth()]+' '+s.date.getFullYear();
-    const rowColor=s.absent?[255,245,245]:(s.altSigne&&s.formSigne?[240,255,244]:[250,250,252]);
-    doc.setFillColor(...rowColor); doc.rect(15,y,180,10,'F');
-    doc.setTextColor(...BLEU_FONCE); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(dateStr,18,y+6);
-    doc.setFont('helvetica','normal'); doc.setTextColor(...GRIS);
-    doc.text(s.mode==='presentiel'?'Présentiel':s.mode==='distanciel'?'Distanciel':'—',55,y+6);
-    if(s.absent){doc.setTextColor(...ROUGE);doc.text('Absent(e)',80,y+6);}
-    else{doc.setTextColor(...VERT);doc.text('Présent(e)',80,y+6);}
-    doc.setTextColor(...BLEU_FONCE);
-    doc.text(s.hP>0?s.hP+'h':'—',112,y+6);
-    doc.text(s.hA>0?s.hA+'h':'—',130,y+6);
-    const sigAlt=s.isRetro?(s.dataM&&s.dataM.statut==='present'||s.dataA&&s.dataA.statut==='present'):s.altSigne;
-    const sigForm=s.isRetro?false:s.formSigne;
-    if(!s.absent&&sigAlt&&!s.isRetro&&s.dataN&&(s.dataN.matin_alt||s.dataN.am_alt)){
-      try{doc.addImage(s.dataN.matin_alt||s.dataN.am_alt,'JPEG',143,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓',145,y+6);}
-    }else{
-      doc.setTextColor(s.absent?ROUGE[0]:sigAlt?VERT[0]:GRIS[0],s.absent?ROUGE[1]:sigAlt?VERT[1]:GRIS[1],s.absent?ROUGE[2]:sigAlt?VERT[2]:GRIS[2]);
-      doc.text(s.absent?'Absent':sigAlt?'✓ Signé':'En attente',145,y+6);
-    }
-    if(!s.absent&&sigForm&&s.dataN&&(s.dataN.matin_form||s.dataN.am_form)){
-      try{doc.addImage(s.dataN.matin_form||s.dataN.am_form,'JPEG',170,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓',172,y+6);}
-    }else{
-      doc.setTextColor(s.absent?ROUGE[0]:sigForm?VERT[0]:GRIS[0],s.absent?ROUGE[1]:sigForm?VERT[1]:GRIS[1],s.absent?ROUGE[2]:sigForm?VERT[2]:GRIS[2]);
-      doc.text(s.absent?'Absent':sigForm?'✓ Signé':'En attente',172,y+6);
-    }
-    doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10); y+=10;
-  }
-  doc.save('JTCF_'+alt.nom.replace(/ /g,'_')+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
-  btn.textContent='👤 Exporter PDF par personne'; btn.disabled=false;
-}
-</script>
-</body>
-</html>
+    doc.setFillColor(...BLEU_FONCE);doc.rect(15,38,180,28,'F');
+    doc.setTextColor(...OR);doc.setFontSize(13);doc.setFont('helvetica','bold');doc.text(r.alt.nom,20,

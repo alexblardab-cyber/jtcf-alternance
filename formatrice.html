@@ -133,7 +133,8 @@
 </div>
 
 <div class="nav" id="mainNav">
-  <a class="nav-btn active" data-target="lundi">📅 Lundi</a>
+  <a class="nav-btn active" data-target="dashboard">📊 Tableau de bord</a>
+  <a class="nav-btn" data-target="lundi">📅 Lundi</a>
   <a class="nav-btn" data-target="mardi">📅 Mardi</a>
   <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
   <a class="nav-btn" data-target="jeudi">📅 Jeudi</a>
@@ -144,8 +145,32 @@
 
 <div class="content" id="mainContent">
 
+  <!-- TABLEAU DE BORD -->
+  <div class="section active" id="dashboard">
+    <div style="background:#1a2f3e;border-radius:12px;padding:14px 16px;margin-bottom:14px;color:white;">
+      <div style="font-size:10px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">📅 Séances aujourd'hui</div>
+      <div id="dashDate" style="font-size:16px;font-weight:700;"></div>
+      <div id="dashMsg" style="font-size:12px;opacity:0.7;margin-top:2px;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div style="background:white;border-radius:10px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
+        <div id="kpiTotal" style="font-size:22px;font-weight:800;color:#C9A227;">—</div>
+        <div style="font-size:10px;color:#718096;">Alternants actifs</div>
+      </div>
+      <div style="background:white;border-radius:10px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
+        <div id="kpiFC" style="font-size:22px;font-weight:800;color:#C9A227;">—</div>
+        <div style="font-size:10px;color:#718096;">Stagiaires FC</div>
+      </div>
+    </div>
+    <div style="background:white;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
+      <div style="font-size:11px;font-weight:800;color:#2a3f4e;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Présences du jour</div>
+      <div id="dashList"><div class="loading">Chargement...</div></div>
+      <div style="margin-top:10px;font-size:10px;color:#a0aec0;">🟢 Signé &nbsp; ⭕ En attente &nbsp; 🔴 Absent</div>
+    </div>
+  </div>
+
   <!-- LUNDI -->
-  <div class="section active" id="lundi">
+  <div class="section" id="lundi">
     <button class="btn-global" id="btnSignGlobalMatinLundi">✍️ Signer MATIN — Tous les lundis</button>
     <button class="btn-global" id="btnSignGlobalAMLundi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les lundis</button>
     <div class="jour-titre">Alternants du Lundi</div>
@@ -325,7 +350,7 @@ const PROFILS = {
   'FORM01': {
     nom: 'Fontaine Emilie',
     acces: 'total',
-    onglets: ['lundi','mardi','mercredi','jeudi','fc','groupes','recap'],
+    onglets: ['dashboard','lundi','mardi','mercredi','jeudi','fc','groupes','recap'],
     fcIds: null, // tous
     debut: null, fin: null // illimité
   },
@@ -363,7 +388,7 @@ function verifierAcces() {
 // Masquer les onglets non autorisés
 function appliquerAcces() {
   document.getElementById('headerNom').textContent = '👩‍🏫 ' + profil.nom;
-  const tousOnglets = ['lundi','mardi','mercredi','jeudi','fc','groupes','recap'];
+  const tousOnglets = ['dashboard','lundi','mardi','mercredi','jeudi','fc','groupes','recap'];
   tousOnglets.forEach(function(id) {
     const btn = document.querySelector('.nav-btn[data-target="' + id + '"]');
     const section = document.getElementById(id);
@@ -795,6 +820,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     document.getElementById(target).classList.add('active');
     btn.classList.add('active');
     if (target==='recap') chargerRecap();
+    if (target==='dashboard') chargerDashboard();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
@@ -804,7 +830,7 @@ document.getElementById('btnLogout').addEventListener('click',function(){session
 
 // Vérifier accès
 appliquerAcces();
-chargerAlternants();
+chargerAlternants().then(() => chargerDashboard());
 
 // ── NOTIFICATIONS ────────────────────────────────────────────
 
@@ -1010,6 +1036,85 @@ document.querySelectorAll('.btn-valider').forEach(function(btn) {
     await updateFicheEmargFC();
   }, {passive:false});
 });
+
+
+// ── Tableau de bord formatrice ────────────────────────────────
+async function chargerDashboard() {
+  const moisNoms=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const joursNoms=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const today = new Date();
+  document.getElementById('dashDate').textContent = joursNoms[today.getDay()]+' '+today.getDate()+' '+moisNoms[today.getMonth()]+' '+today.getFullYear();
+  document.getElementById('kpiTotal').textContent = allAlternants.length;
+  document.getElementById('kpiFC').textContent = allFC.length;
+
+  const jourNom = joursNoms[today.getDay()];
+  const jourNum = today.getDay();
+  const jourMapFC = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+  const altDuJour = allAlternants.filter(a => a.jourCentre === jourNom);
+  const dashList = document.getElementById('dashList');
+  dashList.innerHTML = '';
+  let total = 0;
+
+  if (altDuJour.length > 0) {
+    const sep = document.createElement('div');
+    sep.style.cssText = 'font-size:10px;font-weight:800;color:#3d5a6e;text-transform:uppercase;letter-spacing:1px;padding:4px 0;opacity:0.7;';
+    sep.textContent = '👥 Alternants';
+    dashList.appendChild(sep);
+    for (const alt of altDuJour) {
+      total++;
+      const key = alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap = await get(ref(db,'emargements/'+key));
+      const d = snap.exists()?snap.val():{};
+      const absent = d.presence==='absent';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f2f5;font-size:13px;';
+      row.innerHTML = '<span style="font-weight:600;">'+alt.nom+'</span><span>'
+        +(absent?'🔴 Absent':(d.matin_alt&&d.matin_form&&d.am_alt&&d.am_form)?'🟢 Complet':(d.matin_alt||d.matin_form)?'🟡 Partiel':'⭕ En attente')
+        +'</span>';
+      dashList.appendChild(row);
+    }
+  }
+
+  // FC du jour
+  const fcDuJour = [];
+  for (const fc of allFC) {
+    try {
+      const jSnap = await get(ref(db,'stagiairesFC/'+fc.id+'/jours'));
+      if (jSnap.exists()) {
+        const nums = Object.values(jSnap.val()).filter(Boolean).map(j=>jourMapFC[j]).filter(Boolean);
+        if (nums.includes(jourNum)) fcDuJour.push(fc);
+      } else if (fc.formation && fc.formation.includes('Comptabilité') && jourNum>=1 && jourNum<=5) {
+        fcDuJour.push(fc);
+      }
+    } catch(e) {
+      if (fc.formation && fc.formation.includes('Comptabilité') && jourNum>=1 && jourNum<=5) fcDuJour.push(fc);
+    }
+  }
+  if (fcDuJour.length > 0) {
+    const sep2 = document.createElement('div');
+    sep2.style.cssText = 'font-size:10px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid #f0f2f5;margin-top:6px;';
+    sep2.textContent = '🎓 Formation Continue';
+    dashList.appendChild(sep2);
+    for (const fc of fcDuJour) {
+      total++;
+      const key = fc.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
+      const snap = await get(ref(db,'emargementsFC/'+key));
+      const d = snap.exists()?snap.val():{};
+      const absent = d.presence==='absent';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f2f5;font-size:13px;';
+      row.innerHTML = '<span style="font-weight:600;">'+fc.nom+'</span><span>'
+        +(absent?'🔴 Absent':(d.matin_alt&&d.am_alt)?'🟢 Signé':'⭕ En attente')
+        +'</span>';
+      dashList.appendChild(row);
+    }
+  }
+
+  if (total === 0) {
+    dashList.innerHTML = '<div style="font-size:12px;color:#a0aec0;padding:8px 0;">Aucune séance prévue aujourd'hui</div>';
+  }
+  document.getElementById('dashMsg').textContent = total + ' apprenant'+(total>1?'s':'')+' aujourd'hui';
+}
 
 // Signature globale alternants
 async function signerGlobalAlt(jour, period) {
