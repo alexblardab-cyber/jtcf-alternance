@@ -137,7 +137,8 @@ Content-Type: text/plain; charset=utf-8
 </div>
 
 <div class="nav" id="mainNav">
-  <a class="nav-btn active" data-target="lundi">📅 Lundi</a>
+  <a class="nav-btn active" data-target="dashboard">🏠 Tableau de bord</a>
+  <a class="nav-btn" data-target="lundi">📅 Lundi</a>
   <a class="nav-btn" data-target="mardi">📅 Mardi</a>
   <a class="nav-btn" data-target="mercredi">📅 Mercredi</a>
   <a class="nav-btn" data-target="jeudi">📅 Jeudi</a>
@@ -150,44 +151,62 @@ Content-Type: text/plain; charset=utf-8
 
 <div class="content" id="mainContent">
 
+  <!-- DASHBOARD -->
+  <div class="section active" id="dashboard">
+    <div class="jour-titre" id="dashTitre">🏠 Aujourd'hui</div>
+    <div id="dashKpi" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;"></div>
+    <div id="dashActions"></div>
+    <div id="dashListe"><div class="loading">Chargement...</div></div>
+  </div>
+
   <!-- LUNDI -->
-  <div class="section active" id="lundi">
-    <button class="btn-global" id="btnSignGlobalMatinLundi">✍️ Signer MATIN — Tous les lundis</button>
-    <button class="btn-global" id="btnSignGlobalAMLundi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les lundis</button>
+  <div class="section" id="lundi">
+    <button class="btn-global" id="btnSignGlobalMatinLundi">✍️ Signer MATIN — Lundi (alternants + FC)</button>
+    <button class="btn-global" id="btnSignGlobalAMLundi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Lundi (alternants + FC)</button>
     <div class="jour-titre">Alternants du Lundi</div>
     <div id="listeLundi"><div class="loading">Chargement...</div></div>
+    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Lundi</div>
+    <div id="fcLundi"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- MARDI -->
   <div class="section" id="mardi">
-    <button class="btn-global" id="btnSignGlobalMatinMardi">✍️ Signer MATIN — Tous les mardis</button>
-    <button class="btn-global" id="btnSignGlobalAMMardi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les mardis</button>
+    <button class="btn-global" id="btnSignGlobalMatinMardi">✍️ Signer MATIN — Mardi (alternants + FC)</button>
+    <button class="btn-global" id="btnSignGlobalAMMardi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Mardi (alternants + FC)</button>
     <div class="jour-titre">Alternants du Mardi</div>
     <div id="listeMardi"><div class="loading">Aucun alternant pour l'instant.</div></div>
+    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Mardi</div>
+    <div id="fcMardi"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- MERCREDI -->
   <div class="section" id="mercredi">
-    <button class="btn-global" id="btnSignGlobalMatinMercredi">✍️ Signer MATIN — Tous les mercredis</button>
-    <button class="btn-global" id="btnSignGlobalAMMercredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les mercredis</button>
+    <button class="btn-global" id="btnSignGlobalMatinMercredi">✍️ Signer MATIN — Mercredi (alternants + FC)</button>
+    <button class="btn-global" id="btnSignGlobalAMMercredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Mercredi (alternants + FC)</button>
     <div class="jour-titre">Alternants du Mercredi</div>
     <div id="listeMercredi"><div class="loading">Chargement...</div></div>
+    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Mercredi</div>
+    <div id="fcMercredi"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- JEUDI -->
   <div class="section" id="jeudi">
-    <button class="btn-global" id="btnSignGlobalMatinJeudi">✍️ Signer MATIN — Tous les jeudis</button>
-    <button class="btn-global" id="btnSignGlobalAMJeudi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les jeudis</button>
+    <button class="btn-global" id="btnSignGlobalMatinJeudi">✍️ Signer MATIN — Jeudi (alternants + FC)</button>
+    <button class="btn-global" id="btnSignGlobalAMJeudi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Jeudi (alternants + FC)</button>
     <div class="jour-titre">Alternants du Jeudi</div>
     <div id="listeJeudi"><div class="loading">Aucun alternant pour l'instant.</div></div>
+    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Jeudi</div>
+    <div id="fcJeudi"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- VENDREDI -->
   <div class="section" id="vendredi">
-    <button class="btn-global" id="btnSignGlobalMatinVendredi">✍️ Signer MATIN — Alternants + ASCA du vendredi</button>
-    <button class="btn-global" id="btnSignGlobalAMVendredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Alternants + ASCA du vendredi</button>
+    <button class="btn-global" id="btnSignGlobalMatinVendredi">✍️ Signer MATIN — Vendredi (alternants + FC)</button>
+    <button class="btn-global" id="btnSignGlobalAMVendredi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Vendredi (alternants + FC)</button>
     <div class="jour-titre">Alternants du Vendredi</div>
     <div id="listeVendredi"><div class="loading">Chargement...</div></div>
+    <div class="jour-titre" style="margin-top:14px;">🎓 Formation Continue — Vendredi</div>
+    <div id="fcVendredi"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- DRIVE -->
@@ -347,7 +366,7 @@ const PROFILS = {
   'FORM01': {
     nom: 'Fontaine Emilie',
     acces: 'total',
-    onglets: ['lundi','mardi','mercredi','jeudi','vendredi','fc','groupes','recap','drive'],
+    onglets: ['dashboard','lundi','mardi','mercredi','jeudi','vendredi','fc','groupes','recap','drive'],
     fcIds: null, // tous
     debut: null, fin: null // illimité
   },
@@ -385,13 +404,16 @@ function verifierAcces() {
 // Masquer les onglets non autorisés
 function appliquerAcces() {
   document.getElementById('headerNom').textContent = '👩‍🏫 ' + profil.nom;
-  const tousOnglets = ['lundi','mardi','mercredi','jeudi','vendredi','fc','groupes','recap','drive'];
+  const tousOnglets = ['dashboard','lundi','mardi','mercredi','jeudi','vendredi','fc','groupes','recap','drive'];
   tousOnglets.forEach(function(id) {
     const btn = document.querySelector('.nav-btn[data-target="' + id + '"]');
     const section = document.getElementById(id);
     if (!profil.onglets.includes(id)) {
       if (btn) btn.style.display = 'none';
-      if (section) section.style.display = 'none';
+      if (section) { section.style.display = 'none'; section.classList.remove('active'); }
+    } else {
+      if (btn) btn.style.display = '';
+      if (section) section.style.display = '';
     }
   });
   // Activer le premier onglet autorisé
@@ -444,6 +466,91 @@ let filterMode = 'mois';
 const MATIN_H = 4;
 const AM_H = 3.5;
 
+
+// ===== FC : quels stagiaires sont présents quel jour =====
+// ASCA (Compta) : Lundi, Mercredi, Jeudi, Vendredi  (Mardi = auto)
+// AD / CV       : Lundi, Mardi, Mercredi, Jeudi     (Vendredi = auto)
+function estASCA(fc){
+  if(!fc) return false;
+  if(fc.jours && fc.jours.indexOf && fc.jours.indexOf('Vendredi')>=0) return true;
+  if(fc.formation && fc.formation.indexOf('Comptabilit')>=0) return true;
+  return false;
+}
+function joursDeFC(fc){ return estASCA(fc) ? [1,3,4,5] : [1,2,3,4]; }
+function fcDuJour(jour){
+  var n = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5}[jour];
+  return allFC.filter(function(fc){ return joursDeFC(fc).indexOf(n)>=0; });
+}
+function seancesDeFC(fc){
+  var js = joursDeFC(fc), out = [];
+  var d = new Date(2026,6,13), fin = new Date(2027,5,30);
+  while(d<=fin){ if(js.indexOf(d.getDay())>=0) out.push(new Date(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+
+// ===== TABLEAU DE BORD =====
+async function chargerDashboard(){
+  var box=document.getElementById('dashListe'); if(!box) return;
+  var noms=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var today=new Date(); today.setHours(0,0,0,0);
+  var jn=today.getDay(), jour=noms[jn];
+  var t=document.getElementById('dashTitre');
+  if(t) t.textContent='🏠 '+jour+' '+today.getDate()+'/'+(today.getMonth()+1)+'/'+today.getFullYear();
+
+  if(jn<1||jn>5){
+    document.getElementById('dashKpi').innerHTML='';
+    document.getElementById('dashActions').innerHTML='';
+    box.innerHTML='<div class="loading">Pas de séance le week-end. 🌴</div>';
+    return;
+  }
+
+  var alts=allAlternants.filter(function(a){return a.jourCentre===jour;});
+  var fcs=fcDuJour(jour);
+  var y=today.getFullYear(),m=today.getMonth()+1,d=today.getDate();
+
+  var sM=0,sA=0,tot=alts.length+fcs.length;
+  var lignes=[];
+  for(var i=0;i<alts.length;i++){
+    var a=alts[i];
+    var s=await get(ref(db,'emargements/'+a.id+'_'+y+'_'+m+'_'+d)).catch(function(){return null;});
+    var v=(s&&s.exists())?s.val():{};
+    if(v.matin_form) sM++; if(v.am_form) sA++;
+    lignes.push({nom:a.nom,info:a.formation||'',fc:false,m:!!v.matin_form,a:!!v.am_form});
+  }
+  for(var i=0;i<fcs.length;i++){
+    var f=fcs[i];
+    var s=await get(ref(db,'emargementsFC/'+f.id+'_fc_'+y+'_'+m+'_'+d)).catch(function(){return null;});
+    var v=(s&&s.exists())?s.val():{};
+    if(v.matin_form) sM++; if(v.am_form) sA++;
+    lignes.push({nom:f.nom,info:f.formation||'',fc:true,m:!!v.matin_form,a:!!v.am_form});
+  }
+
+  var kpi=document.getElementById('dashKpi');
+  function box3(val,lbl,col){return '<div style="background:white;border-radius:12px;padding:12px 6px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);"><div style="font-size:22px;font-weight:800;color:'+col+';">'+val+'</div><div style="font-size:10px;color:#718096;font-weight:600;text-transform:uppercase;margin-top:2px;">'+lbl+'</div></div>';}
+  kpi.innerHTML=box3(tot,'Présents','#2a3f4e')+box3(sM+'/'+tot,'Matin signé',sM>=tot&&tot>0?'#38a169':'#C9A227')+box3(sA+'/'+tot,'Après-midi',sA>=tot&&tot>0?'#38a169':'#C9A227');
+
+  document.getElementById('dashActions').innerHTML=
+    '<button class="btn-global" id="dashBtnMatin">✍️ Signer MATIN — tout le monde ('+tot+')</button>'+
+    '<button class="btn-global" id="dashBtnAM" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — tout le monde ('+tot+')</button>';
+  ['Matin','AM'].forEach(function(per){
+    var b=document.getElementById('dashBtn'+per); if(!b) return;
+    var pp=per==='Matin'?'matin':'am';
+    function go(e){ if(e) e.preventDefault(); signerGlobalJour(jour,pp).then(chargerDashboard); }
+    b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
+  });
+
+  if(lignes.length===0){ box.innerHTML='<div class="loading">Personne en centre aujourd\'hui.</div>'; return; }
+  box.innerHTML=lignes.map(function(l){
+    var ini=(l.nom||'?').split(' ').map(function(x){return x[0];}).join('').substring(0,2).toUpperCase();
+    function pt(ok,lbl){return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:'+(ok?'#38a169':'#cbd5e0')+';">'+(ok?'●':'○')+' '+lbl+'</span>';}
+    return '<div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #f0f2f5;">'+
+      '<div style="width:34px;height:34px;border-radius:50%;background:'+(l.fc?'#C9A227':'#2a3f4e')+';color:'+(l.fc?'#2a3f4e':'white')+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">'+ini+'</div>'+
+      '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:#2a3f4e;">'+l.nom+(l.fc?' <span style="font-size:9px;color:#C9A227;">FC</span>':'')+'</div>'+
+      '<div style="font-size:11px;color:#718096;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+l.info+'</div></div>'+
+      '<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">'+pt(l.m,'Matin')+pt(l.a,'A-M')+'</div></div>';
+  }).join('');
+}
+
 async function chargerAlternants() {
   const snap = await get(ref(db, 'alternants'));
   if (snap.exists()) {
@@ -464,6 +571,9 @@ async function chargerAlternants() {
   // Filtrer FC selon profil
   const fcFiltered = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
   afficherListeFC('listeFC', fcFiltered);
+  ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'].forEach(function(J){
+    afficherListeFC('fc'+J, fcDuJour(J).filter(function(fc){return profil.fcIds?profil.fcIds.includes(fc.id):true;}));
+  });
   remplirMoisSelect();
   chargerRecap();
 }
@@ -797,10 +907,12 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     var target = btn.getAttribute('data-target');
     document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
     document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
-    document.getElementById(target).classList.add('active');
+    var sec=document.getElementById(target);
+    if(sec){sec.style.display='';sec.classList.add('active');}
     btn.classList.add('active');
     if (target==='recap') chargerRecap();
     if (target==='drive') chargerDrive();
+    if (target==='dashboard') chargerDashboard();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
@@ -809,7 +921,8 @@ document.getElementById('btnLogout').addEventListener('touchend',function(e){e.p
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_form_user');window.location.href='index.html';});
 
 // Vérifier accès
-chargerAlternants();
+appliquerAcces();
+chargerAlternants().then(function(){ chargerDashboard(); }).catch(console.error);
 
 // ── NOTIFICATIONS ────────────────────────────────────────────
 
@@ -951,10 +1064,8 @@ function ouvrirFicheFC(fc) {
   document.getElementById('ficheMaitre').textContent = '—';
   document.getElementById('ficheContrat').textContent = 'Formation Continue · ' + fc.debut;
   document.getElementById('ficheJour').textContent = 'Lundi au Jeudi · ' + fc.heures;
-  seances = [];
-  const debut = new Date(2026, 6, 13); const fin = new Date(2027, 5, 30);
-  let d = new Date(debut);
-  while (d <= fin) { const j = d.getDay(); if (j >= 1 && j <= 4) seances.push(new Date(d)); d.setDate(d.getDate() + 1); }
+  seances = seancesDeFC(fc);
+  document.getElementById('ficheJour').textContent = (estASCA(fc)?'Lundi, Mercredi, Jeudi, Vendredi':'Lundi au Jeudi') + ' · ' + (fc.heures||'');
   const today = new Date(); today.setHours(0,0,0,0);
   semIdx = 0;
   for (let i = 0; i < seances.length; i++) { const s = new Date(seances[i]); s.setHours(0,0,0,0); if (s <= today) { semIdx = i; } else { break; } }
@@ -1017,20 +1128,25 @@ document.querySelectorAll('.btn-valider').forEach(function(btn) {
 });
 
 // ===== SIGNATURE GLOBALE PAR JOUR (alternants) =====
-async function signerGlobalAlt(jour, period) {
+async function signerGlobalJour(jour, period) {
   var today=new Date();today.setHours(0,0,0,0);
   var jourNum={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5}[jour];
   var jourDate=null;
-  for(var i=-6;i<=6;i++){var d=new Date(today);d.setDate(today.getDate()+i);if(d.getDay()===jourNum){jourDate=d;break;}}
+  for(var i=0;i<=6;i++){var d=new Date(today);d.setDate(today.getDate()-i);if(d.getDay()===jourNum){jourDate=d;break;}}
   if(!jourDate){alert('Impossible de trouver la date pour '+jour);return;}
   var yyyy=jourDate.getFullYear(),mm=jourDate.getMonth()+1,dd=jourDate.getDate();
-  var count=0;
+  var nA=0,nF=0;
   for(var i=0;i<allAlternants.length;i++){
-    var a=allAlternants[i];if(!a.jourCentre||a.jourCentre!==jour)continue;
-    await set(ref(db,'emargements/'+a.id+'_'+yyyy+'_'+mm+'_'+dd+'/'+period+'_form'),'global_sign_'+Date.now());count++;
+    var a=allAlternants[i];if(a.jourCentre!==jour)continue;
+    await set(ref(db,'emargements/'+a.id+'_'+yyyy+'_'+mm+'_'+dd+'/'+period+'_form'),'global_sign_'+Date.now());nA++;
   }
-  alert('✅ '+count+' alternant(s) signé(s) pour '+jour);
+  var lesFC=fcDuJour(jour);
+  for(var i=0;i<lesFC.length;i++){
+    await set(ref(db,'emargementsFC/'+lesFC[i].id+'_fc_'+yyyy+'_'+mm+'_'+dd+'/'+period+'_form'),'global_sign_'+Date.now());nF++;
+  }
+  alert('✅ '+jour+' '+dd+'/'+mm+' — '+(period==='matin'?'Matin':'Après-midi')+'\n'+nA+' alternant(s) + '+nF+' stagiaire(s) FC signé(s).');
 }
+var signerGlobalAlt = signerGlobalJour;
 ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'].forEach(function(j){
   ['Matin','AM'].forEach(function(per){
     var el=document.getElementById('btnSignGlobal'+per+j);if(!el)return;
