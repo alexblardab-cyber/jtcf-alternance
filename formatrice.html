@@ -124,7 +124,7 @@ Content-Type: text/plain; charset=utf-8
   .kpi-val.or{color:var(--or);}.kpi-val.vert{color:var(--vert);}.kpi-val.rouge{color:var(--rouge);}
   .kpi-lbl{font-size:11px;color:var(--gris);margin-top:4px;}
   .today-card{background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));border-radius:14px;padding:16px;margin-bottom:14px;color:var(--blanc);}
-  .today-titre-dash{font-size:12px;font-weight:700;color:var(--or);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;}
+  .today-titre-dash{font-size:12px;font-weight:700;color:var(--or);margin-bottom:10px;text-transform:uppercase;}
   .today-date-dash{font-size:15px;font-weight:700;margin-bottom:12px;}
   .today-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1);}
   .today-row:last-child{border-bottom:none;}
@@ -138,7 +138,7 @@ Content-Type: text/plain; charset=utf-8
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;}
   .modal-overlay.open{display:flex;}
   .modal-box{background:white;border-radius:16px;padding:24px;width:300px;max-width:90vw;}
-  .modal-titre{font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:16px;}
+  .modal-titre-m{font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:16px;}
   .modal-date-input{width:100%;padding:10px;border:2px solid var(--bleu);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;}
   .modal-btns{display:flex;gap:10px;}
   .btn-modal-ok{flex:1;padding:10px;background:var(--bleu-fonce);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;}
@@ -208,7 +208,7 @@ Content-Type: text/plain; charset=utf-8
     <button class="btn-global" id="btnSignGlobalAMMardi" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Alternants + FC du mardi</button>
     <div class="jour-titre">Alternants du Mardi</div>
     <div id="listeMardi"><div class="loading">Aucun alternant pour l'instant.</div></div>
-    <div class="sous-titre-jour">🎓 Stagiaires FC — Mardi (CV/AD uniquement, ASCA = auto)</div>
+    <div class="sous-titre-jour">🎓 Stagiaires FC — Mardi (CV/AD · ASCA = auto)</div>
     <div id="listeFCMardi"><div class="loading">Chargement...</div></div>
   </div>
 
@@ -242,14 +242,13 @@ Content-Type: text/plain; charset=utf-8
     <div id="listeFCVendredi"><div class="loading">Chargement...</div></div>
   </div>
 
-
   <!-- DRIVE -->
   <div class="section" id="drive">
     <div class="jour-titre">📁 Dossiers Google Drive — Apprenants</div>
     <div style="font-size:12px;color:var(--gris);margin-bottom:12px;">Accès aux dossiers individuels de tous les apprenants.</div>
-    <div id="listeDriveAlts"></div>
+    <div id="listeDriveAlts"><div class="loading">Chargement...</div></div>
     <div class="sous-titre-jour">🎓 Stagiaires Formation Continue</div>
-    <div id="listeDriveFC"></div>
+    <div id="listeDriveFC"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- FORMATION CONTINUE (vue complète) -->
@@ -509,14 +508,13 @@ async function chargerAlternants() {
   afficherListe('listeMercredi', allAlternants.filter(a => a.jourCentre === 'Mercredi'));
   afficherListe('listeJeudi', allAlternants.filter(a => a.jourCentre === 'Jeudi'));
   afficherListe('listeVendredi', allAlternants.filter(a => a.jourCentre === 'Vendredi'));
-  // FC par jour
-  const fcASCA = allFC.filter(fc => (fc.jours&&fc.jours.includes('Vendredi'))||(fc.formation&&fc.formation.includes('Comptabilit')));
-  const fcCVAD = allFC.filter(fc => !((fc.jours&&fc.jours.includes('Vendredi'))||(fc.formation&&fc.formation.includes('Comptabilit'))));
-  afficherListeFC('listeFCLundi', allFC);       // tous présents lundi
-  afficherListeFC('listeFCMardi', fcCVAD);      // ASCA auto mardi
-  afficherListeFC('listeFCMercredi', allFC);    // tous présents mercredi
-  afficherListeFC('listeFCJeudi', allFC);       // tous présents jeudi
-  afficherListeFC('listeFCVendredi', fcASCA);   // CVAD auto vendredi
+  const fcASCA=allFC.filter(fc=>(fc.jours&&fc.jours.includes('Vendredi'))||(fc.formation&&fc.formation.includes('Comptabilit')));
+  const fcCVAD=allFC.filter(fc=>!((fc.jours&&fc.jours.includes('Vendredi'))||(fc.formation&&fc.formation.includes('Comptabilit'))));
+  afficherListeFC('listeFCLundi',allFC);
+  afficherListeFC('listeFCMardi',fcCVAD);
+  afficherListeFC('listeFCMercredi',allFC);
+  afficherListeFC('listeFCJeudi',allFC);
+  afficherListeFC('listeFCVendredi',fcASCA);
 
   const fcSnap = await get(ref(db, 'stagiairesFC'));
   if (fcSnap.exists()) {
@@ -1078,229 +1076,109 @@ document.querySelectorAll('.btn-valider').forEach(function(btn) {
 });
 
 // ===== VERROU JOURS =====
-var dateException = null;
-var joursDeSemaine = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
-
-function getDatePourJour(jourNom){
-  if(dateException){
-    var de=new Date(dateException+'T00:00:00');
-    if(de.getDay()===joursDeSemaine[jourNom]) return de;
-    return null;
-  }
-  var today=new Date();today.setHours(0,0,0,0);
-  var jourNum=joursDeSemaine[jourNom];
-  for(var i=-6;i<=6;i++){var d2=new Date(today);d2.setDate(today.getDate()+i);if(d2.getDay()===jourNum){return d2;}}
+var dateException=null;
+var joursMap2={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+function getDatePourJour(j){
+  if(dateException){var de=new Date(dateException+'T00:00:00');if(de.getDay()===joursMap2[j])return de;return null;}
+  var t=new Date();t.setHours(0,0,0,0);var n=joursMap2[j];
+  for(var i=-6;i<=6;i++){var d=new Date(t);d.setDate(t.getDate()+i);if(d.getDay()===n)return d;}
   return null;
 }
-
 function initVerrouJours(){
-  var today=new Date(); var todayNum=today.getDay();
-  ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'].forEach(function(jourCap){
-    var jourLow=jourCap.toLowerCase();
-    var jourNum=joursDeSemaine[jourCap];
-    var section=document.getElementById(jourLow); if(!section) return;
-    var oldB=section.querySelector('.verrou-banner'); if(oldB) oldB.remove();
-    var isAujourdhui=(todayNum===jourNum);
-    if(!isAujourdhui && !dateException){
-      var banner=document.createElement('div'); banner.className='verrou-banner';
-      var next=new Date(today);
-      for(var i=1;i<=7;i++){var d2=new Date(today);d2.setDate(today.getDate()+i);if(d2.getDay()===jourNum){next=d2;break;}}
-      banner.innerHTML='<span class="verrou-txt">🔒 Séance '+jourCap+' — prochaine fois le '
-        +next.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</span>'
-        +'<button class="btn-exception" data-jour="'+jourCap+'">⚠️ Régulariser</button>';
-      section.insertBefore(banner,section.firstChild);
-      ['btnSignGlobalMatin','btnSignGlobalAM'].forEach(function(p){
-        var b=document.getElementById(p+jourCap);
-        if(b){b.disabled=true;b.style.opacity='0.4';b.style.cursor='not-allowed';}
-      });
-      banner.querySelector('.btn-exception').addEventListener('click',function(){ouvrirModalException(jourCap);});
+  var t=new Date();var tn=t.getDay();
+  ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'].forEach(function(jC){
+    var jL=jC.toLowerCase();var jN=joursMap2[jC];
+    var sec=document.getElementById(jL);if(!sec)return;
+    var ob=sec.querySelector('.verrou-banner');if(ob)ob.remove();
+    if(tn!==jN&&!dateException){
+      var b=document.createElement('div');b.className='verrou-banner';
+      var nx=new Date(t);
+      for(var i=1;i<=7;i++){var d2=new Date(t);d2.setDate(t.getDate()+i);if(d2.getDay()===jN){nx=d2;break;}}
+      b.innerHTML='<span class="verrou-txt">🔒 Séance '+jC+' — prochaine le '+nx.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</span><button class="btn-exception" data-jour="'+jC+'">⚠️ Régulariser</button>';
+      sec.insertBefore(b,sec.firstChild);
+      ['btnSignGlobalMatin','btnSignGlobalAM'].forEach(function(p){var el=document.getElementById(p+jC);if(el){el.disabled=true;el.style.opacity='0.4';el.style.cursor='not-allowed';}});
+      b.querySelector('.btn-exception').addEventListener('click',function(){ouvrirModalException(jC);});
     } else {
-      ['btnSignGlobalMatin','btnSignGlobalAM'].forEach(function(p){
-        var b=document.getElementById(p+jourCap);
-        if(b){b.disabled=false;b.style.opacity='';b.style.cursor='';}
-      });
-      if(dateException){
-        var de=new Date(dateException+'T00:00:00');
-        if(de.getDay()===jourNum){
-          var banEx=document.createElement('div'); banEx.className='verrou-banner';
-          banEx.style.background='#e8f5e9'; banEx.style.borderColor='#68d391';
-          banEx.innerHTML='<span class="verrou-txt" style="color:#276749;">✅ Régularisation — '
-            +de.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</span>'
-            +'<button class="btn-exception" style="background:#e53e3e;color:white;" id="btnAnnExc'+jourCap+'">Annuler</button>';
-          section.insertBefore(banEx,section.firstChild);
-          document.getElementById('btnAnnExc'+jourCap).addEventListener('click',function(){dateException=null;initVerrouJours();});
-        }
-      }
+      ['btnSignGlobalMatin','btnSignGlobalAM'].forEach(function(p){var el=document.getElementById(p+jC);if(el){el.disabled=false;el.style.opacity='';el.style.cursor='';}});
+      if(dateException){var de=new Date(dateException+'T00:00:00');if(de.getDay()===jN){var bx=document.createElement('div');bx.className='verrou-banner';bx.style.background='#e8f5e9';bx.style.borderColor='#68d391';bx.innerHTML='<span class="verrou-txt" style="color:#276749;">✅ Régularisation — '+de.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</span><button class="btn-exception" style="background:#e53e3e;color:white;" id="bAE'+jC+'">Annuler</button>';sec.insertBefore(bx,sec.firstChild);document.getElementById('bAE'+jC).addEventListener('click',function(){dateException=null;initVerrouJours();});}}
     }
   });
 }
-
-function ouvrirModalException(jourNom){
-  document.addEventListener('exceptionDateSet',function handler(e){
-    document.removeEventListener('exceptionDateSet',handler);
-    dateException=e.detail.date; initVerrouJours();
-  });
-  var modal=document.getElementById('modalException');
-  modal.dataset.jourCible=jourNom;
-  var today=new Date();today.setHours(0,0,0,0);
-  var jourNum=joursDeSemaine[jourNom]; var last=new Date(today);
-  for(var i=1;i<=7;i++){var d2=new Date(today);d2.setDate(today.getDate()-i);if(d2.getDay()===jourNum){last=d2;break;}}
+function ouvrirModalException(jN){
+  document.addEventListener('exceptionDateSet',function h(e){document.removeEventListener('exceptionDateSet',h);dateException=e.detail.date;initVerrouJours();});
+  var m=document.getElementById('modalException');m.dataset.jourCible=jN;
+  var t=new Date();t.setHours(0,0,0,0);var jNum=joursMap2[jN];var last=new Date(t);
+  for(var i=1;i<=7;i++){var d2=new Date(t);d2.setDate(t.getDate()-i);if(d2.getDay()===jNum){last=d2;break;}}
   document.getElementById('inputDateException').value=last.toISOString().split('T')[0];
-  modal.classList.add('open');
+  m.classList.add('open');
 }
-
+// ===== FC PAR JOUR =====
+function fcDuJour(jour){
+  var isA=function(fc){return(fc.jours&&fc.jours.includes&&fc.jours.includes('Vendredi'))||(fc.formation&&fc.formation.includes('Comptabilit'));};
+  if(jour==='Mardi')return allFC.filter(function(fc){return !isA(fc);});
+  if(jour==='Vendredi')return allFC.filter(function(fc){return isA(fc);});
+  return allFC;
+}
 // ===== SIGNATURE GLOBALE ALTERNANTS + FC =====
-// FCduJour(jourNom) : retourne les FC présents physiquement ce jour
-function fcDuJour(jourNom){
-  var isASCA=function(fc){return (fc.jours&&fc.jours.includes&&fc.jours.includes('Vendredi'))||(fc.formation&&fc.formation.includes('Comptabilit'));};
-  if(jourNom==='Mardi') return allFC.filter(function(fc){return !isASCA(fc);}); // ASCA auto
-  if(jourNom==='Vendredi') return allFC.filter(function(fc){return isASCA(fc);}); // CVAD auto
-  return allFC; // Lundi Mercredi Jeudi = tous
-}
-
-async function signerTousJour(jour, period){
-  var jourDate=getDatePourJour(jour);
-  if(!jourDate){alert('⚠️ La date d'exception ne correspond pas à un '+jour+'.');return;}
-  var yyyy=jourDate.getFullYear(),mm=jourDate.getMonth()+1,dd=jourDate.getDate();
+async function signerTousJour(jour,period){
+  var jd=getDatePourJour(jour);
+  if(!jd){alert('⚠️ Date exception ne correspond pas à un '+jour+'.');return;}
+  var yyyy=jd.getFullYear(),mm=jd.getMonth()+1,dd=jd.getDate();
   var count=0;
-  // Alternants
-  for(var j=0;j<allAlternants.length;j++){
-    var alt2=allAlternants[j];
-    if(!alt2.jourCentre||alt2.jourCentre!==jour) continue;
-    var key2=alt2.id+'_'+yyyy+'_'+mm+'_'+dd;
-    await set(ref(db,'emargements/'+key2+'/'+period+'_form'),'global_sign_'+Date.now());
-    count++;
-  }
-  // FC
-  var fcPresents=fcDuJour(jour);
-  for(var k=0;k<fcPresents.length;k++){
-    var fc2=fcPresents[k];
-    var seances2=typeof seances!=='undefined'?seances:[];
-    var jourFC=null;
-    for(var s=0;s<seances2.length;s++){var sd=new Date(seances2[s]);sd.setHours(0,0,0,0);if(sd.getTime()===jourDate.getTime()){jourFC=sd;break;}}
-    if(!jourFC) continue;
-    var keyFC=fc2.id+'_fc_'+yyyy+'_'+mm+'_'+dd;
-    await set(ref(db,'emargementsFC/'+keyFC+'/'+period+'_form'),'global_sign_'+Date.now());
-    count++;
+  for(var i=0;i<allAlternants.length;i++){var a=allAlternants[i];if(!a.jourCentre||a.jourCentre!==jour)continue;await set(ref(db,'emargements/'+a.id+'_'+yyyy+'_'+mm+'_'+dd+'/'+period+'_form'),'global_sign_'+Date.now());count++;}
+  var fcs=fcDuJour(jour);
+  for(var k=0;k<fcs.length;k++){
+    var fc=fcs[k];var s2=typeof seances!=='undefined'?seances:[];var jFC=null;
+    for(var s=0;s<s2.length;s++){var sd=new Date(s2[s]);sd.setHours(0,0,0,0);if(sd.getTime()===jd.getTime()){jFC=sd;break;}}
+    if(!jFC)continue;
+    await set(ref(db,'emargementsFC/'+fc.id+'_fc_'+yyyy+'_'+mm+'_'+dd+'/'+period+'_form'),'global_sign_'+Date.now());count++;
   }
   alert('✅ '+count+' signature(s) enregistrée(s) pour '+jour);
 }
-
-['Lundi','Mardi','Mercredi','Jeudi','Vendredi'].forEach(function(jour){
-  ['Matin','AM'].forEach(function(per){
-    var el=document.getElementById('btnSignGlobal'+per+jour);if(!el)return;
-    var p2=per==='Matin'?'matin':'am';
-    el.addEventListener('click',function(){signerTousJour(jour,p2);});
-    el.addEventListener('touchend',function(e){e.preventDefault();signerTousJour(jour,p2);},{passive:false});
-  });
-});
-
-// FC onglet dédié (vue complète)
+['Lundi','Mardi','Mercredi','Jeudi','Vendredi'].forEach(function(j){['Matin','AM'].forEach(function(per){var el=document.getElementById('btnSignGlobal'+per+j);if(!el)return;var p=per==='Matin'?'matin':'am';el.addEventListener('click',function(){signerTousJour(j,p);});el.addEventListener('touchend',function(e){e.preventDefault();signerTousJour(j,p);},{passive:false});});});
+// FC onglet dédié
 async function signerGlobalFC(period){
-  var today=new Date();today.setHours(0,0,0,0);
-  var count=0;
-  for(var i=0;i<allFC.length;i++){
-    var fc=allFC[i];
-    var seances2=typeof seances!=='undefined'?seances:[];
-    var jourFC=null;
-    for(var s=0;s<seances2.length;s++){var sd=new Date(seances2[s]);sd.setHours(0,0,0,0);if(sd.getTime()===today.getTime()){jourFC=sd;break;}}
-    if(!jourFC) continue;
-    var key=fc.id+'_fc_'+jourFC.getFullYear()+'_'+(jourFC.getMonth()+1)+'_'+jourFC.getDate();
-    await set(ref(db,'emargementsFC/'+key+'/'+period+'_form'),'global_sign_'+Date.now());
-    count++;
-  }
-  alert('✅ '+count+' signature(s) FC enregistrée(s) !');
+  var t=new Date();t.setHours(0,0,0,0);var count=0;
+  for(var i=0;i<allFC.length;i++){var fc=allFC[i];var s2=typeof seances!=='undefined'?seances:[];var jFC=null;for(var s=0;s<s2.length;s++){var sd=new Date(s2[s]);sd.setHours(0,0,0,0);if(sd.getTime()===t.getTime()){jFC=sd;break;}}if(!jFC)continue;await set(ref(db,'emargementsFC/'+fc.id+'_fc_'+jFC.getFullYear()+'_'+(jFC.getMonth()+1)+'_'+jFC.getDate()+'/'+period+'_form'),'global_sign_'+Date.now());count++;}
+  alert('✅ '+count+' FC signée(s) !');
 }
-var elFC1=document.getElementById('btnSignGlobalMatinFC');
-var elFC2=document.getElementById('btnSignGlobalAMFC');
-if(elFC1){elFC1.addEventListener('click',function(){signerGlobalFC('matin');});elFC1.addEventListener('touchend',function(e){e.preventDefault();signerGlobalFC('matin');},{passive:false});}
-if(elFC2){elFC2.addEventListener('click',function(){signerGlobalFC('am');});elFC2.addEventListener('touchend',function(e){e.preventDefault();signerGlobalFC('am');},{passive:false});}
-
-
-// ===== ONGLET DRIVE =====
+var eFC1=document.getElementById('btnSignGlobalMatinFC'),eFC2=document.getElementById('btnSignGlobalAMFC');
+if(eFC1){eFC1.addEventListener('click',function(){signerGlobalFC('matin');});eFC1.addEventListener('touchend',function(e){e.preventDefault();signerGlobalFC('matin');},{passive:false});}
+if(eFC2){eFC2.addEventListener('click',function(){signerGlobalFC('am');});eFC2.addEventListener('touchend',function(e){e.preventDefault();signerGlobalFC('am');},{passive:false});}
+// ===== DRIVE =====
 async function chargerDrive(){
-  var contAlt=document.getElementById('listeDriveAlts');
-  var contFC=document.getElementById('listeDriveFC');
-  if(contAlt) contAlt.innerHTML='<div class="loading">Chargement...</div>';
-  if(contFC) contFC.innerHTML='<div class="loading">Chargement...</div>';
-
-  // Alternants
-  var altSnap=await get(ref(db,'alternants')).catch(function(){return null;});
-  var alts2=[];
-  if(altSnap&&altSnap.exists()) altSnap.forEach(function(c){var a=c.val();a.id=c.key;alts2.push(a);});
-  if(contAlt){
-    contAlt.innerHTML=alts2.length===0?'<div style="color:var(--gris);font-size:13px;">Aucun alternant.</div>':
-      alts2.map(function(a){
-        var initiales=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();
-        var lien=a.drive?'<a href="'+a.drive+'" target="_blank" style="display:inline-block;padding:6px 14px;background:var(--or);color:var(--bleu-fonce);border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Ouvrir Drive</a>':'<span style="font-size:12px;color:var(--gris);">Pas de lien</span>';
-        return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f2f5;">'
-          +'<div style="width:36px;height:36px;border-radius:50%;background:var(--bleu-fonce);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+initiales+'</div>'
-          +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div>'
-          +'<div style="font-size:11px;color:var(--gris);">'+(a.formation||'')+(a.jourCentre?' · '+a.jourCentre:'')+'</div></div>'
-          +lien+'</div>';
-      }).join('');
-  }
-
-  // FC
-  var fcSnap=await get(ref(db,'stagiairesFC')).catch(function(){return null;});
-  var fcs2=[];
-  if(fcSnap&&fcSnap.exists()) fcSnap.forEach(function(c){var a=c.val();a.id=c.key;fcs2.push(a);});
-  if(contFC){
-    contFC.innerHTML=fcs2.length===0?'<div style="color:var(--gris);font-size:13px;">Aucun stagiaire FC.</div>':
-      fcs2.map(function(a){
-        var initiales=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();
-        var lien=a.drive?'<a href="'+a.drive+'" target="_blank" style="display:inline-block;padding:6px 14px;background:var(--or);color:var(--bleu-fonce);border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Ouvrir Drive</a>':'<span style="font-size:12px;color:var(--gris);">Pas de lien</span>';
-        return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f2f5;">'
-          +'<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#553c9a,#6b46c1);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+initiales+'</div>'
-          +'<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div>'
-          +'<div style="font-size:11px;color:var(--gris);">'+(a.formation||'')+'</div></div>'
-          +lien+'</div>';
-      }).join('');
-  }
+  var cA=document.getElementById('listeDriveAlts'),cF=document.getElementById('listeDriveFC');
+  if(cA)cA.innerHTML='<div class="loading">Chargement...</div>';
+  if(cF)cF.innerHTML='<div class="loading">Chargement...</div>';
+  var aSnap=await get(ref(db,'alternants')).catch(function(){return null;});var alts2=[];if(aSnap&&aSnap.exists())aSnap.forEach(function(c){var a=c.val();a.id=c.key;alts2.push(a);});
+  if(cA)cA.innerHTML=alts2.length===0?'<div style="color:var(--gris);font-size:13px;">Aucun alternant.</div>':alts2.map(function(a){var ini=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();var lien=a.drive?'<a href="'+a.drive+'" target="_blank" style="padding:6px 14px;background:var(--or);color:var(--bleu-fonce);border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block;">📂 Drive</a>':'<span style="font-size:12px;color:var(--gris);">Pas de lien</span>';return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f2f5;"><div style="width:36px;height:36px;border-radius:50%;background:var(--bleu-fonce);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:var(--gris);">'+(a.formation||'')+(a.jourCentre?' · '+a.jourCentre:'')+'</div></div>'+lien+'</div>';}).join('');
+  var fSnap=await get(ref(db,'stagiairesFC')).catch(function(){return null;});var fcs2=[];if(fSnap&&fSnap.exists())fSnap.forEach(function(c){var a=c.val();a.id=c.key;fcs2.push(a);});
+  if(cF)cF.innerHTML=fcs2.length===0?'<div style="color:var(--gris);font-size:13px;">Aucun stagiaire FC.</div>':fcs2.map(function(a){var ini=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();var lien=a.drive?'<a href="'+a.drive+'" target="_blank" style="padding:6px 14px;background:var(--or);color:var(--bleu-fonce);border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block;">📂 Drive</a>':'<span style="font-size:12px;color:var(--gris);">Pas de lien</span>';return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f2f5;"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#553c9a,#6b46c1);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:var(--gris);">'+(a.formation||'')+'</div></div>'+lien+'</div>';}).join('');
 }
-
 // ===== TABLEAU DE BORD =====
 async function chargerDashboard(){
-  var moisN=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  var jrsN=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var mN=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  var jN=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
   var now=new Date();
-  var el=document.getElementById('dashDate');
-  if(el) el.textContent=jrsN[now.getDay()]+' '+now.getDate()+' '+moisN[now.getMonth()]+' '+now.getFullYear();
-  var kT=document.getElementById('kpiDashTotal');var kF=document.getElementById('kpiDashFC');
-  var kJ=document.getElementById('kpiDashJour');var kA=document.getElementById('kpiDashAbsents');
-  if(kT) kT.textContent=allAlternants.length;
-  if(kF) kF.textContent=allFC.length;
-  var todayNum=now.getDay(); var nomJour=jrsN[todayNum];
-  var yyyy=now.getFullYear(),mm=now.getMonth()+1,dd=now.getDate();
-  var altJour=allAlternants.filter(function(a){return a.jourCentre===nomJour;});
-  var fcJour=fcDuJour(nomJour);
-  var apprenants=altJour.map(function(a){return{id:a.id,nom:(a.prenom||'')+' '+(a.nom||a.id),isFC:false};})
-    .concat(fcJour.map(function(f){return{id:f.id+'_fc',nom:(f.prenom||'')+' '+(f.nom||f.id),isFC:true,fcId:f.id};}));
-  if(kJ) kJ.textContent=apprenants.length;
-  var listEl=document.getElementById('dashList');if(!listEl) return;
-  var absCount=0;var rows='';
-  for(var i=0;i<apprenants.length;i++){
-    var ap=apprenants[i];
-    var dbPath=ap.isFC?'emargementsFC/':'emargements/';
-    var keyId=ap.isFC?ap.fcId:ap.id.replace('_fc','');
-    var key=keyId+(ap.isFC?'_fc_':'_')+yyyy+'_'+mm+'_'+dd;
-    var snap=await get(ref(db,dbPath+key)).catch(function(){return null;});
-    var dat=snap&&snap.val()?snap.val():{};
-    var abs=dat.absent===true||dat.absent==='true'||dat.absent==='matin'||dat.absent==='total';
-    if(abs) absCount++;
+  var el=document.getElementById('dashDate');if(el)el.textContent=jN[now.getDay()]+' '+now.getDate()+' '+mN[now.getMonth()]+' '+now.getFullYear();
+  var kT=document.getElementById('kpiDashTotal'),kF=document.getElementById('kpiDashFC'),kJ=document.getElementById('kpiDashJour'),kA=document.getElementById('kpiDashAbsents');
+  if(kT)kT.textContent=allAlternants.length;if(kF)kF.textContent=allFC.length;
+  var tn=now.getDay();var nomJ=jN[tn];var yyyy=now.getFullYear(),mm=now.getMonth()+1,dd=now.getDate();
+  var altJ=allAlternants.filter(function(a){return a.jourCentre===nomJ;});
+  var fcJ=fcDuJour(nomJ);
+  var app=altJ.map(function(a){return{id:a.id,nom:(a.prenom||'')+' '+(a.nom||a.id),isFC:false};}).concat(fcJ.map(function(f){return{id:f.id,nom:(f.prenom||'')+' '+(f.nom||f.id),isFC:true};}));
+  if(kJ)kJ.textContent=app.length;
+  var listEl=document.getElementById('dashList');if(!listEl)return;
+  var abs=0;var rows='';
+  for(var i=0;i<app.length;i++){
+    var ap=app[i];var dbP=ap.isFC?'emargementsFC/':'emargements/';var key=(ap.isFC?ap.id+'_fc_':ap.id+'_')+yyyy+'_'+mm+'_'+dd;
+    var snap=await get(ref(db,dbP+key)).catch(function(){return null;});var dat=snap&&snap.val()?snap.val():{};
+    var absent=dat.absent===true||dat.absent==='true'||dat.absent==='matin'||dat.absent==='total';if(absent)abs++;
     var isAuto=!!(dat.matin_form&&typeof dat.matin_form==='string'&&dat.matin_form.startsWith('auto'));
-    rows+='<div class="today-row">'
-      +'<div class="today-nom">'+ap.nom+(ap.isFC?' <span style="font-size:10px;opacity:0.7;">[FC]</span>':'')+'</div>'
-      +'<div class="today-statuts">'
-      +'<div class="dot-sign '+(abs?'absent':dat.matin_alt?'signe':'attente')+'" title="Matin apprenant"></div>'
-      +'<div class="dot-sign '+(abs?'absent':isAuto?'auto':dat.matin_form?'signe':'attente')+'" title="Matin formateur"></div>'
-      +'<div class="dot-sign '+(abs?'absent':dat.am_alt?'signe':'attente')+'" title="AM apprenant"></div>'
-      +'<div class="dot-sign '+(abs?'absent':isAuto?'auto':dat.am_form?'signe':'attente')+'" title="AM formateur"></div>'
-      +'</div></div>';
+    rows+='<div class="today-row"><div class="today-nom">'+ap.nom+(ap.isFC?' <span style="font-size:10px;opacity:0.7;">[FC]</span>':'')+'</div><div class="today-statuts"><div class="dot-sign '+(absent?'absent':dat.matin_alt?'signe':'attente')+'" title="Matin apprenant"></div><div class="dot-sign '+(absent?'absent':isAuto?'auto':dat.matin_form?'signe':'attente')+'" title="Matin formateur"></div><div class="dot-sign '+(absent?'absent':dat.am_alt?'signe':'attente')+'" title="AM apprenant"></div><div class="dot-sign '+(absent?'absent':isAuto?'auto':dat.am_form?'signe':'attente')+'" title="AM formateur"></div></div></div>';
   }
-  if(rows==='') rows='<div style="opacity:0.7;font-size:12px;padding:8px 0;">Aucun apprenant aujourd'hui.</div>';
-  listEl.innerHTML=rows;
-  if(kA) kA.textContent=absCount;
+  if(!rows)rows='<div style="opacity:0.7;font-size:12px;padding:8px 0;">Aucun apprenant aujourd'hui.</div>';
+  listEl.innerHTML=rows;if(kA)kA.textContent=abs;
 }
 
 </script>
@@ -1703,3 +1581,32 @@ document.querySelectorAll('.nav-btn').forEach(function(btn){
   }
 });
 </script>
+<div class="modal-overlay" id="modalException">
+  <div class="modal-box">
+    <div class="modal-titre-m">🗓️ Régularisation / Exception</div>
+    <p style="font-size:12px;color:#666;margin-bottom:14px;">Sélectionnez la date à régulariser.</p>
+    <input type="date" class="modal-date-input" id="inputDateException">
+    <div class="modal-btns">
+      <button class="btn-modal-ok" id="btnModalOk">Valider</button>
+      <button class="btn-modal-cancel" id="btnModalCancel">Annuler</button>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var btnC=document.getElementById('btnModalCancel');
+  var btnO=document.getElementById('btnModalOk');
+  if(btnC)btnC.addEventListener('click',function(){document.getElementById('modalException').classList.remove('open');});
+  if(btnO)btnO.addEventListener('click',function(){
+    var val=document.getElementById('inputDateException').value;
+    if(!val){alert('Veuillez sélectionner une date.');return;}
+    var de=new Date(val+'T00:00:00');
+    var jC=document.getElementById('modalException').dataset.jourCible;
+    var jMap={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
+    if(de.getDay()!==jMap[jC]){alert('⚠️ Cette date n\'est pas un '+jC+'.');return;}
+    document.getElementById('modalException').classList.remove('open');
+    document.dispatchEvent(new CustomEvent('exceptionDateSet',{detail:{date:val,jour:jC}}));
+  });
+});
+</script>
+<!-- JTCF-FORMATRICE v2026-08-07-D -->
