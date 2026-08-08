@@ -237,12 +237,12 @@
       <div class="verrou-box" id="verouJour" style="display:none;">
         <div style="font-size:20px;margin-bottom:6px;">🔒</div>
         <div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">Signature disponible</div>
-        <div style="font-size:13px;font-weight:700;color:var(--or);">uniquement du lundi au jeudi</div>
+        <div style="font-size:13px;font-weight:700;color:var(--or);" id="msgJoursFormation">les jours de formation</div>
         <div style="font-size:11px;color:var(--gris);margin-top:4px;">Vous pouvez consulter vos autres informations librement</div>
       </div>
 
       <div id="zoneEmarg">
-        <div style="margin-bottom:12px;">
+        <div style="margin-bottom:12px;" id="modeToggleWrap">
           <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Mode de la séance</div>
           <div class="mode-toggle">
             <button class="mode-btn" id="btnPresentiel" data-mode="presentiel">🏫 Présentiel</button>
@@ -250,7 +250,7 @@
           </div>
         </div>
 
-        <div style="margin-bottom:12px;">
+        <div style="margin-bottom:12px;" id="presenceToggleWrap">
           <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Ma présence</div>
           <div class="presence-toggle">
             <button class="presence-btn" id="btnPresent" data-presence="present">✅ Présent(e)</button>
@@ -275,6 +275,20 @@
             <img id="justifPreview" style="width:100%;max-height:150px;object-fit:contain;border-radius:8px;margin-bottom:8px;display:none;" alt="Aperçu" />
             <label class="justif-label-upload" for="justifInput">📷 Prendre une photo ou choisir un fichier</label>
             <input type="file" id="justifInput" class="justif-input" accept="image/*" />
+          </div>
+        </div>
+
+        <div id="blocAutonomie" style="display:none;background:linear-gradient(135deg,#eaf0f4,#f7fafc);border:2px solid #C9A227;border-radius:12px;padding:18px 16px;text-align:center;margin-bottom:12px;">
+          <div style="font-size:34px;margin-bottom:8px;">🏠</div>
+          <div style="font-size:15px;font-weight:800;color:#2a3f4e;margin-bottom:6px;">Journée en autonomie</div>
+          <div style="font-size:13px;color:#4a5568;line-height:1.6;margin-bottom:12px;">
+            Vous travaillez depuis chez vous sur les activités données par votre formatrice.
+          </div>
+          <div style="display:inline-block;background:#C9A227;color:#2a3f4e;font-size:13px;font-weight:800;padding:7px 16px;border-radius:20px;">
+            ✅ 6h comptées automatiquement
+          </div>
+          <div style="font-size:11px;color:#718096;margin-top:12px;line-height:1.5;">
+            Aucune signature nécessaire.<br>En cas d'empêchement, prévenez l'équipe avant 8h00.
           </div>
         </div>
 
@@ -380,7 +394,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -406,24 +420,44 @@ let joursFormation = [];
 let jourIdx = 0;
 let semainePlanIdx = 0;
 
-// ── Jours de formation FC — lundi à jeudi ──────────────────
-function isASCA() {
-  return user && user.jours && user.jours.includes('Vendredi');
+// ── Jours de formation FC — lus depuis Firebase ──────────────
+const jourMapFC = { 'Lundi':1, 'Mardi':2, 'Mercredi':3, 'Jeudi':4, 'Vendredi':5 };
+
+function parseDateFC(str) {
+  if (!str || str === '—' || str === '-') return null;
+  const p = str.split('/');
+  if (p.length === 3) return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+  return null;
 }
 
-function getJoursFC() {
+// ASCA (Comptabilité) : centre lun/mer/jeu/ven — mardi en autonomie
+// AD / CV            : centre lun/mar/mer/jeu — vendredi en autonomie
+function estASCA_livret(u){
+  if(!u) return false;
+  if(u.jours && u.jours.indexOf && u.jours.indexOf('Vendredi')>=0) return true;
+  if(u.formation && u.formation.indexOf('Comptabilit')>=0) return true;
+  return false;
+}
+let jourAutonomie = 5;   // par défaut vendredi (AD/CV)
+
+function getJoursFC(joursAutorise, debutStr, finStr) {
   const jours = [];
-  const debut = new Date(2026, 6, 13);
-  const fin = new Date(2027, 5, 30);
+  const debut = parseDateFC(debutStr) || new Date(2026, 6, 13);
+  const fin   = parseDateFC(finStr)   || new Date(2027, 5, 30);
+  const joursNum = (Array.isArray(joursAutorise) && joursAutorise.length > 0)
+    ? joursAutorise.map(j => jourMapFC[j]).filter(Boolean)
+    : [1, 2, 3, 4];
+  // Le jour en autonomie fait partie du parcours : 6h comptées, sans signature
+  const tous = joursNum.slice();
+  if (tous.indexOf(jourAutonomie) < 0) tous.push(jourAutonomie);
   let d = new Date(debut);
-  const asca = isASCA();
   while (d <= fin) {
-    const j = d.getDay();
-    if (asca ? (j >= 1 && j <= 5) : (j >= 1 && j <= 4)) jours.push(new Date(d));
+    if (tous.includes(d.getDay())) jours.push(new Date(d));
     d.setDate(d.getDate() + 1);
   }
   return jours;
 }
+function estJourAutonomie(d){ return d && d.getDay() === jourAutonomie; }
 
 function formatDate(d) {
   const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
@@ -450,15 +484,15 @@ const PLANNINGS_FC = {
     vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
   },
   ACA: {
-    stages: [{debut:'2026-10-10', fin:'2026-11-06'}],
+    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
     vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
   }
 };
 
 function getGroupeFC() {
   if (!user) return 'CV';
-  if (isASCA()) return 'ACA';
-  if (user.formation && (user.formation.includes('Direction') || user.formation.includes('Secrétaire'))) return 'AD';
+  if (user.formation && user.formation.includes('ACA')) return 'ACA';
+  if (user.formation && user.formation.includes('Direction')) return 'AD';
   return 'CV';
 }
 
@@ -506,12 +540,10 @@ function getEtapeJour(iso) {
     '2027-02-16': { label: 'Examen', icone: '🎓' },
   };
   const etapesACA = {
-    '2026-08-27': { label: 'Évaluation 1', icone: '📝' },
     '2026-11-09': { label: 'DP Dossier Pro.', icone: '📁' },
     '2026-11-10': { label: 'DP Dossier Pro.', icone: '📁' },
     '2026-11-11': { label: 'DP Dossier Pro.', icone: '📁' },
     '2026-11-12': { label: 'DP Dossier Pro.', icone: '📁' },
-    '2026-11-19': { label: 'Évaluation 2', icone: '📝' },
     '2027-02-02': { label: 'Évaluation 3', icone: '📝' },
     '2027-02-09': { label: 'Bilan Final', icone: '🏁' },
     '2027-02-16': { label: 'Examen', icone: '🎓' },
@@ -532,7 +564,30 @@ async function chargerUser() {
   document.getElementById('infoDebut').textContent = user.debut || '13/07/2026';
   document.getElementById('infoHeures').textContent = user.heures || '8h15 – 12h00 / 13h00 – 15h15';
 
-  joursFormation = getJoursFC();
+  // Lire les jours depuis Firebase (noeud alternants)
+  try {
+    // Lire les jours depuis stagiairesFC en priorité, sinon alternants
+    let joursSnap = await get(ref(db, 'stagiairesFC/' + userId + '/jours'));
+    if (!joursSnap.exists()) joursSnap = await get(ref(db, 'alternants/' + userId + '/jours'));
+    let debSnap = await get(ref(db, 'stagiairesFC/' + userId + '/debut_formateur'));
+    if (!debSnap.exists()) debSnap = await get(ref(db, 'alternants/' + userId + '/debut_formateur'));
+    let finSnap = await get(ref(db, 'stagiairesFC/' + userId + '/fin_formateur'));
+    if (!finSnap.exists()) finSnap = await get(ref(db, 'alternants/' + userId + '/fin_formateur'));
+    const joursFirebase = joursSnap.exists() ? Object.values(joursSnap.val()) : null;
+    const debutStr  = debSnap.exists() ? debSnap.val() : (user.debut || '13/07/2026');
+    const finStr    = finSnap.exists() ? finSnap.val() : (user.fin   || '30/06/2027');
+    jourAutonomie = estASCA_livret(user) ? 2 : 5;
+    joursFormation  = getJoursFC(joursFirebase, debutStr, finStr);
+    // Mettre à jour le message du verrou
+    if (joursFirebase && joursFirebase.length > 0) {
+      const el = document.getElementById('msgJoursFormation');
+      if (el) el.textContent = joursFirebase.join(', ');
+    }
+  } catch(e) {
+    console.warn('Jours Firebase non disponibles, fallback lundi-jeudi', e);
+    jourAutonomie = estASCA_livret(user) ? 2 : 5;
+    joursFormation = getJoursFC(null, user.debut, user.fin);
+  }
 
   const today = new Date(); today.setHours(0,0,0,0);
   jourIdx = 0;
@@ -715,6 +770,28 @@ async function updateEmargement() {
 
   const verouJour = document.getElementById('verouJour');
   const zoneEmarg = document.getElementById('zoneEmarg');
+  const blocAuto  = document.getElementById('blocAutonomie');
+
+  // Journée en autonomie : 6h comptées d'office, rien à signer
+  if (estJourAutonomie(d)) {
+    verouJour.style.display = 'none';
+    zoneEmarg.style.display = 'block';
+    if (blocAuto) blocAuto.style.display = 'block';
+    ['blocMatin','blocAM','motifZone'].forEach(function(id){
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    ['modeToggleWrap','presenceToggleWrap'].forEach(function(id){
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    return;
+  }
+  if (blocAuto) blocAuto.style.display = 'none';
+  ['blocMatin','blocAM'].forEach(function(id){
+    const el = document.getElementById(id); if (el) el.style.display = '';
+  });
+  ['modeToggleWrap','presenceToggleWrap'].forEach(function(id){
+    const el = document.getElementById(id); if (el) el.style.display = '';
+  });
 
   if (!estAujourdhui) {
     verouJour.style.display = 'block';
@@ -725,22 +802,8 @@ async function updateEmargement() {
   zoneEmarg.style.display = 'block';
 
   const key = getKey(d);
-  let snap = await get(ref(db, 'emargementsFC/' + key));
-  let data = snap.exists() ? snap.val() : {};
-
-  // ASCA : mardi = distanciel automatique
-  const estMardi = new Date(d).getDay() === 2;
-  if (isASCA() && estMardi && !data.matin_alt) {
-    const autoUp = {};
-    autoUp['emargementsFC/' + key + '/mode'] = 'distanciel';
-    autoUp['emargementsFC/' + key + '/presence'] = 'present';
-    autoUp['emargementsFC/' + key + '/matin_alt'] = 'auto';
-    autoUp['emargementsFC/' + key + '/am_alt'] = 'auto';
-    await update(ref(db), autoUp);
-    snap = await get(ref(db, 'emargementsFC/' + key));
-    data = snap.exists() ? snap.val() : {};
-  }
-
+  const snap = await get(ref(db, 'emargementsFC/' + key));
+  const data = snap.exists() ? snap.val() : {};
   const modeActuel = data.mode || null;
   const presenceActuelle = data.presence || null;
 
@@ -784,7 +847,6 @@ async function updateEmargement() {
     const altSigne = data[s.alt]; const formSigne = data[s.form];
     const altEl = document.getElementById(s.altEl);
     if (absent) { altEl.textContent='❌ Absent(e)'; altEl.className='emarg-status status-attente'; }
-    else if (altSigne === 'auto') { altEl.textContent='✅ Distanciel auto'; altEl.className='emarg-status status-distanciel'; }
     else { altEl.textContent=altSigne?'✅ Signé':'En attente'; altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente'); }
     const formEl = document.getElementById(s.formEl);
     formEl.textContent = formSigne?'✅ Signé':'En attente';

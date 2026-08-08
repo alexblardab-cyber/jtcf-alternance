@@ -486,7 +486,7 @@ const MATIN_H = 4;
 const MATIN_FC = 3.75;
 const AM_FC = 2.25;
 const JOUR_FC_H = 6;
-const AM_H = 3.5;
+const AM_H = 3;    // 13h00–16h00
 
 
 // ===== FC : quels stagiaires sont présents quel jour =====
@@ -1656,7 +1656,7 @@ async function exporterPDF() {
   const moisVal = _sel.value.split('-').map(Number);
   const filterYear = moisVal[0]; const filterMonth = moisVal[1];
   const periodeTitre = moisNoms[filterMonth] + ' ' + filterYear;
-  const MATIN_H = 4; const AM_H = 3.5;
+  const MATIN_H = 4; const AM_H = 3;    // 13h00–16h00
   const jourMap = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   const OR=[201,162,39],BLEU=[61,90,110],BLEU_FONCE=[42,63,78],GRIS=[113,128,150],VERT=[56,161,105],ROUGE=[229,62,62];
   let pageNum = 1;
@@ -1830,7 +1830,7 @@ async function exporterPDFPersonne(alt) {
   const moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   const moisNomsFr = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
   const OR=[201,162,39],BLEU=[61,90,110],BLEU_FONCE=[42,63,78],GRIS=[113,128,150],VERT=[56,161,105],ROUGE=[229,62,62];
-  const MATIN_H=4, AM_H=3.5;
+  const MATIN_H=4, AM_H=3;
   let pageNum = 1;
 
   // Période
