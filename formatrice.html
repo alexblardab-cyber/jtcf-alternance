@@ -1433,14 +1433,16 @@ async function chargerDrive(){
   if(aSnap&&aSnap.exists())aSnap.forEach(function(c){var a=c.val();a.id=c.key;alts2.push(a);});
   cA.innerHTML=alts2.map(function(a){
     var ini=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();
-    var lien=a.drive?'<a href="'+a.drive+'" target="_blank" style="padding:5px 12px;background:#C9A227;color:#2a3f4e;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
+    var dl=(a.documents&&a.documents.dossier)?a.documents.dossier:(a.drive||'');
+    var lien=dl?'<a href="'+dl+'" target="_blank" style="padding:5px 12px;background:#C9A227;color:#2a3f4e;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
     return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f0f2f5;"><div style="width:34px;height:34px;border-radius:50%;background:#2a3f4e;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#2a3f4e;">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:#718096;">'+(a.formation||'')+(a.jourCentre?' · '+a.jourCentre:'')+'</div></div>'+lien+'</div>';
   }).join('')||'<div style="color:#718096;font-size:13px;">Aucun alternant.</div>';
   var fSnap=await get(ref(db,'stagiairesFC')).catch(function(){return null;});var fcs2=[];
   if(fSnap&&fSnap.exists())fSnap.forEach(function(c){var a=c.val();a.id=c.key;fcs2.push(a);});
   if(cF)cF.innerHTML=fcs2.map(function(a){
     var ini=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();
-    var lien=a.drive?'<a href="'+a.drive+'" target="_blank" style="padding:5px 12px;background:#C9A227;color:#2a3f4e;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
+    var dl=(a.documents&&a.documents.dossier)?a.documents.dossier:(a.drive||'');
+    var lien=dl?'<a href="'+dl+'" target="_blank" style="padding:5px 12px;background:#C9A227;color:#2a3f4e;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
     return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f0f2f5;"><div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#553c9a,#6b46c1);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#2a3f4e;">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:#718096;">'+(a.formation||'')+'</div></div>'+lien+'</div>';
   }).join('')||'<div style="color:#718096;font-size:13px;">Aucun stagiaire FC.</div>';
 }

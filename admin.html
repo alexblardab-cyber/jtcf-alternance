@@ -318,7 +318,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -556,7 +556,7 @@ async function sauvegarder(e){
     debut:document.getElementById('formDebut').value.trim(),
     fin:document.getElementById('formFin').value.trim()
   };
-  await set(ref(db,'alternants/'+id),data);
+  await update(ref(db,'alternants/'+id),data);   // update : ne supprime pas documents/
   document.getElementById('formSuccess').classList.add('visible');
   await chargerTout();
 
@@ -1315,8 +1315,13 @@ function ajouterBadgeOnglet(target, count) {
 })();
 
 async function sauvegarderDocs(e){
-  e.preventDefault(); if(!editingId)return;
-  await set(ref(db,'alternants/'+editingId+'/documents/dossier'),document.getElementById('docDossier').value.trim()||null);
+  e.preventDefault();
+  var id = editingId || document.getElementById('formId').value.trim().toUpperCase();
+  if(!id){ alert('Impossible d\'enregistrer : aucun alternant sélectionné.\nOuvrez la fiche depuis la liste.'); return; }
+  var lien = document.getElementById('docDossier').value.trim();
+  try {
+    await set(ref(db,'alternants/'+id+'/documents/dossier'), lien||null);
+  } catch(err){ alert('Erreur d\'enregistrement : '+err.message); return; }
   document.getElementById('docsSuccess').classList.add('visible');
   setTimeout(function(){document.getElementById('docsSuccess').classList.remove('visible');},2000);
 }
@@ -1366,7 +1371,7 @@ async function sauvegarderFC(e){
   e.preventDefault();
   const id=editingFC||document.getElementById('fcFormId').value.trim().toUpperCase();
   if(!id){alert('Identifiant requis.');return;}
-  await set(ref(db,'stagiairesFC/'+id),{
+  await update(ref(db,'stagiairesFC/'+id),{   // update : ne supprime pas documents/
     nom:document.getElementById('fcFormNom').value.trim(),
     formation:document.getElementById('fcFormFormation').value,
     debut:document.getElementById('fcFormDebut').value.trim(),
@@ -1639,8 +1644,13 @@ function ajouterBadgeOnglet(target, count) {
 }
 
 async function sauvegarderDocsFC(e){
-  e.preventDefault(); if(!editingFC)return;
-  await set(ref(db,'stagiairesFC/'+editingFC+'/documents/dossier'),document.getElementById('docDossierFC').value.trim()||null);
+  e.preventDefault();
+  var id = editingFC || document.getElementById('fcFormId').value.trim().toUpperCase();
+  if(!id){ alert('Impossible d\'enregistrer : aucun stagiaire sélectionné.\nOuvrez la fiche depuis la liste FC.'); return; }
+  var lien = document.getElementById('docDossierFC').value.trim();
+  try {
+    await set(ref(db,'stagiairesFC/'+id+'/documents/dossier'), lien||null);
+  } catch(err){ alert('Erreur d\'enregistrement : '+err.message); return; }
   document.getElementById('docsFCSuccess').classList.add('visible');
   setTimeout(function(){document.getElementById('docsFCSuccess').classList.remove('visible');},2000);
 }
