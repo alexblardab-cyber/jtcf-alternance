@@ -235,9 +235,8 @@
 
   <!-- FORMATION CONTINUE -->
   <div class="section" id="fc">
-    <button class="btn-global" id="btnSignGlobalMatinFC">✍️ Signer MATIN — Tous les stagiaires FC</button>
-    <button class="btn-global" id="btnSignGlobalAMFC" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — Tous les stagiaires FC</button>
-    <div class="jour-titre">Stagiaires Formation Continue</div>
+    <div class="jour-titre">🎓 Stagiaires Formation Continue</div>
+    <div style="font-size:11px;color:#718096;margin-bottom:10px;line-height:1.5;">Consultation des dossiers. Les signatures se font dans l'onglet ✍️ Émargement, jour par jour.</div>
     <div id="listeFC"><div class="loading">Chargement...</div></div>
   </div>
 
@@ -483,6 +482,10 @@ let semIdx = 0;
 let filterMode = 'mois';
 
 const MATIN_H = 4;
+// Formation continue : 8h15–12h00 = 3,75h · 13h00–15h15 = 2,25h → 6h/jour, 30h/semaine
+const MATIN_FC = 3.75;
+const AM_FC = 2.25;
+const JOUR_FC_H = 6;
 const AM_H = 3.5;
 
 
@@ -500,10 +503,15 @@ function fcDuJour(jour){
   var n = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5}[jour];
   return allFC.filter(function(fc){ return joursDeFC(fc).indexOf(n)>=0; });
 }
+// Jour travaillé en autonomie : Mardi pour les ASCA, Vendredi pour les AD/CV
+function jourAutonomieFC(fc){ return estASCA(fc) ? 2 : 5; }
+function estJourAutonomie(fc, d){ return d.getDay() === jourAutonomieFC(fc); }
+
+// Séances FC = les 5 jours ouvrés (4 en centre + 1 en autonomie)
 function seancesDeFC(fc){
-  var js = joursDeFC(fc), out = [];
+  var out = [];
   var d = new Date(2026,6,13), fin = new Date(2027,5,30);
-  while(d<=fin){ if(js.indexOf(d.getDay())>=0) out.push(new Date(d)); d.setDate(d.getDate()+1); }
+  while(d<=fin){ var j=d.getDay(); if(j>=1 && j<=5) out.push(new Date(d)); d.setDate(d.getDate()+1); }
   return out;
 }
 
@@ -659,6 +667,7 @@ function rendreApprenants(){
 //  ÉMARGEMENT — jour unique + couleurs dynamiques
 // ═══════════════════════════════════════════════════
 var jourActif = null;
+var currentFCAutonomie = null;
 
 var COULEUR_JOUR = {
   'Lundi':'#3d5a6e', 'Mardi':'#2b6cb0', 'Mercredi':'#2f855a',
@@ -935,6 +944,80 @@ async function chargerRecap() {
         <div class="recap-item or"><div class="recap-val or">${seancesCount}</div><div class="recap-lbl">Séances passées</div></div>
         <div class="recap-item"><div class="recap-val">${heuresPresence + heuresAbsence}h</div><div class="recap-lbl">Heures totales</div></div>
       </div>${motifsHtml}`;
+    container.appendChild(card);
+  }
+
+
+  // ───── STAGIAIRES FORMATION CONTINUE ─────
+  const fcRecap = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
+  for (const fc of fcRecap) {
+    const fcSeances = seancesDeFC(fc);
+    let hPres = 0, hAbs = 0, nbSeances = 0, nbAutonomie = 0;
+    const motifsFC = {};
+
+    for (const d of fcSeances) {
+      if (filterMode === 'mois' && (d.getFullYear() !== filterYear || d.getMonth() !== filterMonth)) continue;
+      if (d > new Date()) continue;
+      const key = fc.id + '_fc_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+      const snap = await get(ref(db, 'emargementsFC/'+key)).catch(function(){return null;});
+      const data = (snap && snap.exists()) ? snap.val() : {};
+      const absent = data.presence === 'absent';
+      nbSeances++;
+
+      if (estJourAutonomie(fc, d)) {
+        // Journée en autonomie : 6h comptées d'office, sauf absence saisie
+        nbAutonomie++;
+        if (absent) {
+          hAbs += JOUR_FC_H;
+          const m = data.motif || 'Non renseigné';
+          motifsFC[m] = (motifsFC[m] || 0) + 1;
+        } else {
+          hPres += JOUR_FC_H;
+        }
+      } else {
+        if (absent) {
+          hAbs += (MATIN_FC + AM_FC);
+          const m = data.motif || 'Non renseigné';
+          motifsFC[m] = (motifsFC[m] || 0) + 1;
+        } else {
+          if (data.matin_alt) hPres += MATIN_FC;
+          if (data.am_alt) hPres += AM_FC;
+        }
+      }
+    }
+
+    totalHeuresGlobal += hPres;
+    totalAbsencesGlobal += hAbs;
+    totalSeancesGlobal += nbSeances;
+    if (nbSeances === 0) continue;
+
+    const ini = fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+    let motifsHtml = '';
+    if (Object.keys(motifsFC).length > 0) {
+      motifsHtml = '<div class="recap-motifs"><div style="font-size:11px;font-weight:700;color:var(--rouge);margin-bottom:4px;">Motifs d\'absence :</div>';
+      for (const [m, c] of Object.entries(motifsFC)) {
+        motifsHtml += '<div class="recap-motif-item"><span>'+m+'</span><span style="font-weight:700;">'+c+' fois</span></div>';
+      }
+      motifsHtml += '</div>';
+    }
+    const jourAuto = ['','Lundi','Mardi','Mercredi','Jeudi','Vendredi'][jourAutonomieFC(fc)];
+    const card = document.createElement('div');
+    card.className = 'recap-card';
+    card.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+        '<div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;background:#C9A227;color:#2a3f4e;border-color:#C9A227;">'+ini+'</div>' +
+        '<div><div class="recap-nom">'+fc.nom+'</div>' +
+        '<div style="font-size:11px;color:var(--gris);">'+fc.formation+' · 🎓 FC</div></div>' +
+      '</div>' +
+      '<div class="recap-grid">' +
+        '<div class="recap-item vert"><div class="recap-val vert">'+hPres+'h</div><div class="recap-lbl">Heures présence</div></div>' +
+        '<div class="recap-item rouge"><div class="recap-val rouge">'+hAbs+'h</div><div class="recap-lbl">Heures absence</div></div>' +
+        '<div class="recap-item or"><div class="recap-val or">'+nbSeances+'</div><div class="recap-lbl">Séances passées</div></div>' +
+        '<div class="recap-item"><div class="recap-val">'+(hPres+hAbs)+'h</div><div class="recap-lbl">Heures totales</div></div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#718096;margin-top:8px;padding-top:8px;border-top:1px solid #f0f2f5;">' +
+        '🏠 '+nbAutonomie+' journée'+(nbAutonomie>1?'s':'')+' en autonomie ('+jourAuto+') · '+(nbAutonomie*JOUR_FC_H)+'h incluses' +
+      '</div>' + motifsHtml;
     container.appendChild(card);
   }
 
@@ -1417,6 +1500,7 @@ function ouvrirFicheFC(fc) {
   document.getElementById('ficheContrat').textContent = 'Formation Continue · ' + fc.debut;
   document.getElementById('ficheJour').textContent = 'Lundi au Jeudi · ' + fc.heures;
   seances = seancesDeFC(fc);
+  currentFCAutonomie = jourAutonomieFC(fc);
   document.getElementById('ficheJour').textContent = (estASCA(fc)?'Lundi, Mercredi, Jeudi, Vendredi':'Lundi au Jeudi') + ' · ' + (fc.heures||'');
   const today = new Date(); today.setHours(0,0,0,0);
   semIdx = 0;
@@ -1511,20 +1595,6 @@ document.querySelectorAll('.jour-btn').forEach(function(b){
   b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
 });
 
-// ===== FC =====
-async function signerGlobalFC(period) {
-  var today=new Date();today.setHours(0,0,0,0);var count=0;
-  for(var i=0;i<allFC.length;i++){
-    var fc=allFC[i];
-    var jFC=seances.find(function(s){var d=new Date(s);d.setHours(0,0,0,0);return d.getTime()===today.getTime();});
-    if(!jFC)continue;
-    await set(ref(db,'emargementsFC/'+fc.id+'_fc_'+jFC.getFullYear()+'_'+(jFC.getMonth()+1)+'_'+jFC.getDate()+'/'+period+'_form'),'global_sign_'+Date.now());count++;
-  }
-  alert('✅ '+count+' FC signé(s) !');
-}
-var eFC1=document.getElementById('btnSignGlobalMatinFC'),eFC2=document.getElementById('btnSignGlobalAMFC');
-if(eFC1){eFC1.addEventListener('click',function(){signerGlobalFC('matin');});eFC1.addEventListener('touchend',function(e){e.preventDefault();signerGlobalFC('matin');},{passive:false});}
-if(eFC2){eFC2.addEventListener('click',function(){signerGlobalFC('am');});eFC2.addEventListener('touchend',function(e){e.preventDefault();signerGlobalFC('am');},{passive:false});}
 
 // ===== DRIVE =====
 async function chargerDrive(){
