@@ -357,6 +357,7 @@ Content-Type: text/plain; charset=utf-8
         </div>
         <button class="btn-annuler-sign" id="btnAnnulerMatin" style="display:none;" data-slot="matin_form">🗑️ Annuler ma signature matin</button>
         
+        <button class="btn-annuler-sign" id="btnExceptMatin" style="display:none;background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;font-weight:800;">✍️ Signer à sa place — matin (oubli / panne / réseau)</button>
         <button class="btn-annuler-sign" id="btnEffacerAltMatin" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant matin</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentMatin" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent matin (efface sig. matin)</button>
       </div>
@@ -375,6 +376,7 @@ Content-Type: text/plain; charset=utf-8
         </div>
         <button class="btn-annuler-sign" id="btnAnnulerAM" style="display:none;" data-slot="am_form">🗑️ Annuler ma signature après-midi</button>
         
+        <button class="btn-annuler-sign" id="btnExceptAM" style="display:none;background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;font-weight:800;">✍️ Signer à sa place — après-midi (oubli / panne / réseau)</button>
         <button class="btn-annuler-sign" id="btnEffacerAltAM" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant après-midi</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentAM" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent après-midi (efface sig. AM)</button>
       </div>
@@ -558,20 +560,20 @@ async function chargerDashboard(){
     var a=alts[i];
     var s=await get(ref(db,'emargements/'+a.id+'_'+y+'_'+m+'_'+d)).catch(function(){return null;});
     var v=(s&&s.exists())?s.val():{};
-    if(v.matin_form) sM++; if(v.am_form) sA++;
-    lignes.push({nom:a.nom,info:a.formation||'',fc:false,m:!!v.matin_form,a:!!v.am_form});
+    if(v.matin_alt) sM++; if(v.am_alt) sA++;
+    lignes.push({nom:a.nom,info:a.formation||'',fc:false,m:!!v.matin_alt,a:!!v.am_alt,abs:v.presence==='absent'});
   }
   for(var i=0;i<fcs.length;i++){
     var f=fcs[i];
     var s=await get(ref(db,'emargementsFC/'+f.id+'_fc_'+y+'_'+m+'_'+d)).catch(function(){return null;});
     var v=(s&&s.exists())?s.val():{};
-    if(v.matin_form) sM++; if(v.am_form) sA++;
-    lignes.push({nom:f.nom,info:f.formation||'',fc:true,m:!!v.matin_form,a:!!v.am_form});
+    if(v.matin_alt) sM++; if(v.am_alt) sA++;
+    lignes.push({nom:f.nom,info:f.formation||'',fc:true,m:!!v.matin_alt,a:!!v.am_alt,abs:v.presence==='absent'});
   }
 
   var kpi=document.getElementById('dashKpi');
   function box3(val,lbl,col){return '<div style="background:white;border-radius:12px;padding:12px 6px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);"><div style="font-size:22px;font-weight:800;color:'+col+';">'+val+'</div><div style="font-size:10px;color:#718096;font-weight:600;text-transform:uppercase;margin-top:2px;">'+lbl+'</div></div>';}
-  kpi.innerHTML=box3(tot,'Présents','#2a3f4e')+box3(sM+'/'+tot,'Matin signé',sM>=tot&&tot>0?'#38a169':'#C9A227')+box3(sA+'/'+tot,'Après-midi',sA>=tot&&tot>0?'#38a169':'#C9A227');
+  kpi.innerHTML=box3(tot,'Présents','#2a3f4e')+box3(sM+'/'+tot,'Matin apprenant',sM>=tot&&tot>0?'#38a169':'#C9A227')+box3(sA+'/'+tot,'A-M apprenant',sA>=tot&&tot>0?'#38a169':'#C9A227');
 
   document.getElementById('dashActions').innerHTML=
     '<button class="btn-global" id="dashBtnMatin">✍️ Signer MATIN — tout le monde ('+tot+')</button>'+
@@ -631,16 +633,24 @@ function dateDuJour(jour){
   return t;
 }
 function badgeHTML(v){
-  var pres = v.matin_form||v.am_form||v.matin||v.am;
-  var abs  = v.absence||v.motif||v.matin_absence||v.am_absence;
-  function pt(ok,lbl){return '<span style="display:block;font-size:9px;font-weight:800;line-height:1.35;color:'+(ok?'#38a169':'#cbd5e0')+';">'+(ok?'●':'○')+' '+lbl+'</span>';}
-  var tag='';
-  if(abs) tag='<span style="display:block;font-size:9px;font-weight:800;color:#e53e3e;line-height:1.35;">✕ Absent</span>';
-  else if((v.matin_form||v.matin)&&(v.am_form||v.am)) tag='<span style="display:block;font-size:9px;font-weight:800;color:#38a169;line-height:1.35;">✓ Présent</span>';
-  else if(pres) tag='<span style="display:block;font-size:9px;font-weight:800;color:#C9A227;line-height:1.35;">◐ Partiel</span>';
-  else tag='<span style="display:block;font-size:9px;font-weight:800;color:#a0aec0;line-height:1.35;">— À signer</span>';
-  return tag+pt(!!(v.matin_form||v.matin),'Matin')+pt(!!(v.am_form||v.am),'A-M');
+  // Présence = signature de l'APPRENANT (matin_alt / am_alt).
+  // La signature formatrice (matin_form) ne prouve PAS la présence.
+  var aM=!!v.matin_alt, aA=!!v.am_alt;
+  var fM=!!v.matin_form, fA=!!v.am_form;
+  var abs=(v.presence==='absent');
+  var tag;
+  if(abs)            tag=['✕ Absent','#e53e3e'];
+  else if(aM&&aA)    tag=['✓ Présent','#38a169'];
+  else if(aM||aA)    tag=['◐ Partiel','#C9A227'];
+  else if(fM||fA)    tag=['⚠ Non signé','#dd6b20'];
+  else               tag=['— En attente','#a0aec0'];
+  function pt(ok,lbl){return '<span style="display:block;font-size:9px;font-weight:800;line-height:1.3;color:'+(ok?'#38a169':'#cbd5e0')+';">'+(ok?'●':'○')+' '+lbl+'</span>';}
+  var s='<span style="display:block;font-size:9px;font-weight:800;color:'+tag[1]+';line-height:1.3;">'+tag[0]+'</span>';
+  s+=pt(aM,'Matin')+pt(aA,'A-M');
+  if(!abs&&(fM||fA)&&!(aM&&aA)) s+='<span style="display:block;font-size:8px;font-weight:700;color:#a0aec0;line-height:1.3;">form. '+((fM?1:0)+(fA?1:0))+'/2</span>';
+  return s;
 }
+
 async function chargerEtats(containerId, items, jour, isFC){
   if(!jour) return;
   var c=document.getElementById(containerId); if(!c) return;
@@ -651,7 +661,7 @@ async function chargerEtats(containerId, items, jour, isFC){
     var path = isFC ? ('emargementsFC/'+it.id+'_fc_'+y+'_'+m+'_'+dd) : ('emargements/'+it.id+'_'+y+'_'+m+'_'+dd);
     var snap=await get(ref(db,path)).catch(function(){return null;});
     var v=(snap&&snap.exists())?snap.val():{};
-    if(v.matin_form||v.am_form||v.matin||v.am) nP++;
+    if(v.matin_alt&&v.am_alt) nP++;
     var el=c.querySelector('[data-etat="'+it.id+'"]');
     if(el) el.innerHTML=badgeHTML(v);
   }
@@ -924,6 +934,13 @@ async function updateFicheEmarg() {
   // Effacer sig alternant — visible si signé et pas déjà absent
   if (btnEffAltMatin) btnEffAltMatin.style.display = (data.matin_alt && !absent) ? 'block' : 'none';
   if (btnEffAltAM) btnEffAltAM.style.display = (data.am_alt && !absent) ? 'block' : 'none';
+  // Exception : proposer de signer à la place seulement si l'apprenant n'a pas signé
+  var bxM=document.getElementById('btnExceptMatin'), bxA=document.getElementById('btnExceptAM');
+  if (bxM) bxM.style.display = (!data.matin_alt && !absent) ? 'block' : 'none';
+  if (bxA) bxA.style.display = (!data.am_alt && !absent) ? 'block' : 'none';
+  // Mention régularisation
+  if (data.matin_alt_regul) document.getElementById('ficheStatusMatinAlt').textContent = '✅ Signé (régularisé)';
+  if (data.am_alt_regul) document.getElementById('ficheStatusAMAlt').textContent = '✅ Signé (régularisé)';
   // Absent matin — visible si pas déjà absent
   if (btnAbsMatin) btnAbsMatin.style.display = !absent ? 'block' : 'none';
   // Absent AM — visible si pas déjà absent
@@ -951,6 +968,80 @@ function initCanvases() {
     canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',draw,{passive:false}); canvas.addEventListener('touchend',stop);
   });
 }
+
+
+// ═══ EXCEPTION : signer à la place de l'apprenant avec SA propre signature ═══
+// Cas d'usage : oubli, panne de téléphone, absence de réseau.
+// La signature réutilisée est celle que l'apprenant a lui-même tracée lors d'une séance précédente.
+async function derniereSignature(id, isFC){
+  var base = isFC ? 'emargementsFC' : 'emargements';
+  var snap = await get(ref(db, base)).catch(function(){return null;});
+  if(!snap || !snap.exists()) return null;
+  var pref = isFC ? (id+'_fc_') : (id+'_');
+  var best = null, bestT = -1;
+  snap.forEach(function(c){
+    var k = c.key;
+    if(k.indexOf(pref)!==0) return;
+    var reste = k.substring(pref.length).split('_');
+    if(reste.length!==3) return;
+    var t = new Date(+reste[0], +reste[1]-1, +reste[2]).getTime();
+    var v = c.val()||{};
+    var sig = v.matin_alt || v.am_alt;
+    if(sig && String(sig).indexOf('data:image')===0 && t>bestT){ bestT=t; best=sig; }
+  });
+  return best;
+}
+
+async function signerException(slot, isFC){
+  var sujet = isFC ? currentFC : currentAlt;
+  if(!sujet){ alert('Aucun apprenant sélectionné.'); return; }
+  var d = seances[semIdx];
+  var libelle = slot==='matin_alt' ? 'MATIN' : 'APRÈS-MIDI';
+
+  var motif = prompt(
+    'Signer à la place de ' + sujet.nom + '\n' +
+    libelle + ' — ' + formatDate(d) + '\n\n' +
+    'Motif de la régularisation :\n' +
+    '1 = Oubli de signature\n' +
+    '2 = Panne de téléphone\n' +
+    '3 = Absence de réseau\n' +
+    '4 = Autre (préciser)\n\n' +
+    'Tapez 1, 2, 3 ou votre motif :', '1');
+  if(motif===null) return;
+  var motifs={'1':'Oubli de signature','2':'Panne de téléphone','3':'Absence de réseau'};
+  motif = motifs[motif.trim()] || motif.trim();
+  if(!motif){ alert('Motif obligatoire pour une régularisation.'); return; }
+
+  var sig = await derniereSignature(sujet.id, isFC);
+  if(!sig){
+    alert('❌ Aucune signature enregistrée pour ' + sujet.nom + '.\n\n' +
+          'Il faut qu\'il/elle ait signé au moins une fois dans l\'application pour pouvoir régulariser avec sa propre signature.');
+    return;
+  }
+
+  if(!confirm('Confirmer la régularisation ?\n\n' +
+     sujet.nom + ' — ' + libelle + ' — ' + formatDate(d) + '\n' +
+     'Motif : ' + motif + '\n\n' +
+     'La signature enregistrée de l\'apprenant sera apposée et tracée comme régularisation.')) return;
+
+  var base = isFC ? 'emargementsFC' : 'emargements';
+  var key  = isFC ? getFCKey(d) : getKey(sujet.id, d);
+  await set(ref(db, base+'/'+key+'/'+slot), sig);
+  await set(ref(db, base+'/'+key+'/'+slot+'_regul'), {
+    motif: motif,
+    par: profil.nom,
+    le: new Date().toISOString()
+  });
+  alert('✅ Régularisation enregistrée.\n' + sujet.nom + ' — ' + libelle + '\nMotif : ' + motif);
+  if(isFC) await updateFicheEmargFC(); else await updateFicheEmarg();
+}
+
+['Matin','AM'].forEach(function(P){
+  var b=document.getElementById('btnExcept'+P); if(!b) return;
+  var slot = (P==='Matin'?'matin_alt':'am_alt');
+  function go(e){ e.preventDefault(); signerException(slot, !!currentFC && !currentAlt).catch(function(err){alert('Erreur : '+err.message);}); }
+  b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
+});
 
 document.querySelectorAll('.btn-valider').forEach(function(btn) {
   async function valider(e) {
