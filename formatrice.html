@@ -595,6 +595,10 @@ async function chargerAlternants() {
   afficherListeFC('listeFC', fcFiltered);
   if(jourActif) rendreJour(jourActif);
   if(document.getElementById('listeApprenants')) rendreApprenants();
+  // Partager les données avec le script PDF (hors module)
+  window.allAlternants = allAlternants;
+  window.allFC = allFC;
+  window.MATIN_FC = MATIN_FC; window.AM_FC = AM_FC; window.JOUR_FC_H = JOUR_FC_H;
   remplirMoisSelect();
   chargerRecap();
 }
@@ -1621,8 +1625,16 @@ async function chargerDrive(){
 </script>
 
 <script>
-document.getElementById('btnExportPDF').addEventListener('click', exporterPDF);
-document.getElementById('btnExportPDF').addEventListener('touchend', function(e){ e.preventDefault(); exporterPDF(); }, {passive:false});
+function _lancerPDF(){
+  var b = document.getElementById('btnExportPDF');
+  exporterPDF().catch(function(err){
+    console.error('Export PDF :', err);
+    if (err && err.message !== 'moisSelect vide') alert('Échec de la génération du PDF :\n' + (err.message||err));
+    b.textContent = '📄 Exporter le PDF mensuel'; b.disabled = false;
+  });
+}
+document.getElementById('btnExportPDF').addEventListener('click', _lancerPDF);
+document.getElementById('btnExportPDF').addEventListener('touchend', function(e){ e.preventDefault(); _lancerPDF(); }, {passive:false});
 
 async function exporterPDF() {
   const btn = document.getElementById('btnExportPDF');
@@ -1639,7 +1651,9 @@ async function exporterPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  const moisVal = document.getElementById('moisSelect').value.split('-').map(Number);
+  const _sel = document.getElementById('moisSelect');
+  if (!_sel || !_sel.value) { alert('Choisissez d\'abord un mois dans l\'onglet Récap.'); throw new Error('moisSelect vide'); }
+  const moisVal = _sel.value.split('-').map(Number);
   const filterYear = moisVal[0]; const filterMonth = moisVal[1];
   const periodeTitre = moisNoms[filterMonth] + ' ' + filterYear;
   const MATIN_H = 4; const AM_H = 3.5;
@@ -1779,7 +1793,9 @@ document.getElementById('btnExportPDFPersonne').addEventListener('click', functi
   const menu = document.getElementById('menuPersonne');
   if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
   menu.innerHTML = '';
-  allAlternants.forEach(function(alt) {
+  var _alts = window.allAlternants || [];
+  if (_alts.length === 0) { alert('Les alternants ne sont pas encore chargés. Patientez quelques secondes puis réessayez.'); return; }
+  _alts.forEach(function(alt) {
     const item = document.createElement('div');
     item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#2a3f4e;border-bottom:1px solid #f0f2f5;';
     item.textContent = alt.nom + ' — ' + alt.formation;
@@ -1819,7 +1835,9 @@ async function exporterPDFPersonne(alt) {
 
   // Période
   const isMois = document.getElementById('filterMois').classList.contains('active');
-  const moisVal = document.getElementById('moisSelect').value.split('-').map(Number);
+  const _sel = document.getElementById('moisSelect');
+  if (!_sel || !_sel.value) { alert('Choisissez d\'abord un mois dans l\'onglet Récap.'); throw new Error('moisSelect vide'); }
+  const moisVal = _sel.value.split('-').map(Number);
   const filterYear = isMois ? moisVal[0] : null;
   const filterMonth = isMois ? moisVal[1] : null;
   const periodeTitre = isMois ? moisNoms[filterMonth]+' '+filterYear : 'Total contrat';
