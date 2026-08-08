@@ -496,8 +496,12 @@ const PLANNINGS_FC = {
 
 function getGroupeFC() {
   if (!user) return 'CV';
-  if (user.formation && user.formation.includes('ACA')) return 'ACA';
-  if (user.formation && user.formation.includes('Direction')) return 'AD';
+  const f = (user.formation || '');
+  // Comptabilité → ACA (intitulé réel : "Assistant Comptabilité et Administration en TPE PME")
+  if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
+  // Assistant de Direction → AD
+  if (f.indexOf('Direction') >= 0) return 'AD';
+  // Conseiller de Vente → CV
   return 'CV';
 }
 
