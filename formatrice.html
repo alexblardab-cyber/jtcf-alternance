@@ -359,6 +359,7 @@ Content-Type: text/plain; charset=utf-8
         
         <button class="btn-annuler-sign" id="btnExceptMatin" style="display:none;background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;font-weight:800;">✍️ Signer à sa place — matin (oubli / panne / réseau)</button>
         <button class="btn-annuler-sign" id="btnEffacerAltMatin" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant matin</button>
+        <button class="btn-annuler-sign" id="btnAnnulerAbsence" style="display:none;background:#f0fff4;color:#22543d;border-color:#9ae6b4;font-weight:800;">↩️ Annuler l'absence — l'apprenant était présent</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentMatin" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent matin (efface sig. matin)</button>
       </div>
       <div class="emarg-bloc" id="ficheBlocAM">
@@ -935,6 +936,8 @@ async function updateFicheEmarg() {
   if (btnEffAltMatin) btnEffAltMatin.style.display = (data.matin_alt && !absent) ? 'block' : 'none';
   if (btnEffAltAM) btnEffAltAM.style.display = (data.am_alt && !absent) ? 'block' : 'none';
   // Exception : proposer de signer à la place seulement si l'apprenant n'a pas signé
+  var bAbs=document.getElementById('btnAnnulerAbsence');
+  if (bAbs) bAbs.style.display = absent ? 'block' : 'none';
   var bxM=document.getElementById('btnExceptMatin'), bxA=document.getElementById('btnExceptAM');
   if (bxM) bxM.style.display = (!data.matin_alt && !absent) ? 'block' : 'none';
   if (bxA) bxA.style.display = (!data.am_alt && !absent) ? 'block' : 'none';
@@ -969,6 +972,72 @@ function initCanvases() {
   });
 }
 
+
+
+// ═══ ANNULER UNE ABSENCE saisie par erreur ═══
+async function annulerAbsence(){
+  var sujet = currentAlt || currentFC; if(!sujet) return;
+  var isFC = !currentAlt && !!currentFC;
+  var d = seances[semIdx];
+  if(!confirm('Annuler l\'absence de ' + sujet.nom + ' ?\n' + formatDate(d) +
+     '\n\nLa séance repassera en "en attente" et vous pourrez régulariser sa signature.')) return;
+  var base = isFC ? 'emargementsFC' : 'emargements';
+  var key  = isFC ? getFCKey(d) : getKey(sujet.id, d);
+  await set(ref(db, base+'/'+key+'/presence'), null);
+  await set(ref(db, base+'/'+key+'/motif'), null);
+  await set(ref(db, base+'/'+key+'/justificatif'), null);
+  alert('✅ Absence annulée pour ' + sujet.nom + '.\nVous pouvez maintenant régulariser sa signature.');
+  if(isFC) await updateFicheEmargFC(); else await updateFicheEmarg();
+}
+(function(){
+  var b=document.getElementById('btnAnnulerAbsence'); if(!b) return;
+  function go(e){ e.preventDefault(); annulerAbsence().catch(function(x){alert('Erreur : '+x.message);}); }
+  b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
+})();
+
+// ═══ MARQUER ABSENT (les boutons existaient sans action) ═══
+async function marquerAbsent(periode){
+  var sujet = currentAlt || currentFC; if(!sujet) return;
+  var isFC = !currentAlt && !!currentFC;
+  var d = seances[semIdx];
+  var motif = prompt('Absence de ' + sujet.nom + ' — ' + formatDate(d) +
+    '\n\nMotif :\n1 = Maladie\n2 = Absence justifiée\n3 = Absence non justifiée\n4 = Autre (préciser)\n\nTapez 1, 2, 3 ou votre motif :','3');
+  if(motif===null) return;
+  var m={'1':'Maladie','2':'Absence justifiée','3':'Absence non justifiée'};
+  motif = m[motif.trim()] || motif.trim();
+  if(!motif){ alert('Motif obligatoire.'); return; }
+  var base = isFC ? 'emargementsFC' : 'emargements';
+  var key  = isFC ? getFCKey(d) : getKey(sujet.id, d);
+  await set(ref(db, base+'/'+key+'/presence'), 'absent');
+  await set(ref(db, base+'/'+key+'/motif'), motif);
+  if(periode==='matin'||periode==='jour') await set(ref(db, base+'/'+key+'/matin_alt'), null);
+  if(periode==='am'   ||periode==='jour') await set(ref(db, base+'/'+key+'/am_alt'), null);
+  alert('✅ ' + sujet.nom + ' marqué(e) absent(e).\nMotif : ' + motif);
+  if(isFC) await updateFicheEmargFC(); else await updateFicheEmarg();
+}
+[['btnMarquerAbsentMatin','matin'],['btnMarquerAbsentAM','am']].forEach(function(x){
+  var b=document.getElementById(x[0]); if(!b) return;
+  function go(e){ e.preventDefault(); marquerAbsent(x[1]).catch(function(err){alert('Erreur : '+err.message);}); }
+  b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
+});
+
+// ═══ EFFACER la signature de l'apprenant ═══
+[['btnEffacerAltMatin','matin_alt'],['btnEffacerAltAM','am_alt']].forEach(function(x){
+  var b=document.getElementById(x[0]); if(!b) return;
+  async function go(e){
+    e.preventDefault();
+    var sujet = currentAlt || currentFC; if(!sujet) return;
+    var isFC = !currentAlt && !!currentFC;
+    var d = seances[semIdx];
+    if(!confirm('Effacer la signature de ' + sujet.nom + ' ?\n' + formatDate(d))) return;
+    var base = isFC ? 'emargementsFC' : 'emargements';
+    var key  = isFC ? getFCKey(d) : getKey(sujet.id, d);
+    await set(ref(db, base+'/'+key+'/'+x[1]), null);
+    await set(ref(db, base+'/'+key+'/'+x[1]+'_regul'), null);
+    if(isFC) await updateFicheEmargFC(); else await updateFicheEmarg();
+  }
+  b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
+});
 
 // ═══ EXCEPTION : signer à la place de l'apprenant avec SA propre signature ═══
 // Cas d'usage : oubli, panne de téléphone, absence de réseau.
