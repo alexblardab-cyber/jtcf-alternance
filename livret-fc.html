@@ -200,6 +200,11 @@
   <!-- PLANNING -->
   <div class="section" id="planning">
     <div class="card">
+      <div class="card-title">📖 Comment se déroule ma formation</div>
+      <div id="explicPlanning"><div style="font-size:12px;color:#718096;">Chargement...</div></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">📅 Planning de formation</div>
       <div class="legende">
         <span class="leg-item leg-formation">🏫 Formation</span>
@@ -219,7 +224,7 @@
     <!-- Étapes clés du parcours -->
     <div class="card">
       <div class="card-title">🎯 Étapes clés du parcours</div>
-      <div style="font-size:12px;color:#718096;margin-bottom:12px;">TP Conseiller de Vente · 500h · 13/07/2026 → 01/03/2027</div>
+      <div style="font-size:12px;color:#718096;margin-bottom:12px;" id="sousTitreEtapes">—</div>
       <div id="etapesList"></div>
     </div>
   </div>
@@ -610,6 +615,7 @@ async function chargerUser() {
   updatePlanning();
   updateEmargement();
   afficherEtapesCles();
+  afficherExplicationPlanning();
   chargerDocumentsFC();
 }
 
@@ -702,6 +708,77 @@ function updatePlanning() {
 }
 
 // ── Étapes clés synthèse ───────────────────────────────────
+
+// ── Explication du parcours, adaptée au groupe ───────────────
+const INFOS_GROUPE = {
+  CV:  { titre:'TP Conseiller de Vente',
+         stages:[['5 octobre','30 octobre 2026'],['23 novembre','18 décembre 2026']],
+         bilan:'23 février 2027', examen:'2 mars 2027' },
+  AD:  { titre:'TP Assistant de Direction',
+         stages:[['12 octobre','6 novembre 2026']],
+         bilan:'9 février 2027', examen:'16 février 2027' },
+  ACA: { titre:'Assistant Comptabilité et Administration',
+         stages:[['12 octobre','6 novembre 2026']],
+         bilan:'9 février 2027', examen:'16 février 2027' }
+};
+
+function afficherExplicationPlanning() {
+  const box = document.getElementById('explicPlanning');
+  if (!box || !user) return;
+  const g = getGroupeFC();
+  const info = INFOS_GROUPE[g] || INFOS_GROUPE.CV;
+  const nomJourAuto = ['','lundi','mardi','mercredi','jeudi','vendredi'][jourAutonomie] || 'vendredi';
+  const joursCentre = (jourAutonomie === 2)
+    ? 'lundi, mercredi, jeudi et vendredi'
+    : 'lundi, mardi, mercredi et jeudi';
+
+  const nbStages = info.stages.length;
+  const stagesHtml = info.stages.map(function(s, i){
+    const lbl = nbStages > 1 ? ('Stage ' + (i+1)) : 'Stage';
+    return '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;">' +
+           '<span style="color:#dd6b20;font-weight:700;">🏢 ' + lbl + '</span>' +
+           '<span style="color:#4a5568;">du ' + s[0] + ' au ' + s[1] + '</span></div>';
+  }).join('');
+
+  function ligne(icone, titre, texte){
+    return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f0f2f5;">' +
+      '<div style="font-size:18px;flex-shrink:0;">' + icone + '</div>' +
+      '<div><div style="font-size:13px;font-weight:700;color:#2a3f4e;">' + titre + '</div>' +
+      '<div style="font-size:12px;color:#718096;line-height:1.55;">' + texte + '</div></div></div>';
+  }
+
+  box.innerHTML =
+    '<div style="background:#fdf6e3;border-left:3px solid #C9A227;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#744210;line-height:1.6;">' +
+      'Vous suivez le parcours <strong>' + info.titre + '</strong>. Voici comment votre année est organisée.' +
+    '</div>' +
+
+    ligne('🏫', 'Vos semaines en centre',
+      'Formation en présentiel le ' + joursCentre + ', de 8h15 à 12h00 puis de 13h00 à 15h15.') +
+
+    ligne('🏠', 'Votre journée en autonomie',
+      'Chaque ' + nomJourAuto + ', vous travaillez depuis chez vous sur les activités données par votre formatrice. ' +
+      'Cette journée compte pour <strong>6h</strong>, sans signature à fournir.') +
+
+    ligne('⏱️', 'Votre volume horaire',
+      '6h par jour, soit <strong>30h par semaine</strong> — les 4 journées en centre et la journée en autonomie réunies.') +
+
+    ligne('🏢', nbStages > 1 ? 'Vos ' + nbStages + ' périodes de stage' : 'Votre période de stage',
+      (nbStages > 1
+        ? 'Votre parcours comprend <strong>deux périodes</strong> de stage en entreprise.'
+        : 'Votre parcours comprend <strong>une période</strong> de stage en entreprise.') +
+      '<div style="margin-top:6px;">' + stagesHtml + '</div>' +
+      'Pendant le stage, l\'émargement se fait auprès de votre entreprise, pas dans cette application.') +
+
+    ligne('🔴', 'Les vacances du centre',
+      'Le centre est fermé du 21 décembre 2026 au 10 janvier 2027.') +
+
+    ligne('🎓', 'La fin de parcours',
+      'Bilan final le ' + info.bilan + ', puis examen le ' + info.examen + '.');
+
+  const st = document.getElementById('sousTitreEtapes');
+  if (st) st.textContent = info.titre + ' · ' + (user.debut || '13/07/2026') + ' → ' + (user.fin || '—');
+}
+
 function afficherEtapesCles() {
   const groupe = getGroupeFC();
   let etapes = [];
@@ -983,6 +1060,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     document.getElementById(target).classList.add('active');
     btn.classList.add('active');
     if(target==='emargement') updateEmargement();
+    if(target==='planning') afficherExplicationPlanning();
     if(target==='planning') updatePlanning();
     if(target==='documents') chargerDocumentsFC();
   }
