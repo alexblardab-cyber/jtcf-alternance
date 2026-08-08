@@ -119,6 +119,9 @@
   .barre-fond { height:5px; background:#e8ecf0; border-radius:0 0 10px 10px; overflow:hidden; margin-bottom:12px; }
   .barre-jauge { height:100%; width:0%; transition:width .45s ease, background .45s ease; }
   .btn-am { background:linear-gradient(135deg,#2b6cb0,#3d5a6e); }
+  .filtre-jours { display:flex; gap:4px; margin-bottom:12px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .f-btn { flex-shrink:0; padding:7px 13px; border:none; border-radius:20px; background:#e8ecf0; color:#718096; font-size:12px; font-weight:700; cursor:pointer; touch-action:manipulation; }
+  .f-btn.actif { background:#2a3f4e; color:#fff; }
   .btn-global { width: 100%; padding: 13px; background: linear-gradient(135deg, #276749, #38a169); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; letter-spacing: 0.5px; }
   .btn-annuler-sign { width: 100%; padding: 8px; background: #fff5f5; color: var(--rouge); border: 1px solid #fed7d7; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; margin-top: 8px; }
   .btn-signature-globale { width: 100%; padding: 13px; background: linear-gradient(135deg, #2a3f4e, #3d5a6e); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; letter-spacing: 0.5px; }
@@ -151,6 +154,7 @@
 <div class="nav" id="mainNav">
   <a class="nav-btn active" data-target="dashboard">🏠 Accueil</a>
   <a class="nav-btn" data-target="emargement">✍️ Émargement</a>
+  <a class="nav-btn" data-target="apprenants">👥 Apprenants</a>
   <a class="nav-btn" data-target="fc">🎓 FC</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📊 Récap</a>
@@ -199,6 +203,25 @@
     <div class="card">
       <div class="card-title" style="border-bottom-color:#C9A227;">🎓 Formation Continue <span class="pill or" id="hdr_listeFCJour">—</span></div>
       <div id="listeFCJour"><div class="loading">Chargement...</div></div>
+    </div>
+  </div>
+
+  <!-- APPRENANTS -->
+  <div class="section" id="apprenants">
+    <input type="text" id="rechApprenant" placeholder="🔍 Rechercher un nom, une formation..." autocomplete="off"
+      style="width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;margin-bottom:12px;box-sizing:border-box;-webkit-appearance:none;">
+    <div class="filtre-jours" id="filtreJours">
+      <button class="f-btn actif" data-f="tous">Tous</button>
+      <button class="f-btn" data-f="Lundi">Lun</button>
+      <button class="f-btn" data-f="Mardi">Mar</button>
+      <button class="f-btn" data-f="Mercredi">Mer</button>
+      <button class="f-btn" data-f="Jeudi">Jeu</button>
+      <button class="f-btn" data-f="Vendredi">Ven</button>
+      <button class="f-btn" data-f="fc">FC</button>
+    </div>
+    <div class="card">
+      <div class="card-title">👥 Tous les apprenants <span class="pill" id="compteurApprenants">—</span></div>
+      <div id="listeApprenants"><div class="loading">Chargement...</div></div>
     </div>
   </div>
 
@@ -362,7 +385,7 @@ const PROFILS = {
   'FORM01': {
     nom: 'Fontaine Emilie',
     acces: 'total',
-    onglets: ['dashboard','emargement','fc','groupes','recap','drive'],
+    onglets: ['dashboard','emargement','apprenants','fc','groupes','recap','drive'],
     fcIds: null, // tous
     debut: null, fin: null // illimité
   },
@@ -376,7 +399,7 @@ const PROFILS = {
   'FORM03': {
     nom: 'Faconnier Elodie',
     acces: 'partiel',
-    onglets: ['dashboard','emargement','fc','groupes','drive'],
+    onglets: ['dashboard','emargement','apprenants','fc','groupes','drive'],
     fcIds: null, // tous
     joursAutorises: ['2026-08-03','2026-08-04','2026-08-05','2026-08-10','2026-08-11','2026-08-12'],
     debut: '2026-08-03', fin: '2026-08-12'
@@ -400,7 +423,7 @@ function verifierAcces() {
 // Masquer les onglets non autorisés
 function appliquerAcces() {
   document.getElementById('headerNom').textContent = '👩‍🏫 ' + profil.nom;
-  const tousOnglets = ['dashboard','emargement','fc','groupes','recap','drive'];
+  const tousOnglets = ['dashboard','emargement','apprenants','fc','groupes','recap','drive'];
   tousOnglets.forEach(function(id) {
     const btn = document.querySelector('.nav-btn[data-target="' + id + '"]');
     const section = document.getElementById(id);
@@ -563,10 +586,74 @@ async function chargerAlternants() {
   const fcFiltered = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
   afficherListeFC('listeFC', fcFiltered);
   if(jourActif) rendreJour(jourActif);
+  if(document.getElementById('listeApprenants')) rendreApprenants();
   remplirMoisSelect();
   chargerRecap();
 }
 
+
+// ═══ ANNUAIRE DES APPRENANTS ═══
+var filtreApprenant = 'tous';
+
+function rendreApprenants(){
+  var box=document.getElementById('listeApprenants'); if(!box) return;
+  var q=(document.getElementById('rechApprenant').value||'').trim().toLowerCase();
+
+  var items=[];
+  allAlternants.forEach(function(a){ items.push({o:a,fc:false}); });
+  allFC.filter(function(fc){ return profil.fcIds?profil.fcIds.includes(fc.id):true; })
+       .forEach(function(f){ items.push({o:f,fc:true}); });
+
+  items=items.filter(function(x){
+    if(filtreApprenant==='fc'  && !x.fc) return false;
+    if(filtreApprenant!=='tous' && filtreApprenant!=='fc'){
+      if(x.fc) return fcDuJour(filtreApprenant).some(function(f){return f.id===x.o.id;});
+      return x.o.jourCentre===filtreApprenant;
+    }
+    return true;
+  });
+  if(q) items=items.filter(function(x){
+    return ((x.o.nom||'')+' '+(x.o.formation||'')+' '+(x.o.entreprise||'')).toLowerCase().indexOf(q)>=0;
+  });
+  items.sort(function(a,b){ return (a.o.nom||'').localeCompare(b.o.nom||''); });
+
+  var c=document.getElementById('compteurApprenants');
+  if(c) c.textContent=items.length+(items.length>1?' apprenants':' apprenant');
+
+  if(items.length===0){ box.innerHTML='<div class="loading">Aucun résultat.</div>'; return; }
+  box.innerHTML='';
+  items.forEach(function(x){
+    var o=x.o;
+    var ini=(o.nom||'?').split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
+    var coul=x.fc?'#C9A227':(COULEUR_JOUR[o.jourCentre]||'#2a3f4e');
+    var sous=x.fc?'🎓 Formation Continue':(o.jourCentre||'—');
+    var card=document.createElement('div');
+    card.className='alternant-card';
+    card.innerHTML='<div class="alternant-avatar" style="background:'+coul+';color:#fff;border-color:'+coul+';">'+ini+'</div>'+
+      '<div style="flex:1;min-width:0;"><div class="alternant-nom">'+o.nom+'</div>'+
+      '<div class="alternant-formation">'+(o.formation||'')+'</div>'+
+      '<div style="font-size:10px;font-weight:700;color:'+coul+';margin-top:2px;">'+sous+'</div></div>'+
+      '<div class="alternant-arrow">›</div>';
+    function ouvrir(e){ e.preventDefault(); if(x.fc) ouvrirFicheFC(o); else ouvrirFiche(o).catch(console.error); }
+    card.addEventListener('click',ouvrir); card.addEventListener('touchend',ouvrir,{passive:false});
+    box.appendChild(card);
+  });
+}
+
+(function(){
+  var inp=document.getElementById('rechApprenant');
+  if(inp) inp.addEventListener('input',rendreApprenants);
+  document.querySelectorAll('.f-btn').forEach(function(b){
+    function go(e){
+      e.preventDefault();
+      filtreApprenant=b.getAttribute('data-f');
+      document.querySelectorAll('.f-btn').forEach(function(x){x.classList.remove('actif');});
+      b.classList.add('actif');
+      rendreApprenants();
+    }
+    b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
+  });
+})();
 
 // ═══════════════════════════════════════════════════
 //  ÉMARGEMENT — jour unique + couleurs dynamiques
@@ -1177,6 +1264,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     if (target==='drive') chargerDrive();
     if (target==='dashboard') chargerDashboard();
     if (target==='emargement') rendreJour(jourActif||jourParDefaut());
+    if (target==='apprenants') rendreApprenants();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
