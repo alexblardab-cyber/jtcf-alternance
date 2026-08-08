@@ -127,6 +127,7 @@
   <a class="nav-btn" data-target="stagiairesfc">🎓 FC</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📈 Récap heures</a>
+  <a class="nav-btn" data-target="exceptions">✏️ Exceptions</a>
 </div>
 
 <div class="content">
@@ -279,6 +280,37 @@
       <div id="menuPersonneAdmin" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #C9A227;border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:260px;overflow-y:auto;"></div>
     </div>
     <div id="adminRecapListe"><div class="loading">Chargement...</div></div>
+  </div>
+
+
+  <!-- EXCEPTIONS / CORRECTIONS -->
+  <div class="section" id="exceptions">
+    <div class="card">
+      <div class="card-title">✏️ Corriger un émargement</div>
+      <div style="font-size:12px;color:#718096;line-height:1.5;margin-bottom:12px;">
+        Régulariser une séance en cas d'oubli, de panne de téléphone ou d'absence de réseau.
+        La signature réutilisée est celle que l'apprenant a lui-même tracée lors d'une séance précédente.
+      </div>
+
+      <label style="font-size:11px;font-weight:700;color:#2a3f4e;text-transform:uppercase;">Apprenant</label>
+      <select id="excPersonne" class="mois-select" style="display:block;width:100%;margin:4px 0 12px;"></select>
+
+      <label style="font-size:11px;font-weight:700;color:#2a3f4e;text-transform:uppercase;">Date de la séance</label>
+      <input type="date" id="excDate" class="mois-select" style="display:block;width:100%;margin:4px 0 12px;">
+
+      <button class="btn-primary" id="excCharger" style="background:linear-gradient(135deg,#3d5a6e,#2a3f4e);color:#fff;font-weight:800;">🔍 Afficher cette séance</button>
+    </div>
+
+    <div class="card" id="excResultat" style="display:none;">
+      <div class="card-title" id="excTitre">Séance</div>
+      <div id="excEtat" style="margin-bottom:14px;"></div>
+      <div id="excActions"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Historique des régularisations</div>
+      <div id="excHistorique"><div class="loading">Chargement...</div></div>
+    </div>
   </div>
 
   <div class="spacer"></div>
@@ -942,6 +974,201 @@ async function chargerRecapAdmin(){
 });
 document.getElementById('adminMoisSelect').addEventListener('change',chargerRecapAdmin);
 
+
+
+// ══════════════════════════════════════════════════
+//  EXCEPTIONS / CORRECTION D'ÉMARGEMENT
+// ══════════════════════════════════════════════════
+var excSujet = null, excIsFC = false, excD = null;
+
+function initExceptions(){
+  var sel = document.getElementById('excPersonne');
+  if(!sel || sel.dataset.rempli === '1') { chargerHistoriqueRegul(); return; }
+  var html = '<option value="">— Choisir —</option>';
+  html += '<optgroup label="Alternants">';
+  allAlternants.forEach(function(a){
+    html += '<option value="alt:'+a.id+'">'+a.nom+' · '+(a.jourCentre||'?')+'</option>';
+  });
+  html += '</optgroup><optgroup label="Formation Continue">';
+  allFC.forEach(function(f){
+    html += '<option value="fc:'+f.id+'">'+f.nom+'</option>';
+  });
+  html += '</optgroup>';
+  sel.innerHTML = html;
+  sel.dataset.rempli = '1';
+  var di = document.getElementById('excDate');
+  if(di && !di.value) di.value = new Date().toISOString().slice(0,10);
+  chargerHistoriqueRegul();
+}
+
+function excKey(id, isFC, d){
+  var y=d.getFullYear(), m=d.getMonth()+1, j=d.getDate();
+  return isFC ? (id+'_fc_'+y+'_'+m+'_'+j) : (id+'_'+y+'_'+m+'_'+j);
+}
+function excBase(isFC){ return isFC ? 'emargementsFC' : 'emargements'; }
+
+// Retrouve la dernière signature tracée par l'apprenant lui-même
+async function excDerniereSignature(id, isFC){
+  var snap = await get(ref(db, excBase(isFC))).catch(function(){return null;});
+  if(!snap || !snap.exists()) return null;
+  var pref = isFC ? (id+'_fc_') : (id+'_');
+  var best=null, bestT=-1;
+  snap.forEach(function(c){
+    var k=c.key; if(k.indexOf(pref)!==0) return;
+    var r=k.substring(pref.length).split('_'); if(r.length!==3) return;
+    var t=new Date(+r[0],+r[1]-1,+r[2]).getTime();
+    var v=c.val()||{};
+    var s=v.matin_alt||v.am_alt;
+    if(s && String(s).indexOf('data:image')===0 && t>bestT){ bestT=t; best=s; }
+  });
+  return best;
+}
+
+async function excAfficher(){
+  var sel=document.getElementById('excPersonne').value;
+  var dv =document.getElementById('excDate').value;
+  if(!sel){ alert('Choisissez un apprenant.'); return; }
+  if(!dv){ alert('Choisissez une date.'); return; }
+
+  excIsFC = sel.indexOf('fc:')===0;
+  var id  = sel.split(':')[1];
+  excSujet = (excIsFC?allFC:allAlternants).filter(function(x){return x.id===id;})[0];
+  var pr=dv.split('-'); excD=new Date(+pr[0],+pr[1]-1,+pr[2]);
+
+  var jours=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var jour=jours[excD.getDay()];
+
+  var snap=await get(ref(db, excBase(excIsFC)+'/'+excKey(id,excIsFC,excD))).catch(function(){return null;});
+  var v=(snap&&snap.exists())?snap.val():{};
+
+  document.getElementById('excResultat').style.display='block';
+  document.getElementById('excTitre').textContent = excSujet.nom + ' — ' + jour + ' ' + pr[2]+'/'+pr[1]+'/'+pr[0];
+
+  var absent = v.presence==='absent';
+  function ligne(lbl,val,col){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f2f5;">'+
+      '<span style="font-size:12px;color:#718096;">'+lbl+'</span>'+
+      '<span style="font-size:12px;font-weight:800;color:'+col+';">'+val+'</span></div>';
+  }
+  var etat='';
+  if(absent) etat+=ligne('Statut','✕ Absent(e) — '+(v.motif||'sans motif'),'#e53e3e');
+  else if(v.matin_alt&&v.am_alt) etat+=ligne('Statut','✓ Présent(e)','#38a169');
+  else if(v.matin_alt||v.am_alt) etat+=ligne('Statut','◐ Partiel','#C9A227');
+  else etat+=ligne('Statut','— Rien signé','#a0aec0');
+  etat+=ligne('Signature apprenant · matin', v.matin_alt?(v.matin_alt_regul?'✅ Régularisée':'✅ Signée'):'○ Absente', v.matin_alt?'#38a169':'#cbd5e0');
+  etat+=ligne('Signature apprenant · A-M',   v.am_alt   ?(v.am_alt_regul   ?'✅ Régularisée':'✅ Signée'):'○ Absente', v.am_alt   ?'#38a169':'#cbd5e0');
+  etat+=ligne('Signature formatrice · matin',v.matin_form?'✅ Signée':'○ Absente', v.matin_form?'#38a169':'#cbd5e0');
+  etat+=ligne('Signature formatrice · A-M',  v.am_form  ?'✅ Signée':'○ Absente', v.am_form  ?'#38a169':'#cbd5e0');
+  if(v.matin_alt_regul) etat+=ligne('Régul. matin', v.matin_alt_regul.motif+' — '+v.matin_alt_regul.par, '#dd6b20');
+  if(v.am_alt_regul)    etat+=ligne('Régul. A-M',   v.am_alt_regul.motif+' — '+v.am_alt_regul.par,    '#dd6b20');
+  document.getElementById('excEtat').innerHTML=etat;
+
+  var act='';
+  var S='width:100%;padding:11px;border-radius:10px;font-size:13px;font-weight:800;border:2px solid;margin-bottom:8px;cursor:pointer;';
+  if(absent){
+    act+='<button id="excAnnulerAbs" style="'+S+'background:#f0fff4;color:#22543d;border-color:#9ae6b4;">↩️ Annuler l\'absence — il/elle était présent(e)</button>';
+  } else {
+    if(!v.matin_alt) act+='<button id="excRegulMatin" style="'+S+'background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;">✍️ Régulariser le MATIN (sa signature)</button>';
+    if(!v.am_alt)    act+='<button id="excRegulAM"    style="'+S+'background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;">✍️ Régulariser l\'APRÈS-MIDI (sa signature)</button>';
+    if(v.matin_alt)  act+='<button id="excEffMatin"   style="'+S+'background:#fffaf0;color:#744210;border-color:#f0d98a;">🗑️ Effacer la signature du matin</button>';
+    if(v.am_alt)     act+='<button id="excEffAM"      style="'+S+'background:#fffaf0;color:#744210;border-color:#f0d98a;">🗑️ Effacer la signature de l\'après-midi</button>';
+    act+='<button id="excAbsent" style="'+S+'background:#fff5f5;color:#c53030;border-color:#fed7d7;">✕ Marquer absent(e) sur la journée</button>';
+  }
+  document.getElementById('excActions').innerHTML=act;
+
+  function on(id,fn){ var b=document.getElementById(id); if(!b)return;
+    function g(e){e.preventDefault();fn().catch(function(x){alert('Erreur : '+x.message);});}
+    b.addEventListener('click',g); b.addEventListener('touchend',g,{passive:false}); }
+
+  on('excAnnulerAbs', async function(){
+    if(!confirm('Annuler l\'absence de '+excSujet.nom+' ?')) return;
+    var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+    await set(ref(db,k+'/presence'),null);
+    await set(ref(db,k+'/motif'),null);
+    await set(ref(db,k+'/justificatif'),null);
+    alert('✅ Absence annulée. Vous pouvez régulariser sa signature.');
+    await excAfficher();
+  });
+  on('excRegulMatin', function(){ return excReguler('matin_alt','MATIN'); });
+  on('excRegulAM',    function(){ return excReguler('am_alt','APRÈS-MIDI'); });
+  on('excEffMatin',   function(){ return excEffacer('matin_alt','matin'); });
+  on('excEffAM',      function(){ return excEffacer('am_alt','après-midi'); });
+  on('excAbsent', async function(){
+    var m=prompt('Motif de l\'absence :\n1 = Maladie\n2 = Absence justifiée\n3 = Absence non justifiée\n4 = Autre\n\nTapez 1, 2, 3 ou votre motif :','3');
+    if(m===null) return;
+    var M={'1':'Maladie','2':'Absence justifiée','3':'Absence non justifiée'};
+    m=M[m.trim()]||m.trim(); if(!m){alert('Motif obligatoire.');return;}
+    var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+    await set(ref(db,k+'/presence'),'absent');
+    await set(ref(db,k+'/motif'),m);
+    await set(ref(db,k+'/matin_alt'),null);
+    await set(ref(db,k+'/am_alt'),null);
+    alert('✅ '+excSujet.nom+' marqué(e) absent(e).');
+    await excAfficher();
+  });
+}
+
+async function excReguler(slot, libelle){
+  var motif=prompt('Régulariser '+libelle+' pour '+excSujet.nom+'\n\n'+
+    'Motif :\n1 = Oubli de signature\n2 = Panne de téléphone\n3 = Absence de réseau\n4 = Autre\n\nTapez 1, 2, 3 ou votre motif :','1');
+  if(motif===null) return;
+  var M={'1':'Oubli de signature','2':'Panne de téléphone','3':'Absence de réseau'};
+  motif=M[motif.trim()]||motif.trim();
+  if(!motif){alert('Motif obligatoire.');return;}
+  var sig=await excDerniereSignature(excSujet.id, excIsFC);
+  if(!sig){ alert('❌ Aucune signature enregistrée pour '+excSujet.nom+'.\n\nIl faut qu\'il/elle ait signé au moins une fois dans l\'application.'); return; }
+  if(!confirm('Confirmer ?\n\n'+excSujet.nom+' — '+libelle+'\nMotif : '+motif)) return;
+  var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+  await set(ref(db,k+'/'+slot), sig);
+  await set(ref(db,k+'/'+slot+'_regul'), {motif:motif, par:'Admin', le:new Date().toISOString()});
+  alert('✅ Régularisation enregistrée.');
+  await excAfficher(); chargerHistoriqueRegul();
+}
+
+async function excEffacer(slot, libelle){
+  if(!confirm('Effacer la signature du '+libelle+' pour '+excSujet.nom+' ?')) return;
+  var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+  await set(ref(db,k+'/'+slot), null);
+  await set(ref(db,k+'/'+slot+'_regul'), null);
+  await excAfficher();
+}
+
+// Historique des régularisations
+async function chargerHistoriqueRegul(){
+  var box=document.getElementById('excHistorique'); if(!box) return;
+  var lignes=[];
+  for(var b=0;b<2;b++){
+    var isFC=(b===1);
+    var snap=await get(ref(db, excBase(isFC))).catch(function(){return null;});
+    if(!snap||!snap.exists()) continue;
+    snap.forEach(function(c){
+      var v=c.val()||{}; var k=c.key;
+      ['matin_alt_regul','am_alt_regul'].forEach(function(f){
+        if(!v[f]) return;
+        var id=isFC?k.split('_fc_')[0]:k.substring(0,k.indexOf('_'));
+        var per=(f==='matin_alt_regul')?'Matin':'A-M';
+        var parts=k.split('_'); var dt=parts.slice(-3);
+        var pers=(isFC?allFC:allAlternants).filter(function(x){return x.id===id;})[0];
+        lignes.push({nom:pers?pers.nom:id, per:per, date:dt[2]+'/'+dt[1]+'/'+dt[0],
+                     motif:v[f].motif||'—', par:v[f].par||'—', le:v[f].le||''});
+      });
+    });
+  }
+  lignes.sort(function(a,b){return (b.le||'').localeCompare(a.le||'');});
+  if(lignes.length===0){ box.innerHTML='<div class="loading">Aucune régularisation enregistrée.</div>'; return; }
+  box.innerHTML=lignes.map(function(l){
+    return '<div style="padding:9px 0;border-bottom:1px solid #f0f2f5;">'+
+      '<div style="font-size:12px;font-weight:800;color:#2a3f4e;">'+l.nom+' · '+l.date+' · '+l.per+'</div>'+
+      '<div style="font-size:11px;color:#718096;">'+l.motif+' — par '+l.par+'</div></div>';
+  }).join('');
+}
+
+(function(){
+  var b=document.getElementById('excCharger'); if(!b) return;
+  function g(e){e.preventDefault(); excAfficher().catch(function(x){alert('Erreur : '+x.message);});}
+  b.addEventListener('click',g); b.addEventListener('touchend',g,{passive:false});
+})();
+
 document.querySelectorAll('.nav-btn').forEach(function(btn){
   function activate(e){
     e.preventDefault();
@@ -951,6 +1178,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn){
     document.getElementById(target).classList.add('active');
     btn.classList.add('active');
     if(target==='recap') chargerRecapAdmin();
+    if(target==='exceptions') initExceptions();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
