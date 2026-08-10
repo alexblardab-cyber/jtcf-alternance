@@ -367,7 +367,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -712,62 +712,123 @@ async function enregistrerSignatureRef(dataUrl){
 }
 
 // ═══ RATTRAPAGE : combler toutes les signatures formatrice manquantes ═══
+// Dernière signature manuscrite d'un apprenant, pour régularisation
+function dernierParapheApprenant(snap, id, isFC){
+  var pref = isFC ? (id+'_fc_') : (id+'_');
+  var best=null, bestT=-1;
+  if(!snap || !snap.exists()) return null;
+  snap.forEach(function(c){
+    var k=c.key; if(k.indexOf(pref)!==0) return;
+    var r=k.substring(pref.length).split('_'); if(r.length!==3) return;
+    var t=new Date(+r[0],+r[1]-1,+r[2]).getTime();
+    var v=c.val()||{};
+    [v.matin_alt, v.am_alt].forEach(function(s){
+      if(s && String(s).indexOf('data:image')===0 && t>bestT){ bestT=t; best=s; }
+    });
+  });
+  return best;
+}
+
 async function completerSignatures(){
   var sig = await signatureFormatrice();
   if(!sig){
-    alert('Aucun paraphe enregistré.\n\nSignez d\'abord une séance à la main depuis la fiche d\'un apprenant : ce paraphe servira ensuite de référence.');
+    alert('Aucun paraphe enregistré.\n\nSignez d\'abord une séance à la main depuis la fiche d\'un apprenant : ce paraphe servira de référence.');
     return;
   }
+
+  var snapA = await get(ref(db,'emargements')).catch(function(){return null;});
+  var snapF = await get(ref(db,'emargementsFC')).catch(function(){return null;});
+
   var today=new Date(); today.setHours(23,59,59,0);
-  var manquantes=[];
+  var nomAlt={}; allAlternants.forEach(function(a){ nomAlt[a.id]=a.nom; });
+  var nomFC={}, autoFC={};
+  allFC.forEach(function(f){ nomFC[f.id]=f.nom; autoFC[f.id]=jourAutonomieFC(f); });
 
-  // Alternants
-  for(var i=0;i<allAlternants.length;i++){
-    var a=allAlternants[i];
-    var seq=getSeances(a);
-    for(var k=0;k<seq.length;k++){
-      var d=seq[k]; if(d>today) continue;
-      var key=a.id+'_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+d.getDate();
-      var sn=await get(ref(db,'emargements/'+key)).catch(function(){return null;});
-      var v=(sn&&sn.exists())?sn.val():{};
-      if(v.presence==='absent') continue;
-      if(!v.matin_alt && !v.am_alt) continue;          // séance jamais commencée : on ne signe pas
-      if(v.matin_alt && !v.matin_form) manquantes.push({base:'emargements',key:key,slot:'matin_form',nom:a.nom,d:d});
-      if(v.am_alt    && !v.am_form)    manquantes.push({base:'emargements',key:key,slot:'am_form',nom:a.nom,d:d});
+  var aRemplacer=[];   // marqueur global_sign_ → vrai paraphe
+  var aCombler=[];     // case formatrice vide, apprenant signé
+  var sansApprenant=[];// apprenant n'a jamais signé
+
+  function estImg(v){ return typeof v==='string' && v.indexOf('data:image')===0; }
+
+  function examiner(snap, isFC){
+    if(!snap || !snap.exists()) return;
+    snap.forEach(function(c){
+      var key=c.key, v=c.val()||{};
+      var parts=key.split('_'); if(parts.length<4) return;
+      var y=+parts[parts.length-3], mo=+parts[parts.length-2], da=+parts[parts.length-1];
+      if(!y||!mo||!da) return;
+      var dte=new Date(y,mo-1,da); if(dte>today) return;
+      var id=isFC ? key.split('_fc_')[0] : parts.slice(0,parts.length-3).join('_');
+      var nom=isFC ? nomFC[id] : nomAlt[id]; if(!nom) return;
+      if(v.presence==='absent') return;
+      if(isFC && dte.getDay()===autoFC[id]) return;
+      var base=isFC?'emargementsFC':'emargements';
+
+      [['matin','matin_alt','matin_form'],['am','am_alt','am_form']].forEach(function(t){
+        var per=t[0], sa=v[t[1]], sf=v[t[2]];
+        var item={base:base,key:key,slotForm:t[2],slotAlt:t[1],nom:nom,d:dte,per:per,id:id,isFC:isFC};
+        if(sa){
+          if(!sf) aCombler.push(item);
+          else if(!estImg(sf)) aRemplacer.push(item);
+        } else {
+          sansApprenant.push(item);
+        }
+      });
+    });
+  }
+  examiner(snapA,false); examiner(snapF,true);
+  [aRemplacer,aCombler,sansApprenant].forEach(function(t){ t.sort(function(a,b){return a.d-b.d;}); });
+
+  // ── Étape 1 : ce qui est sans risque ──
+  var maj={}, n1=aRemplacer.length+aCombler.length;
+  if(n1>0){
+    if(!confirm('Mettre à jour '+n1+' signature(s) formatrice ?\n\n'+
+       '· '+aCombler.length+' case(s) vide(s) à signer\n'+
+       '· '+aRemplacer.length+' mention(s) « Signature groupe » à remplacer par votre paraphe\n\n'+
+       'Uniquement des séances déjà signées par l\'apprenant.')) return;
+    aRemplacer.concat(aCombler).forEach(function(m){ maj[m.base+'/'+m.key+'/'+m.slotForm]=sig; });
+    await update(ref(db), maj);
+  }
+
+  // ── Étape 2 : régularisation des apprenants, sur demande explicite ──
+  var n2=sansApprenant.length, msg2='';
+  if(n2>0){
+    var apercu=sansApprenant.slice(0,6).map(function(m){
+      return '· '+m.nom+' — '+('0'+m.d.getDate()).slice(-2)+'/'+('0'+(m.d.getMonth()+1)).slice(-2)+' '+(m.per==='matin'?'matin':'après-midi');
+    }).join('\n');
+    if(confirm('⚠️ '+n2+' demi-journée(s) ne sont signées par PERSONNE :\n\n'+apercu+
+       (n2>6?'\n… et '+(n2-6)+' autre(s)':'')+
+       '\n\nVoulez-vous les régulariser ?\n\n'+
+       'Le paraphe de chaque apprenant sera apposé, ainsi que le vôtre.\n'+
+       'Chaque ligne sera tracée comme une régularisation avec motif.\n\n'+
+       'N\'acceptez que si ces personnes étaient réellement présentes.')){
+      var motif=prompt('Motif de la régularisation :\n1 = Oubli de signature\n2 = Panne de téléphone\n3 = Absence de réseau\n4 = Autre\n\nTapez 1, 2, 3 ou votre motif :','1');
+      if(motif!==null){
+        var M={'1':'Oubli de signature','2':'Panne de téléphone','3':'Absence de réseau'};
+        motif=M[motif.trim()]||motif.trim();
+        if(motif){
+          var caches={}, maj2={}, ignores=0;
+          for(var i=0;i<sansApprenant.length;i++){
+            var m=sansApprenant[i], ck=(m.isFC?'fc:':'alt:')+m.id;
+            if(!(ck in caches)) caches[ck]=dernierParapheApprenant(m.isFC?snapF:snapA, m.id, m.isFC);
+            var pa=caches[ck];
+            if(!pa){ ignores++; continue; }
+            maj2[m.base+'/'+m.key+'/'+m.slotAlt]=pa;
+            maj2[m.base+'/'+m.key+'/'+m.slotForm]=sig;
+            maj2[m.base+'/'+m.key+'/'+m.slotAlt+'_regul']={motif:motif, par:profil.nom, le:new Date().toISOString()};
+          }
+          var faits=n2-ignores;
+          if(faits>0) await update(ref(db), maj2);
+          msg2='\n\n'+faits+' régularisation(s) enregistrée(s)'+
+               (ignores>0?'\n'+ignores+' ignorée(s) — apprenant sans paraphe de référence':'');
+        }
+      }
     }
   }
-  // Stagiaires FC — hors journées en autonomie
-  for(var i=0;i<allFC.length;i++){
-    var f=allFC[i];
-    var jAuto=jourAutonomieFC(f);
-    var seq=seancesDeFC(f);
-    for(var k=0;k<seq.length;k++){
-      var d=seq[k]; if(d>today) continue;
-      if(d.getDay()===jAuto) continue;                  // autonomie : aucune signature attendue
-      var key=f.id+'_fc_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+d.getDate();
-      var sn=await get(ref(db,'emargementsFC/'+key)).catch(function(){return null;});
-      var v=(sn&&sn.exists())?sn.val():{};
-      if(v.presence==='absent') continue;
-      if(!v.matin_alt && !v.am_alt) continue;
-      if(v.matin_alt && !v.matin_form) manquantes.push({base:'emargementsFC',key:key,slot:'matin_form',nom:f.nom,d:d});
-      if(v.am_alt    && !v.am_form)    manquantes.push({base:'emargementsFC',key:key,slot:'am_form',nom:f.nom,d:d});
-    }
-  }
 
-  if(manquantes.length===0){ alert('✅ Aucune signature manquante.\nToutes les séances déjà signées par les apprenants sont contresignées.'); return; }
-
-  var apercu = manquantes.slice(0,8).map(function(m){
-    return '· '+m.nom+' — '+('0'+m.d.getDate()).slice(-2)+'/'+('0'+(m.d.getMonth()+1)).slice(-2)+' '+(m.slot==='matin_form'?'matin':'après-midi');
-  }).join('\n');
-  if(!confirm('Signer '+manquantes.length+' demi-journée(s) manquante(s) ?\n\n'+apercu+
-     (manquantes.length>8?'\n… et '+(manquantes.length-8)+' autre(s)':'')+
-     '\n\nVotre paraphe sera apposé sur chacune.\nSeules les séances déjà signées par l\'apprenant sont concernées.')) return;
-
-  for(var i=0;i<manquantes.length;i++){
-    var m=manquantes[i];
-    await set(ref(db, m.base+'/'+m.key+'/'+m.slot), sig);
-  }
-  alert('✅ '+manquantes.length+' signature(s) enregistrée(s).\nElles apparaîtront sur les PDF.');
+  alert('✅ Terminé.\n\n'+
+        aCombler.length+' signature(s) ajoutée(s)\n'+
+        aRemplacer.length+' mention(s) remplacée(s) par votre paraphe'+msg2);
   chargerDashboard();
 }
 
