@@ -516,10 +516,71 @@ function jourAutonomieFC(fc){ return estASCA(fc) ? 2 : 5; }
 function estJourAutonomie(fc, d){ return d.getDay() === jourAutonomieFC(fc); }
 
 // Séances FC = les 5 jours ouvrés (4 en centre + 1 en autonomie)
+// ══════════════════════════════════════════════════════════════
+//  PÉRIODES HORS CENTRE — stages, vacances et jours fériés
+//  Ces journées ne sont ni des seances en centre ni des journees
+//  en autonomie : elles sortent entierement du decompte.
+// ══════════════════════════════════════════════════════════════
+var PERIODES_FC = {
+  CV:   { stages: [['2026-10-05','2026-10-30'], ['2026-11-23','2026-12-18']],
+          vacances: [['2026-12-21','2027-01-10']] },
+  AD:   { stages: [['2026-10-12','2026-11-06']],
+          vacances: [['2026-12-21','2027-01-10']] },
+  ACA:  { stages: [['2026-10-12','2026-11-06']],
+          vacances: [['2026-12-21','2027-01-10']] },
+  ACOM: { stages: [['2026-10-05','2026-10-30'], ['2027-01-18','2027-02-12']],
+          vacances: [['2026-12-21','2027-01-08']] }
+};
+
+// Jours feries a La Reunion sur la periode de formation
+var FERIES_FC = ['2026-08-15','2026-11-01','2026-11-11','2026-12-20','2026-12-25',
+                 '2027-01-01','2027-03-29','2027-05-01','2027-05-08','2027-05-13',
+                 '2027-05-24','2027-06-20','2027-07-14'];
+
+function groupeFC(fc){
+  var f = (fc && fc.formation) || '';
+  if (f.indexOf('Commercial') >= 0)  return 'ACOM';
+  if (f.indexOf('Comptabilit') >= 0) return 'ACA';
+  if (f.indexOf('Direction') >= 0)   return 'AD';
+  return 'CV';
+}
+
+function isoJour(d){
+  return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+}
+
+// La date tombe-t-elle en stage, en vacances ou un jour ferie ?
+function horsCentreFC(fc, d){
+  var iso = isoJour(d);
+  if (FERIES_FC.indexOf(iso) >= 0) return true;
+  var p = PERIODES_FC[groupeFC(fc)];
+  if (!p) return false;
+  var listes = (p.stages || []).concat(p.vacances || []);
+  for (var i = 0; i < listes.length; i++){
+    if (iso >= listes[i][0] && iso <= listes[i][1]) return true;
+  }
+  return false;
+}
+
+// Dates propres au stagiaire : chaque parcours FC peut avoir les siennes.
+// Repli sur la promotion de juillet 2026 si le champ est vide.
+function bornesFC(fc){
+  function lire(s, defaut){
+    if(!s) return defaut;
+    var p = String(s).split('/');
+    if(p.length !== 3) return defaut;
+    var d = new Date(parseInt(p[2],10), parseInt(p[1],10)-1, parseInt(p[0],10));
+    return isNaN(d) ? defaut : d;
+  }
+  return { debut: lire(fc && fc.debut, new Date(2026,6,13)),
+           fin:   lire(fc && fc.fin,   new Date(2027,5,30)) };
+}
+
 function seancesDeFC(fc){
   var out = [];
-  var d = new Date(2026,6,13), fin = new Date(2027,5,30);
-  while(d<=fin){ var j=d.getDay(); if(j>=1 && j<=5) out.push(new Date(d)); d.setDate(d.getDate()+1); }
+  var b = bornesFC(fc);
+  var d = new Date(b.debut), fin = b.fin;
+  while(d<=fin){ var j=d.getDay(); if(j>=1 && j<=5 && !horsCentreFC(fc,d)) out.push(new Date(d)); d.setDate(d.getDate()+1); }
   return out;
 }
 
@@ -2200,16 +2261,58 @@ function estASCA_pdf(fc){
 }
 function jourAutoFC_pdf(fc){ return estASCA_pdf(fc) ? 2 : 5; }
 
-function seancesFC_pdf(){
-  const out=[]; let d=new Date(2026,6,13); const fin=new Date(2027,5,30);
-  while(d<=fin){ const j=d.getDay(); if(j>=1&&j<=5) out.push(new Date(d)); d.setDate(d.getDate()+1); }
+// Periodes hors centre — copie locale, le script PDF ne voit pas le module.
+var PERIODES_FC_P = {
+  CV:   { p: [['2026-10-05','2026-10-30'],['2026-11-23','2026-12-18'],['2026-12-21','2027-01-10']] },
+  AD:   { p: [['2026-10-12','2026-11-06'],['2026-12-21','2027-01-10']] },
+  ACA:  { p: [['2026-10-12','2026-11-06'],['2026-12-21','2027-01-10']] },
+  ACOM: { p: [['2026-10-05','2026-10-30'],['2027-01-18','2027-02-12'],['2026-12-21','2027-01-08']] }
+};
+var FERIES_P = ['2026-08-15','2026-11-01','2026-11-11','2026-12-20','2026-12-25',
+                '2027-01-01','2027-03-29','2027-05-01','2027-05-08','2027-05-13',
+                '2027-05-24','2027-06-20','2027-07-14'];
+function groupeFC_p(fc){
+  var f=(fc&&fc.formation)||'';
+  if(f.indexOf('Commercial')>=0)  return 'ACOM';
+  if(f.indexOf('Comptabilit')>=0) return 'ACA';
+  if(f.indexOf('Direction')>=0)   return 'AD';
+  return 'CV';
+}
+function isoJour_p(d){
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+}
+function horsCentreCommun(fc,d){
+  var iso=isoJour_p(d);
+  if(FERIES_P.indexOf(iso)>=0) return true;
+  var g=PERIODES_FC_P[groupeFC_p(fc)];
+  if(!g) return false;
+  for(var i=0;i<g.p.length;i++){ if(iso>=g.p[i][0] && iso<=g.p[i][1]) return true; }
+  return false;
+}
+function horsCentrePdf(fc,d){ return horsCentreCommun(fc,d); }
+function horsCentre_p(fc,d){ return horsCentreCommun(fc,d); }
+
+function bornesFCPdf(fc){
+  function lire(s, defaut){
+    if(!s) return defaut;
+    var p=String(s).split('/'); if(p.length!==3) return defaut;
+    var d=new Date(parseInt(p[2],10), parseInt(p[1],10)-1, parseInt(p[0],10));
+    return isNaN(d)?defaut:d;
+  }
+  return { debut: lire(fc&&fc.debut,new Date(2026,6,13)), fin: lire(fc&&fc.fin,new Date(2027,5,30)) };
+}
+
+function seancesFC_pdf(fc){
+  const b = bornesFCPdf(fc);
+  const out=[]; let d=new Date(b.debut); const fin=b.fin;
+  while(d<=fin){ const j=d.getDay(); if(j>=1&&j<=5 && !horsCentrePdf(fc,d)) out.push(new Date(d)); d.setDate(d.getDate()+1); }
   return out;
 }
 
 // Collecte des données d'un stagiaire pour une période
 async function donneesFC(fc, filterYear, filterMonth, refDb, getFn, dbRef){
   const jAuto = jourAutoFC_pdf(fc);
-  const toutes = seancesFC_pdf();
+  const toutes = seancesFC_pdf(fc);
   const auj = new Date();
   const retenues = toutes.filter(function(d){
     if (filterYear!==null && (d.getFullYear()!==filterYear || d.getMonth()!==filterMonth)) return false;

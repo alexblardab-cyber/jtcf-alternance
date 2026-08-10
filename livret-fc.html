@@ -491,12 +491,21 @@ const PLANNINGS_FC = {
   ACA: {
     stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
     vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
+  },
+  ACOM: {
+    stages: [
+      {debut:'2026-10-05', fin:'2026-10-30'},
+      {debut:'2027-01-18', fin:'2027-02-12'},
+    ],
+    vacances: [{debut:'2026-12-21', fin:'2027-01-08'}],
   }
 };
 
 function getGroupeFC() {
   if (!user) return 'CV';
   const f = (user.formation || '');
+  // Assistant Commercial → ACOM (à tester avant « Comptabilit » : intitulés proches)
+  if (f.indexOf('Commercial') >= 0 || f.indexOf('ACOM') >= 0) return 'ACOM';
   // Comptabilité → ACA (intitulé réel : "Assistant Comptabilité et Administration en TPE PME")
   if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
   // Assistant de Direction → AD
@@ -723,7 +732,10 @@ const INFOS_GROUPE = {
          bilan:'9 février 2027', examen:'16 février 2027' },
   ACA: { titre:'Assistant Comptabilité et Administration',
          stages:[['12 octobre','6 novembre 2026']],
-         bilan:'9 février 2027', examen:'16 février 2027' }
+         bilan:'9 février 2027', examen:'16 février 2027' },
+  ACOM:{ titre:'TP Assistant Commercial',
+         stages:[['5 octobre','30 octobre 2026'],['18 janvier','12 février 2027']],
+         bilan:'5 avril 2027', examen:'12 avril 2027' }
 };
 
 function afficherExplicationPlanning() {
@@ -794,6 +806,18 @@ function afficherEtapesCles() {
       { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
       { date: '23/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
       { date: '02/03/2027', label: 'Examen', icone: '🎓', type: 'exam' },
+    ];
+  } else if (groupe === 'ACOM') {
+    etapes = [
+      { date: '17/08/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '05/10 → 30/10/2026', label: 'Stage 1 en entreprise', icone: '🏢', type: 'stage' },
+      { date: '25/11/2026', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '21/12/2026 → 08/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '18/01 → 12/02/2027', label: 'Stage 2 en entreprise', icone: '🏢', type: 'stage' },
+      { date: '15 → 17/02/2027', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
+      { date: '24/03/2027', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '05/04/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+      { date: '12/04/2027', label: 'Examen', icone: '🎓', type: 'exam' },
     ];
   } else if (groupe === 'AD') {
     etapes = [
