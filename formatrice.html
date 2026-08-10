@@ -281,6 +281,10 @@
       <button class="btn-export" id="btnExportPDFPersonne" style="background:linear-gradient(135deg,#3d5a6e,#2a3f4e);color:#fff;">👤 Exporter PDF par personne</button>
       <div id="menuPersonne" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #C9A227;border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:260px;overflow-y:auto;"></div>
     </div>
+    <div style="position:relative;margin-bottom:14px;">
+      <button class="btn-export" id="btnExportPDFFC" style="background:linear-gradient(135deg,#C9A227,#b8901f);color:#2a3f4e;font-weight:800;">🎓 Exporter PDF — Formation Continue</button>
+      <div id="menuFC" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #C9A227;border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:300px;overflow-y:auto;"></div>
+    </div>
     <div id="recapListe"><div class="loading">Chargement...</div></div>
   </div>
 
@@ -1991,6 +1995,276 @@ async function exporterPDFPersonne(alt) {
   doc.save('JTCF_'+alt.nom.replace(/ /g,'_')+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
   btn.textContent='👤 Exporter PDF par personne'; btn.disabled=false;
 }
+
+
+// ═══════════════════════════════════════════════════════════
+//  EXPORT PDF — STAGIAIRES FORMATION CONTINUE
+//  8h15–12h00 = 3,75h · 13h00–15h15 = 2,25h · autonomie = 6h
+// ═══════════════════════════════════════════════════════════
+const MATIN_FC_PDF = 3.75, AM_FC_PDF = 2.25, AUTO_FC_PDF = 6;
+
+function estASCA_pdf(fc){
+  if(!fc) return false;
+  if(fc.jours && fc.jours.indexOf && fc.jours.indexOf('Vendredi')>=0) return true;
+  if(fc.formation && fc.formation.indexOf('Comptabilit')>=0) return true;
+  return false;
+}
+function jourAutoFC_pdf(fc){ return estASCA_pdf(fc) ? 2 : 5; }
+
+function seancesFC_pdf(){
+  const out=[]; let d=new Date(2026,6,13); const fin=new Date(2027,5,30);
+  while(d<=fin){ const j=d.getDay(); if(j>=1&&j<=5) out.push(new Date(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+
+// Collecte des données d'un stagiaire pour une période
+async function donneesFC(fc, filterYear, filterMonth, refDb, getFn, dbRef){
+  const jAuto = jourAutoFC_pdf(fc);
+  const toutes = seancesFC_pdf();
+  const auj = new Date();
+  const retenues = toutes.filter(function(d){
+    if (filterYear!==null && (d.getFullYear()!==filterYear || d.getMonth()!==filterMonth)) return false;
+    return d <= auj;
+  });
+  let hP=0, hA=0, nAuto=0;
+  const detail=[];
+  for (const s of retenues){
+    const key = fc.id+'_fc_'+s.getFullYear()+'_'+(s.getMonth()+1)+'_'+s.getDate();
+    const snap = await getFn(dbRef(refDb,'emargementsFC/'+key)).catch(function(){return null;});
+    const data = (snap && snap.exists()) ? snap.val() : {};
+    const absent = data.presence==='absent';
+    const auto = (s.getDay()===jAuto);
+    let hPs=0, hAs=0;
+    if (auto){
+      nAuto++;
+      if (absent) hAs = AUTO_FC_PDF; else hPs = AUTO_FC_PDF;
+    } else if (absent){
+      hAs = MATIN_FC_PDF + AM_FC_PDF;
+    } else {
+      if (data.matin_alt) hPs += MATIN_FC_PDF;
+      if (data.am_alt)    hPs += AM_FC_PDF;
+    }
+    hP+=hPs; hA+=hAs;
+    detail.push({date:s, auto, absent, mode:data.mode||'—', data, hP:hPs, hA:hAs,
+                 altSigne:!!(data.matin_alt||data.am_alt), formSigne:!!(data.matin_form||data.am_form),
+                 motif:data.motif||''});
+  }
+  return {detail, hP, hA, nAuto, nbSeances:retenues.length};
+}
+
+async function exporterPDFFC(listeFC, titreFichier){
+  const btn = document.getElementById('btnExportPDFFC');
+  btn.textContent='⏳ Génération...'; btn.disabled=true;
+  if (!window.jspdf){
+    await new Promise(function(resolve){
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload=resolve; document.head.appendChild(s);
+    });
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const moisNoms=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const moisFr=['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  const OR=[201,162,39],BLEU=[61,90,110],BLEU_FONCE=[42,63,78],GRIS=[113,128,150],VERT=[56,161,105],ROUGE=[229,62,62];
+
+  const isMois = document.getElementById('filterMois').classList.contains('active');
+  const sel = document.getElementById('moisSelect');
+  if (isMois && (!sel || !sel.value)) { alert('Choisissez d\'abord un mois.'); throw new Error('moisSelect vide'); }
+  const mv = isMois ? sel.value.split('-').map(Number) : [null,null];
+  const filterYear = isMois ? mv[0] : null, filterMonth = isMois ? mv[1] : null;
+  const periodeTitre = isMois ? (moisNoms[filterMonth]+' '+filterYear) : 'Parcours complet';
+
+  const { getDatabase, ref, get } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  const { getApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+  const db = getDatabase(getApp());
+
+  let pageNum = 1;
+  function addHeader(titre){
+    doc.setFillColor.apply(doc,BLEU_FONCE); doc.rect(0,0,210,30,'F');
+    doc.setTextColor.apply(doc,OR); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('JT CONSEIL FORMATION',15,12);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
+    doc.text('Saint-Joseph · La Réunion',15,18);
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text(titre,15,25);
+    const now=new Date(); doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(200,200,200);
+    doc.text('Généré le '+now.toLocaleDateString('fr-FR')+' à '+now.toLocaleTimeString('fr-FR'),150,25);
+  }
+  function addFooter(n){
+    doc.setFillColor.apply(doc,BLEU_FONCE); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('Page '+n,195,292,{align:'right'});
+  }
+
+  let premier = true;
+  for (const fc of listeFC){
+    if (!premier){ pageNum++; doc.addPage(); }
+    premier = false;
+
+    const r = await donneesFC(fc, filterYear, filterMonth, db, get, ref);
+    const jAutoNom = ['','Lundi','Mardi','Mercredi','Jeudi','Vendredi'][jourAutoFC_pdf(fc)];
+
+    addHeader('ÉMARGEMENT · FORMATION CONTINUE · '+periodeTitre.toUpperCase());
+    addFooter(pageNum);
+    doc.setFillColor.apply(doc,OR); doc.rect(0,30,210,2,'F');
+
+    // Bandeau stagiaire
+    doc.setFillColor.apply(doc,BLEU_FONCE); doc.rect(15,38,180,28,'F');
+    doc.setTextColor.apply(doc,OR); doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text(fc.nom,20,48);
+    doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('Formation : '+(fc.formation||'—'),20,55);
+    doc.text('Statut : Formation continue   ·   Horaires : 8h15-12h00 / 13h00-15h15   ·   6h par jour',20,61);
+    doc.text('Journée en autonomie : '+jAutoNom+'   ·   Période : '+periodeTitre,20,67);
+
+    // Récap
+    doc.setFillColor.apply(doc,VERT);       doc.rect(15,72,42,14,'F');
+    doc.setFillColor(229,62,62);            doc.rect(61,72,42,14,'F');
+    doc.setFillColor.apply(doc,BLEU);       doc.rect(107,72,42,14,'F');
+    doc.setFillColor.apply(doc,OR);         doc.rect(153,72,42,14,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text(r.hP+'h',36,81,{align:'center'});
+    doc.text(r.hA+'h',82,81,{align:'center'});
+    doc.text(String(r.nbSeances),128,81,{align:'center'});
+    doc.setTextColor.apply(doc,BLEU_FONCE);
+    doc.text(String(r.nAuto),174,81,{align:'center'});
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
+    doc.text('Heures présence',36,84,{align:'center'});
+    doc.text('Heures absence',82,84,{align:'center'});
+    doc.text('Journées',128,84,{align:'center'});
+    doc.setTextColor.apply(doc,BLEU_FONCE);
+    doc.text('dont autonomie',174,84,{align:'center'});
+
+    // Tableau
+    let y=95;
+    doc.setFillColor.apply(doc,BLEU_FONCE); doc.rect(15,y,180,8,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
+    doc.text('Date',18,y+5); doc.text('Type',52,y+5); doc.text('Présence',82,y+5);
+    doc.text('H.Prés.',110,y+5); doc.text('H.Abs.',128,y+5);
+    doc.text('Sig. Stagiaire',145,y+5); doc.text('Sig. Formatrice',172,y+5);
+    y+=8;
+
+    for (const s of r.detail){
+      if (y>265){
+        addFooter(pageNum); pageNum++; doc.addPage();
+        addHeader('ÉMARGEMENT · '+fc.nom.toUpperCase()+' (suite)'); addFooter(pageNum); y=38;
+      }
+      const dateStr = s.date.getDate()+' '+moisFr[s.date.getMonth()]+' '+s.date.getFullYear();
+      const rowColor = s.absent ? [255,245,245] : (s.auto ? [253,246,227] : (s.altSigne&&s.formSigne ? [240,255,244] : [250,250,252]));
+      doc.setFillColor.apply(doc,rowColor); doc.rect(15,y,180,10,'F');
+      doc.setTextColor.apply(doc,BLEU_FONCE); doc.setFontSize(7); doc.setFont('helvetica','bold');
+      doc.text(dateStr,18,y+6);
+      doc.setFont('helvetica','normal');
+
+      if (s.auto){
+        doc.setTextColor(184,144,31); doc.text('Autonomie',52,y+6);
+      } else {
+        doc.setTextColor.apply(doc,GRIS);
+        doc.text(s.mode==='presentiel'?'Présentiel':s.mode==='distanciel'?'Distanciel':'Centre',52,y+6);
+      }
+
+      if (s.absent){ doc.setTextColor.apply(doc,ROUGE); doc.text(s.motif?('Absent · '+s.motif).substring(0,22):'Absent(e)',82,y+6); }
+      else { doc.setTextColor.apply(doc,VERT); doc.text('Présent(e)',82,y+6); }
+
+      doc.setTextColor.apply(doc,BLEU_FONCE);
+      doc.text(s.hP>0?String(s.hP).replace('.',',')+'h':'—',112,y+6);
+      doc.text(s.hA>0?String(s.hA).replace('.',',')+'h':'—',130,y+6);
+
+      if (s.auto && !s.absent){
+        doc.setTextColor(184,144,31); doc.setFontSize(6);
+        doc.text('Travail en autonomie',145,y+6);
+        doc.text('validé par le centre',172,y+6);
+        doc.setFontSize(7);
+      } else {
+        const sigA = s.data.matin_alt || s.data.am_alt;
+        if (!s.absent && sigA){
+          try { doc.addImage(sigA,'JPEG',143,y+1,22,8); }
+          catch(e){ doc.setTextColor.apply(doc,VERT); doc.text('✓ Signé',145,y+6); }
+        } else {
+          doc.setTextColor.apply(doc, s.absent?ROUGE:GRIS);
+          doc.text(s.absent?'Absent':'En attente',145,y+6);
+        }
+        const sigF = s.data.matin_form || s.data.am_form;
+        if (!s.absent && sigF){
+          try { doc.addImage(sigF,'JPEG',170,y+1,22,8); }
+          catch(e){ doc.setTextColor.apply(doc,VERT); doc.text('✓ Signé',172,y+6); }
+        } else {
+          doc.setTextColor.apply(doc, s.absent?ROUGE:GRIS);
+          doc.text(s.absent?'Absent':'En attente',172,y+6);
+        }
+      }
+      doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10);
+      y+=10;
+    }
+
+    // Mention légale autonomie
+    y+=4;
+    if (y<250){
+      doc.setFillColor(253,246,227); doc.rect(15,y,180,12,'F');
+      doc.setDrawColor.apply(doc,OR); doc.setLineWidth(0.3); doc.rect(15,y,180,12);
+      doc.setTextColor(116,66,16); doc.setFontSize(7); doc.setFont('helvetica','normal');
+      doc.text('Les journées du '+jAutoNom.toLowerCase()+' sont effectuées en autonomie (6h), sur activités fournies par le centre.',18,y+5);
+      doc.text('Volume hebdomadaire : 30h — 4 journées en centre et 1 journée en autonomie.',18,y+9);
+      y+=16;
+    }
+
+    // Zones de signature
+    if (y<245){
+      doc.setDrawColor.apply(doc,OR); doc.setLineWidth(0.5);
+      doc.rect(15,y,84,30); doc.rect(111,y,84,30);
+      doc.setTextColor.apply(doc,GRIS); doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.text('Signature Formatrice',57,y+5,{align:'center'});
+      doc.text('Signature Stagiaire',153,y+5,{align:'center'});
+      doc.setFont('helvetica','normal'); doc.setFontSize(7);
+      doc.text('Lu et approuvé',57,y+28,{align:'center'});
+      doc.text('Lu et approuvé',153,y+28,{align:'center'});
+    }
+  }
+
+  doc.save('JTCF_FC_'+titreFichier+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
+  btn.textContent='🎓 Exporter PDF — Formation Continue'; btn.disabled=false;
+}
+
+// ── Menu de sélection ────────────────────────────────────────
+document.getElementById('btnExportPDFFC').addEventListener('click', function(e){
+  e.stopPropagation();
+  const menu = document.getElementById('menuFC');
+  if (menu.style.display==='block'){ menu.style.display='none'; return; }
+  const fcs = window.allFC || [];
+  if (fcs.length===0){ alert('Les stagiaires ne sont pas encore chargés. Patientez puis réessayez.'); return; }
+  menu.innerHTML='';
+
+  function ajouter(label, sousTitre, action, fond){
+    const it=document.createElement('div');
+    it.style.cssText='padding:11px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f2f5;'+(fond||'');
+    it.innerHTML='<div style="font-weight:700;color:#2a3f4e;">'+label+'</div>'+
+                 (sousTitre?'<div style="font-size:11px;color:#718096;">'+sousTitre+'</div>':'');
+    it.addEventListener('click', function(){
+      menu.style.display='none';
+      action().catch(function(err){
+        console.error('Export PDF FC :', err);
+        if (err && err.message!=='moisSelect vide') alert('Échec de la génération :\n'+(err.message||err));
+        const b=document.getElementById('btnExportPDFFC');
+        b.textContent='🎓 Exporter PDF — Formation Continue'; b.disabled=false;
+      });
+    });
+    menu.appendChild(it);
+  }
+
+  ajouter('📚 Tous les stagiaires ('+fcs.length+')', 'Un seul PDF, une page par stagiaire',
+          function(){ return exporterPDFFC(fcs,'Tous'); }, 'background:#fdf6e3;');
+  fcs.forEach(function(fc){
+    ajouter(fc.nom, fc.formation||'', function(){ return exporterPDFFC([fc], fc.nom.replace(/ /g,'_')); });
+  });
+  menu.style.display='block';
+});
+document.addEventListener('click', function(e){
+  if (!e.target.closest('#btnExportPDFFC') && !e.target.closest('#menuFC')){
+    const m=document.getElementById('menuFC'); if (m) m.style.display='none';
+  }
+});
+
 </script>
 
 <script>
