@@ -465,8 +465,9 @@ async function chargerTout() {
       const jRef = ref(db, 'stagiairesFC/'+fc.id+'/jours');
       const jSnap = await get(jRef);
       const jours = jSnap.exists() ? Object.values(jSnap.val()) : [];
-      if (!jours.includes('Vendredi')) {
-        await set(jRef, ['Lundi','Mardi','Mercredi','Jeudi','Vendredi']);
+      const attendus = joursSelonFormation(fc.formation);   // ASCA : lun, mer, jeu, ven
+      if (jours.join(',') !== attendus.join(',')) {
+        await set(jRef, attendus);
       }
     }
   }
@@ -529,22 +530,17 @@ async function chargerDashboard() {
   // ── Formation Continue ────────────────────────────────────
   const fcDuJour = [];
   for (const fc of allFC) {
-    try {
-      const jSnap = await get(ref(db,'stagiairesFC/'+fc.id+'/jours'));
-      if (jSnap.exists()) {
-        const joursFC = Object.values(jSnap.val()).filter(Boolean);
-        const nums = joursFC.map(j=>jourMapFC[j]).filter(Boolean);
-        if (nums.includes(jourNum)) fcDuJour.push(fc);
-      } else if (fc.formation && fc.formation.includes('Comptabilité') && jourNum >= 1 && jourNum <= 5) {
-        // ASCA : Lun-Ven même si jours non défini en DB
-        fcDuJour.push(fc);
-      }
-    } catch(e) {
-      if (fc.formation && fc.formation.includes('Comptabilité') && jourNum >= 1 && jourNum <= 5) {
-        fcDuJour.push(fc);
-      }
-    }
+    const b = bornesFC(fc);
+    const j0 = new Date(today); j0.setHours(0,0,0,0);
+    const d0 = new Date(b.debut); d0.setHours(0,0,0,0);
+    const f0 = new Date(b.fin);   f0.setHours(23,59,59,0);
+    if (j0 < d0 || j0 > f0) continue;                 // hors periode de formation
+    if (jourNum < 1 || jourNum > 5) continue;          // week-end
+    if (horsCentreFC(fc, j0)) continue;                // stage, vacances, ferie
+    fc._autonomie = (jourNum === jourAutonomieFC_admin(fc));
+    fcDuJour.push(fc);
   }
+
   if (fcDuJour.length > 0) {
     const sepFC = document.createElement('div');
     sepFC.style.cssText = 'font-size:10px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid #f0f2f5;margin-top:6px;';
@@ -557,6 +553,16 @@ async function chargerDashboard() {
       const data=snap.exists()?snap.val():{};
       const absent=data.presence==='absent';
       if(absent) absentsCount++;
+
+      // Journee en autonomie : 6 h comptees d'office, aucune signature attendue
+      if (fc._autonomie && !absent) {
+        const rowA=document.createElement('div'); rowA.className='today-row';
+        rowA.innerHTML='<div class="today-nom">'+fc.nom+'</div>'
+          + '<div style="font-size:10px;font-weight:800;color:#C9A227;background:rgba(201,162,39,0.15);'
+          + 'padding:3px 9px;border-radius:20px;white-space:nowrap;">🏠 Autonomie · 6 h</div>';
+        todayList.appendChild(rowA);
+        continue;
+      }
       const isAuto = !!data.auto;
       const modeBadge = data.mode==='distanciel'
         ? '<span style="font-size:9px;background:#f5f2ff;color:#7C5CFF;padding:1px 4px;border-radius:4px;margin-left:4px;">📡 dist.</span>'
