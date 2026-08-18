@@ -272,6 +272,7 @@
       <div class="total-grid">
         <div class="total-item"><div class="total-val" id="adminTotalH">—</div><div class="total-lbl">Heures présence</div></div>
         <div class="total-item"><div class="total-val" id="adminTotalA">—</div><div class="total-lbl">Heures absence</div></div>
+        <div class="total-item"><div class="total-val" id="adminTotalE">—</div><div class="total-lbl">Heures entreprise</div></div>
         <div class="total-item"><div class="total-val" id="adminTotalS">—</div><div class="total-lbl">Séances total</div></div>
       </div>
     </div>
@@ -747,10 +748,10 @@ async function chargerRecapAdmin(){
   container.innerHTML='<div class="loading">Calcul en cours...</div>';
   const [filterYear,filterMonth]=filterMode==='mois'
     ?document.getElementById('adminMoisSelect').value.split('-').map(Number):[null,null];
-  let totalH=0,totalA=0,totalS=0; container.innerHTML='';
+  let totalH=0,totalA=0,totalS=0,totalE=0; container.innerHTML='';
   for(const alt of allAlternants){
     const altSeances=getSeances(alt);
-    let hP=0,hA=0,sCount=0; const motifsCount={};
+    let hP=0,hA=0,sCount=0,hE=0; const motifsCount={};
     for(const d of altSeances){
       if(filterMode==='mois'&&(d.getFullYear()!==filterYear||d.getMonth()!==filterMonth)) continue;
       if(d>new Date()) continue;
@@ -776,11 +777,12 @@ async function chargerRecapAdmin(){
         else if(dataAMRetro&&dataAMRetro.statut==='present'){hP+=AM_H;}
       }else{
         const data=dataNormal||{};
+        if(data.presence==='entreprise'){ hE+=(MATIN_H+AM_H); continue; }
         if(data.presence==='absent'){hA+=(MATIN_H+AM_H);const m=data.motif||'Non renseigné';motifsCount[m]=(motifsCount[m]||0)+1;}
         else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
       }
     }
-    totalH+=hP;totalA+=hA;totalS+=sCount;
+    totalH+=hP;totalA+=hA;totalS+=sCount;totalE+=hE;
     if(sCount===0) continue;
     const initiales=alt.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
     let motifsHtml='';
@@ -797,7 +799,7 @@ async function chargerRecapAdmin(){
       <div class="recap-item vert"><div class="recap-val vert">${hP}h</div><div class="recap-lbl">Présence</div></div>
       <div class="recap-item rouge"><div class="recap-val rouge">${hA}h</div><div class="recap-lbl">Absence</div></div>
       <div class="recap-item or"><div class="recap-val or">${sCount}</div><div class="recap-lbl">Séances</div></div>
-      <div class="recap-item"><div class="recap-val">${hP+hA}h</div><div class="recap-lbl">Total</div></div>
+      <div class="recap-item"><div class="recap-val" style="color:#2b6cb0;">${hE}h</div><div class="recap-lbl">Entreprise</div></div>
     </div>${motifsHtml}`;
     container.appendChild(card);
   }
@@ -848,6 +850,8 @@ async function chargerRecapAdmin(){
   }
 
   window.allFC = allFC; window.allAlternants = allAlternants;
+  const elE=document.getElementById('adminTotalE');
+  if(elE) elE.textContent=totalE+'h';
   document.getElementById('adminTotalH').textContent=totalH+'h';
   document.getElementById('adminTotalA').textContent=totalA+'h';
   document.getElementById('adminTotalS').textContent=totalS;
@@ -944,7 +948,8 @@ async function excAfficher(){
       '<span style="font-size:12px;font-weight:800;color:'+col+';">'+val+'</span></div>';
   }
   var etat='';
-  if(absent) etat+=ligne('Statut','✕ Absent(e) — '+(v.motif||'sans motif'),'#e53e3e');
+  if(v.presence==='entreprise') etat+=ligne('Statut','🏢 En entreprise (hors formation)','#2b6cb0');
+  else if(absent) etat+=ligne('Statut','✕ Absent(e) — '+(v.motif||'sans motif'),'#e53e3e');
   else if(v.matin_alt&&v.am_alt) etat+=ligne('Statut','✓ Présent(e)','#38a169');
   else if(v.matin_alt||v.am_alt) etat+=ligne('Statut','◐ Partiel','#C9A227');
   else etat+=ligne('Statut','— Rien signé','#a0aec0');
@@ -958,13 +963,17 @@ async function excAfficher(){
 
   var act='';
   var S='width:100%;padding:11px;border-radius:10px;font-size:13px;font-weight:800;border:2px solid;margin-bottom:8px;cursor:pointer;';
-  if(absent){
-    act+='<button id="excAnnulerAbs" style="'+S+'background:#f0fff4;color:#22543d;border-color:#9ae6b4;">↩️ Annuler l\'absence — il/elle était présent(e)</button>';
+  var enEnt = v.presence === 'entreprise';
+  if(absent || enEnt){
+    act+='<button id="excAnnulerAbs" style="'+S+'background:#f0fff4;color:#22543d;border-color:#9ae6b4;">↩️ '
+       + (enEnt ? 'Annuler — il/elle était bien en formation' : 'Annuler l\'absence — il/elle était présent(e)')
+       + '</button>';
   } else {
     if(!v.matin_alt) act+='<button id="excRegulMatin" style="'+S+'background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;">✍️ Régulariser le MATIN (sa signature)</button>';
     if(!v.am_alt)    act+='<button id="excRegulAM"    style="'+S+'background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;">✍️ Régulariser l\'APRÈS-MIDI (sa signature)</button>';
     if(v.matin_alt)  act+='<button id="excEffMatin"   style="'+S+'background:#fffaf0;color:#744210;border-color:#f0d98a;">🗑️ Effacer la signature du matin</button>';
     if(v.am_alt)     act+='<button id="excEffAM"      style="'+S+'background:#fffaf0;color:#744210;border-color:#f0d98a;">🗑️ Effacer la signature de l\'après-midi</button>';
+    act+='<button id="excEntreprise" style="'+S+'background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;">🏢 Journée en entreprise (pas en formation)</button>';
     act+='<button id="excAbsent" style="'+S+'background:#fff5f5;color:#c53030;border-color:#fed7d7;">✕ Marquer absent(e) sur la journée</button>';
   }
   document.getElementById('excActions').innerHTML=act;
@@ -973,6 +982,15 @@ async function excAfficher(){
     function g(e){e.preventDefault();fn().catch(function(x){alert('Erreur : '+x.message);});}
     b.addEventListener('click',g); b.addEventListener('touchend',g,{passive:false}); }
 
+  on('excEntreprise', async function(){
+    if(!confirm('Déclarer '+excSujet.nom+' en entreprise ce jour-là ?\n\n'
+      +'Ni présence ni absence : la journée sera comptée en heures en entreprise.')) return;
+    var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+    await set(ref(db,k+'/presence'),'entreprise');
+    await set(ref(db,k+'/motif'),null);
+    alert('✅ Journée en entreprise enregistrée.');
+    await excAfficher();
+  });
   on('excAnnulerAbs', async function(){
     if(!confirm('Annuler l\'absence de '+excSujet.nom+' ?')) return;
     var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
@@ -1402,8 +1420,9 @@ async function exporterPDFAdmin() {
       const snap=await get(ref(db,'emargements/'+key));
       const data=snap.exists()?snap.val():{};
       const absent=data.presence==='absent';
-      if(absent){hA+=(MATIN_H+AM_H);}else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
-      seancesDetail.push({date:s,data,absent});
+      if(data.presence==='entreprise'){/* ni presence ni absence */}
+      else if(absent){hA+=(MATIN_H+AM_H);}else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
+      seancesDetail.push({date:s,data,absent,entreprise:data.presence==='entreprise'});
     }
     totalHGlobal+=hP;totalAGlobal+=hA;totalSGlobal+=seancesMois.length;
     recapData.push({alt,seancesDetail,hP,hA,seances:seancesMois.length});
@@ -1593,10 +1612,11 @@ async function exporterPDFAdminPersonne(alt) {
       const data=dataN||{};
       absent=data.presence==='absent'; mode=data.mode||'—';
       altSigne=!!(data.matin_alt||data.am_alt); formSigne=!!(data.matin_form||data.am_form);
-      if(absent){hAs=MATIN_H+AM_H;}else{if(data.matin_alt)hPs+=MATIN_H;if(data.am_alt)hPs+=AM_H;}
+      if(data.presence==='entreprise'){hPs=0;hAs=0;}
+      else if(absent){hAs=MATIN_H+AM_H;}else{if(data.matin_alt)hPs+=MATIN_H;if(data.am_alt)hPs+=AM_H;}
     }
     hP+=hPs; hA+=hAs;
-    seancesDetail.push({date:s,absent,mode,altSigne,formSigne,hP:hPs,hA:hAs,isRetro,dataN,dataM,dataA});
+    seancesDetail.push({date:s,absent,entreprise:((dataN||{}).presence==='entreprise'),mode,altSigne,formSigne,hP:hPs,hA:hAs,isRetro,dataN,dataM,dataA});
   }
 
   addHeader('ÉMARGEMENT · '+alt.nom.toUpperCase()+' · '+periodeTitre.toUpperCase());
@@ -1632,7 +1652,8 @@ async function exporterPDFAdminPersonne(alt) {
     doc.setTextColor(...BLEU_FONCE); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(dateStr,18,y+6);
     doc.setFont('helvetica','normal'); doc.setTextColor(...GRIS);
     doc.text(s.mode==='presentiel'?'Présentiel':s.mode==='distanciel'?'Distanciel':'—',55,y+6);
-    if(s.absent){doc.setTextColor(...ROUGE);doc.text('Absent(e)',80,y+6);}
+    if(s.entreprise){doc.setTextColor(43,108,176);doc.text('En entreprise',80,y+6);}
+    else if(s.absent){doc.setTextColor(...ROUGE);doc.text('Absent(e)',80,y+6);}
     else{doc.setTextColor(...VERT);doc.text('Présent(e)',80,y+6);}
     doc.setTextColor(...BLEU_FONCE);
     doc.text(s.hP>0?s.hP+'h':'—',112,y+6);

@@ -49,6 +49,7 @@
   .presence-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 12px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; }
   .presence-btn.active-present { border-color: var(--vert); background: var(--vert-clair); color: var(--vert); }
   .presence-btn.active-absent { border-color: var(--rouge); background: var(--rouge-clair); color: var(--rouge); }
+  .presence-btn.active-entreprise { border-color: #2b6cb0; background: #ebf8ff; color: #2b6cb0; }
   .motif-zone { background: var(--rouge-clair); border: 1px solid #fed7d7; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
   .motif-label { font-size: 11px; font-weight: 700; color: var(--rouge); margin-bottom: 8px; text-transform: uppercase; }
   .motif-select { width: 100%; padding: 10px; border: 1px solid #fed7d7; border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--bleu-fonce); background: white; -webkit-appearance: none; outline: none; margin-bottom: 10px; }
@@ -192,8 +193,21 @@
         <div class="presence-toggle">
           <button class="presence-btn" id="btnPresent" data-presence="present">✅ Présent(e)</button>
           <button class="presence-btn" id="btnAbsent" data-presence="absent">❌ Absent(e)</button>
+          <button class="presence-btn" id="btnEntreprise" data-presence="entreprise">🏢 En entreprise</button>
         </div>
       </div>
+      <div id="zoneEntreprise" style="display:none;background:#ebf8ff;border:1px solid #bee3f8;border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:#2b6cb0;text-transform:uppercase;margin-bottom:6px;">🏢 Journée en entreprise</div>
+        <div style="font-size:12px;color:#2c5282;line-height:1.6;">
+          Vous êtes sur votre temps de travail, pas en formation. Cette journée n'est comptée
+          ni en présence ni en absence : elle figurera en <strong>heures en entreprise</strong>.
+          Prévenez votre formatrice si ce n'était pas prévu.
+        </div>
+        <label class="justif-label-upload" for="justifInput" style="margin-top:10px;background:#2b6cb0;">
+          📎 Joindre un mot de l'entreprise (facultatif)
+        </label>
+      </div>
+
       <div class="motif-zone" id="motifZone" style="display:none;">
         <div class="motif-label">⚠️ Motif d'absence</div>
         <select class="motif-select" id="motifSelect">
@@ -438,6 +452,9 @@ async function updateEmargement() {
   document.getElementById('btnDistanciel').className='mode-btn'+(modeActuel==='distanciel'?' active-distanciel':'');
   document.getElementById('btnPresent').className='presence-btn'+(presenceActuelle==='present'?' active-present':'');
   document.getElementById('btnAbsent').className='presence-btn'+(presenceActuelle==='absent'?' active-absent':'');
+  document.getElementById('btnEntreprise').className='presence-btn'+(presenceActuelle==='entreprise'?' active-entreprise':'');
+  const zoneEnt=document.getElementById('zoneEntreprise');
+  if(zoneEnt) zoneEnt.style.display = presenceActuelle==='entreprise' ? 'block' : 'none';
   document.getElementById('motifZone').style.display=presenceActuelle==='absent'?'block':'none';
   if(data.motif) document.getElementById('motifSelect').value=data.motif;
   const justifDeja=document.getElementById('justifDeja'); const justifPreview=document.getElementById('justifPreview');
@@ -459,15 +476,18 @@ async function updateEmargement() {
     {alt:'am_alt',form:'am_form',altEl:'statusAMAlt',formEl:'statusAMForm',zone:'zoneAMAlt',bloc:'blocAM'}
   ];
   slots.forEach(function(s){
-    const altSigne=data[s.alt]; const formSigne=data[s.form]; const absent=presenceActuelle==='absent';
+    const altSigne=data[s.alt]; const formSigne=data[s.form];
+    const absent=presenceActuelle==='absent';
+    const enEntreprise=presenceActuelle==='entreprise';
     const altEl=document.getElementById(s.altEl);
     if(absent){altEl.textContent='❌ Absent(e)';altEl.className='emarg-status status-absent';}
+    else if(enEntreprise){altEl.textContent='🏢 En entreprise';altEl.className='emarg-status status-distanciel';}
     else{altEl.textContent=altSigne?'✅ Signé':'En attente';altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente');}
     const formEl=document.getElementById(s.formEl);
     formEl.textContent=formSigne?'✅ Signé':'En attente';
     formEl.className='emarg-status '+(formSigne?'status-signe':'status-attente');
     const zone=document.getElementById(s.zone);
-    if(zone) zone.style.display=(altSigne||absent)?'none':'block';
+    if(zone) zone.style.display=(altSigne||absent||enEntreprise)?'none':'block';
     document.getElementById(s.bloc).className='emarg-bloc'+(absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
   });
   ['canvasMatinAlt','canvasAMAlt'].forEach(function(id){const c=document.getElementById(id);if(c){c.width=c.offsetWidth;c.height=80;c.getContext('2d').clearRect(0,0,c.width,c.height);}});
@@ -517,7 +537,7 @@ document.getElementById('justifInput').addEventListener('change',async function(
   document.getElementById(id).addEventListener('touchend',setMode,{passive:false});document.getElementById(id).addEventListener('click',setMode);
 });
 
-['btnPresent','btnAbsent'].forEach(function(id){
+['btnPresent','btnAbsent','btnEntreprise'].forEach(function(id){
   async function setPresence(e){e.preventDefault();await set(ref(db,'emargements/'+getKey(semIdx)+'/presence'),document.getElementById(id).getAttribute('data-presence'));await updateEmargement();}
   document.getElementById(id).addEventListener('touchend',setPresence,{passive:false});document.getElementById(id).addEventListener('click',setPresence);
 });

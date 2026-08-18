@@ -276,6 +276,7 @@
       <div class="total-grid">
         <div class="total-item"><div class="total-val" id="totalHeures">—</div><div class="total-lbl">Heures présence</div></div>
         <div class="total-item"><div class="total-val" id="totalAbsences">—</div><div class="total-lbl">Heures absence</div></div>
+        <div class="total-item"><div class="total-val" id="totalEntreprise">—</div><div class="total-lbl">Heures entreprise</div></div>
         <div class="total-item"><div class="total-val" id="totalSeances">—</div><div class="total-lbl">Séances total</div></div>
       </div>
     </div>
@@ -338,6 +339,7 @@
         
         <button class="btn-annuler-sign" id="btnExceptMatin" style="display:none;background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;font-weight:800;">✍️ Signer à sa place — matin (oubli / panne / réseau)</button>
         <button class="btn-annuler-sign" id="btnEffacerAltMatin" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant matin</button>
+        <button class="btn-annuler-sign" id="btnEntreprise" style="display:none;background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;font-weight:800;">🏢 Journée en entreprise (pas en formation)</button>
         <button class="btn-annuler-sign" id="btnAnnulerAbsence" style="display:none;background:#f0fff4;color:#22543d;border-color:#9ae6b4;font-weight:800;">↩️ Annuler l'absence — l'apprenant était présent</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentMatin" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent matin (efface sig. matin)</button>
       </div>
@@ -1098,12 +1100,12 @@ async function chargerRecap() {
     ? document.getElementById('moisSelect').value.split('-').map(Number)
     : [null, null];
 
-  let totalHeuresGlobal = 0, totalAbsencesGlobal = 0, totalSeancesGlobal = 0;
+  let totalHeuresGlobal = 0, totalAbsencesGlobal = 0, totalSeancesGlobal = 0, totalEntrepriseGlobal = 0;
   container.innerHTML = '';
 
   for (const alt of allAlternants) {
     const altSeances = getSeances(alt);
-    let heuresPresence = 0, heuresAbsence = 0, seancesCount = 0;
+    let heuresPresence = 0, heuresAbsence = 0, seancesCount = 0, heuresEntreprise = 0;
     const motifsCount = {};
 
     for (const d of altSeances) {
@@ -1135,6 +1137,8 @@ async function chargerRecap() {
         else if (dataAMRetro && dataAMRetro.statut === 'present') { heuresPresence += AM_H; }
       } else {
         const data = dataNormal || {};
+        // Journée sur le temps de travail : ni présence ni absence en formation
+        if (data.presence === 'entreprise') { heuresEntreprise += (MATIN_H + AM_H); continue; }
         const absent = data.presence === 'absent';
         if (absent) {
           heuresAbsence += (MATIN_H + AM_H);
@@ -1149,6 +1153,7 @@ async function chargerRecap() {
 
     totalHeuresGlobal += heuresPresence;
     totalAbsencesGlobal += heuresAbsence;
+    totalEntrepriseGlobal += heuresEntreprise;
     totalSeancesGlobal += seancesCount;
     if (seancesCount === 0) continue;
 
@@ -1172,7 +1177,7 @@ async function chargerRecap() {
         <div class="recap-item vert"><div class="recap-val vert">${heuresPresence}h</div><div class="recap-lbl">Heures présence</div></div>
         <div class="recap-item rouge"><div class="recap-val rouge">${heuresAbsence}h</div><div class="recap-lbl">Heures absence</div></div>
         <div class="recap-item or"><div class="recap-val or">${seancesCount}</div><div class="recap-lbl">Séances passées</div></div>
-        <div class="recap-item"><div class="recap-val">${heuresPresence + heuresAbsence}h</div><div class="recap-lbl">Heures totales</div></div>
+        <div class="recap-item"><div class="recap-val" style="color:#2b6cb0;">${heuresEntreprise}h</div><div class="recap-lbl">En entreprise</div></div>
       </div>${motifsHtml}`;
     container.appendChild(card);
   }
@@ -1251,6 +1256,8 @@ async function chargerRecap() {
     container.appendChild(card);
   }
 
+  const elEnt = document.getElementById('totalEntreprise');
+  if (elEnt) elEnt.textContent = totalEntrepriseGlobal + 'h';
   document.getElementById('totalHeures').textContent = totalHeuresGlobal + 'h';
   document.getElementById('totalAbsences').textContent = totalAbsencesGlobal + 'h';
   document.getElementById('totalSeances').textContent = totalSeancesGlobal;
@@ -1351,8 +1358,18 @@ async function updateFicheEmarg() {
   if (btnEffAltMatin) btnEffAltMatin.style.display = (data.matin_alt && !absent) ? 'block' : 'none';
   if (btnEffAltAM) btnEffAltAM.style.display = (data.am_alt && !absent) ? 'block' : 'none';
   // Exception : proposer de signer à la place seulement si l'apprenant n'a pas signé
+  var enEnt = data.presence === 'entreprise';
   var bAbs=document.getElementById('btnAnnulerAbsence');
-  if (bAbs) bAbs.style.display = absent ? 'block' : 'none';
+  if (bAbs) bAbs.style.display = (absent || enEnt) ? 'block' : 'none';
+  if (bAbs) bAbs.textContent = enEnt
+    ? "↩️ Annuler — l'apprenant était bien en formation"
+    : "↩️ Annuler l'absence — l'apprenant était présent";
+  var bEnt=document.getElementById('btnEntreprise');
+  if (bEnt) bEnt.style.display = (!absent && !enEnt) ? 'block' : 'none';
+  if (enEnt) {
+    document.getElementById('ficheStatusMatinAlt').textContent = '🏢 En entreprise';
+    document.getElementById('ficheStatusAMAlt').textContent   = '🏢 En entreprise';
+  }
   var bxM=document.getElementById('btnExceptMatin'), bxA=document.getElementById('btnExceptAM');
   if (bxM) bxM.style.display = (!data.matin_alt && !absent) ? 'block' : 'none';
   if (bxA) bxA.style.display = (!data.am_alt && !absent) ? 'block' : 'none';
@@ -1388,6 +1405,28 @@ function initCanvases() {
 }
 
 
+
+
+// ═══ Journée passée en entreprise, hors formation ═══
+async function marquerEntreprise(){
+  var sujet = currentAlt || currentFC; if(!sujet) return;
+  var isFC = !currentAlt && !!currentFC;
+  var d = seances[semIdx];
+  if(!confirm('Déclarer ' + sujet.nom + ' en entreprise le ' + formatDate(d) + ' ?\n\n'
+    + 'Cette journée ne sera comptée ni en présence ni en absence :\n'
+    + 'elle apparaîtra en heures en entreprise.')) return;
+  var base = isFC ? 'emargementsFC' : 'emargements';
+  var key  = isFC ? getFCKey(d) : getKey(sujet.id, d);
+  await set(ref(db, base+'/'+key+'/presence'), 'entreprise');
+  await set(ref(db, base+'/'+key+'/motif'), null);
+  alert('✅ ' + sujet.nom + ' déclaré(e) en entreprise.');
+  if(isFC) await updateFicheEmargFC(); else await updateFicheEmarg();
+}
+(function(){
+  var b=document.getElementById('btnEntreprise'); if(!b) return;
+  function go(e){ e.preventDefault(); marquerEntreprise().catch(function(x){alert('Erreur : '+x.message);}); }
+  b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
+})();
 
 // ═══ ANNULER UNE ABSENCE saisie par erreur ═══
 async function annulerAbsence(){
@@ -1960,7 +1999,7 @@ async function exporterPDF() {
       const data=snap.exists()?snap.val():{};
       const absent=data.presence==='absent';
       if(absent){hA+=(MATIN_H+AM_H);}else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
-      seancesDetail.push({date:s,data,absent});
+      seancesDetail.push({date:s,data,absent,entreprise:data.presence==='entreprise'});
     }
     totalHGlobal+=hP;totalAGlobal+=hA;totalSGlobal+=seancesMois.length;
     recapData.push({alt,seancesDetail,hP,hA,seances:seancesMois.length});
@@ -2155,15 +2194,18 @@ async function exporterPDFPersonne(alt) {
       if (dataA) { if(dataA.statut==='present'){hPsean+=AM_H;altSigne=true;}else{hAsean+=AM_H;absent=true;} }
     } else {
       const data = dataN || {};
+      entreprise = data.presence === 'entreprise';
       absent = data.presence === 'absent';
+      const enEntreprisePdf = data.presence === 'entreprise';
       mode = data.mode || '—';
       altSigne = !!(data.matin_alt || data.am_alt);
       formSigne = !!(data.matin_form || data.am_form);
-      if (absent) { hAsean = MATIN_H+AM_H; }
+      if (enEntreprisePdf) { hPsean = 0; hAsean = 0; }
+      else if (absent) { hAsean = MATIN_H+AM_H; }
       else { if(data.matin_alt)hPsean+=MATIN_H; if(data.am_alt)hPsean+=AM_H; }
     }
     hP+=hPsean; hA+=hAsean;
-    seancesDetail.push({date:s,absent,mode,altSigne,formSigne,hP:hPsean,hA:hAsean,isRetro,dataN,dataM,dataA});
+    seancesDetail.push({date:s,absent,entreprise:((dataN||{}).presence==='entreprise'),mode,altSigne,formSigne,hP:hPsean,hA:hAsean,isRetro,dataN,dataM,dataA});
   }
 
   // PAGE
@@ -2208,7 +2250,8 @@ async function exporterPDFPersonne(alt) {
     doc.setTextColor(...BLEU_FONCE); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(dateStr,18,y+6);
     doc.setFont('helvetica','normal'); doc.setTextColor(...GRIS);
     doc.text(s.mode==='presentiel'?'Présentiel':s.mode==='distanciel'?'Distanciel':'—',55,y+6);
-    if (s.absent) { doc.setTextColor(...ROUGE); doc.text('Absent(e)',80,y+6); }
+    if (s.entreprise) { doc.setTextColor(43,108,176); doc.text('En entreprise',80,y+6); }
+    else if (s.absent) { doc.setTextColor(...ROUGE); doc.text('Absent(e)',80,y+6); }
     else { doc.setTextColor(...VERT); doc.text('Présent(e)',80,y+6); }
     doc.setTextColor(...BLEU_FONCE);
     doc.text(s.hP>0?s.hP+'h':'—',112,y+6);
