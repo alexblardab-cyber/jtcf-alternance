@@ -1,7 +1,7 @@
 {
-  "name": "JTCF Alternance — JT Conseil Formation",
+  "name": "JTCF — Mon Espace",
   "short_name": "JTCF",
-  "description": "Émargement et livrets d'accueil des alternants et stagiaires de JT Conseil Formation, Saint-Joseph.",
+  "description": "Émargement, livrets d'accueil et documents — alternance et formation continue. JT Conseil Formation, Saint-Joseph.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "/jtcf-alternance/",
@@ -10,10 +10,28 @@
   "orientation": "any",
   "background_color": "#2a3f4e",
   "theme_color": "#2a3f4e",
-  "categories": ["education", "productivity"],
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "icons": [
-    { "src": "icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icone-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icone-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
