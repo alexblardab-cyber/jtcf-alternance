@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>JTCF Alternance – Connexion</title>
+
+<!-- Application installable -->
+<meta name="theme-color" content="#2a3f4e">
+<meta name="description" content="Émargement et livrets d'accueil — JT Conseil Formation, Saint-Joseph">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icone-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JTCF">
+
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(160deg, #2a3f4e, #3d5a6e); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -25,6 +36,7 @@
   .error-msg.visible { display: block; }
   .footer-note { margin-top: 24px; font-size: 11px; color: var(--gris); line-height: 1.6; }
   .footer-note strong { color: var(--bleu); }
+  .btn-install { display: none; width: 100%; margin-top: 12px; padding: 11px; background: var(--or-pale); border: 2px solid var(--or); border-radius: 10px; color: #744210; font-size: 12px; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -47,6 +59,7 @@
     </div>
   </div>
   <button class="btn" id="btnConnect">ACCÉDER À MON ESPACE</button>
+  <button class="btn-install" id="btnInstaller">📲 Installer l'application sur cet ordinateur</button>
   <div class="error-msg" id="errorMsg">❌ Identifiant ou code incorrect.</div>
   <div class="footer-note">Identifiant oublié ?<br>Contactez-nous : <a href="mailto:contact@tbrgroup.fr" style="color:#3d5a6e;font-weight:700;">contact@tbrgroup.fr</a></div>
 </div>
@@ -87,21 +100,18 @@ async function connexion(e) {
   }
 
   try {
-    // Vérifier si c'est un alternant
     const altSnap = await get(ref(db, 'alternants/' + id));
     if (altSnap.exists()) {
       sessionStorage.setItem('jtcf_alt_user', id);
       window.location.href = 'livret.html';
       return;
     }
-    // Vérifier si c'est un stagiaire FC
     const fcSnap = await get(ref(db, 'stagiairesFC/' + id));
     if (fcSnap.exists()) {
       sessionStorage.setItem('jtcf_fc_user', id);
       window.location.href = 'livret-fc.html';
       return;
     }
-    // Vérifier si c'est une formatrice
     const formSnap = await get(ref(db, 'formateurs/' + id));
     if (formSnap.exists()) {
       sessionStorage.setItem('jtcf_form_user', id);
@@ -110,7 +120,6 @@ async function connexion(e) {
       window.location.href = 'formatrice.html';
       return;
     }
-    // Vérifier si c'est un admin
     const adminSnap = await get(ref(db, 'admins/' + id));
     if (adminSnap.exists()) {
       sessionStorage.setItem('jtcf_admin_user', id);
@@ -133,14 +142,40 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Enter') connex
 function toggleCode() {
   const input = document.getElementById('code');
   const btn = document.getElementById('btnToggleCode');
-  if (input.type === 'password') {
-    input.type = 'text';
-    btn.textContent = '🙈';
-  } else {
-    input.type = 'password';
-    btn.textContent = '👁️';
-  }
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁️'; }
 }
+
+// ── Installation en tant qu'application ──────────────────────
+// Le service worker est exigé par Chrome et Edge pour proposer l'installation.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function (e) {
+      console.warn('Service worker non enregistré :', e);
+    });
+  });
+}
+
+// Bouton d'installation, affiché seulement si le navigateur le permet
+// et si l'application n'est pas déjà installée.
+var invite = null;
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault();
+  invite = e;
+  var b = document.getElementById('btnInstaller');
+  if (b) b.style.display = 'block';
+});
+document.getElementById('btnInstaller').addEventListener('click', async function () {
+  if (!invite) return;
+  invite.prompt();
+  await invite.userChoice;
+  invite = null;
+  this.style.display = 'none';
+});
+window.addEventListener('appinstalled', function () {
+  var b = document.getElementById('btnInstaller');
+  if (b) b.style.display = 'none';
+});
 </script>
 </body>
 </html>
