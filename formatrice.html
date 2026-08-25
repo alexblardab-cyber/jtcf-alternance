@@ -541,10 +541,14 @@ var FERIES_FC = ['2026-08-15','2026-11-01','2026-11-11','2026-12-20','2026-12-25
 
 function groupeFC(fc){
   var f = (fc && fc.formation) || '';
-  if (f.indexOf('Commercial') >= 0)  return 'ACOM';
-  if (f.indexOf('Comptabilit') >= 0) return 'ACA';
-  if (f.indexOf('Direction') >= 0)   return 'AD';
-  return 'CV';
+  // Detection precise : avec 16 intitules, un simple mot-cle ne suffit plus.
+  if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
+  if (f.indexOf('Direction') >= 0) return 'AD';
+  if (f.indexOf('Assistant') >= 0 && f.indexOf('Commercial') >= 0) return 'ACOM';
+  if (f.indexOf('ACOM') >= 0) return 'ACOM';
+  if (f.indexOf('Conseiller') >= 0 && f.indexOf('Vente') >= 0) return 'CV';
+  if (f.indexOf('CV') >= 0) return 'CV';
+  return 'CV';   // repli neutre : aucune periode hors centre appliquee
 }
 
 function isoJour(d){
@@ -2315,11 +2319,15 @@ var FERIES_P = ['2026-08-15','2026-11-01','2026-11-11','2026-12-20','2026-12-25'
                 '2027-01-01','2027-03-29','2027-05-01','2027-05-08','2027-05-13',
                 '2027-05-24','2027-06-20','2027-07-14'];
 function groupeFC_p(fc){
-  var f=(fc&&fc.formation)||'';
-  if(f.indexOf('Commercial')>=0)  return 'ACOM';
-  if(f.indexOf('Comptabilit')>=0) return 'ACA';
-  if(f.indexOf('Direction')>=0)   return 'AD';
-  return 'CV';
+  var f = (fc&&fc.formation) || '';
+  // Detection precise : avec 16 intitules, un simple mot-cle ne suffit plus.
+  if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
+  if (f.indexOf('Direction') >= 0) return 'AD';
+  if (f.indexOf('Assistant') >= 0 && f.indexOf('Commercial') >= 0) return 'ACOM';
+  if (f.indexOf('ACOM') >= 0) return 'ACOM';
+  if (f.indexOf('Conseiller') >= 0 && f.indexOf('Vente') >= 0) return 'CV';
+  if (f.indexOf('CV') >= 0) return 'CV';
+  return 'CV';   // repli neutre : aucune periode hors centre appliquee
 }
 function isoJour_p(d){
   return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
