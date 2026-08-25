@@ -1400,6 +1400,27 @@ document.getElementById('btnSauvegarderDocsFC').addEventListener('touchend',sauv
 </script>
 
 <script>
+// Dernier paraphe manuscrit trouve dans les seances, pour les cadres de bas de page.
+function dernierParaphe(liste, champs){
+  for (var i = liste.length - 1; i >= 0; i--){
+    var d = liste[i] || {};
+    var src = d.data || d.dataN || {};
+    for (var c = 0; c < champs.length; c++){
+      var v = src[champs[c]];
+      if (typeof v === 'string' && v.indexOf('data:image') === 0) return v;
+    }
+  }
+  return null;
+}
+// Appose les paraphes dans les deux cadres de validation.
+function remplirCadres(doc, y, liste){
+  var sigF = dernierParaphe(liste, ['matin_form','am_form']);
+  var sigA = dernierParaphe(liste, ['matin_alt','am_alt']);
+  if (sigF) { try { doc.addImage(sigF,'JPEG',30,y+8,54,17); } catch(e){} }
+  if (sigA) { try { doc.addImage(sigA,'JPEG',126,y+8,54,17); } catch(e){} }
+}
+
+
 // Une signature n'est une image que si elle commence par data:image.
 // Les signatures globales de la formatrice sont stockées en "global_sign_<horodatage>".
 function estImageSig(v){ return typeof v==='string' && v.indexOf('data:image')===0; }
@@ -1560,6 +1581,8 @@ async function exporterPDFAdmin() {
       doc.setTextColor(...GRIS);doc.setFontSize(8);doc.setFont('helvetica','bold');
       doc.text('Signature Formatrice',57,y+5,{align:'center'});doc.text('Signature Alternant',153,y+5,{align:'center'});
       doc.setFont('helvetica','normal');doc.setFontSize(7);
+      remplirCadres(doc, y, r.seancesDetail || []);
+      doc.setTextColor(...GRIS);doc.setFont('helvetica','normal');doc.setFontSize(7);
       doc.text('Lu et approuvé',57,y+28,{align:'center'});doc.text('Lu et approuvé',153,y+28,{align:'center'});
     }
   }
@@ -1748,6 +1771,8 @@ async function exporterPDFAdminPersonne(alt) {
     doc.setTextColor(...GRIS); doc.setFontSize(8); doc.setFont('helvetica','bold');
     doc.text('Signature Formatrice',57,y+5,{align:'center'}); doc.text('Signature Alternant',153,y+5,{align:'center'});
     doc.setFont('helvetica','normal'); doc.setFontSize(7);
+    remplirCadres(doc, y, seancesDetail);
+    doc.setTextColor(...GRIS); doc.setFont('helvetica','normal'); doc.setFontSize(7);
     doc.text('Lu et approuvé',57,y+28,{align:'center'}); doc.text('Lu et approuvé',153,y+28,{align:'center'});
   }
   doc.save('JTCF_'+alt.nom.replace(/ /g,'_')+'_'+periodeTitre.replace(/ /g,'_')+'.pdf');
@@ -1977,6 +2002,8 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
       doc.text('Signature Formatrice',57,y+5,{align:'center'});
       doc.text('Signature Stagiaire',153,y+5,{align:'center'});
       doc.setFont('helvetica','normal'); doc.setFontSize(7);
+      remplirCadres(doc, y, r.detail || []);
+      doc.setTextColor.apply(doc,GRIS); doc.setFont('helvetica','normal'); doc.setFontSize(7);
       doc.text('Lu et approuvé',57,y+28,{align:'center'});
       doc.text('Lu et approuvé',153,y+28,{align:'center'});
     }
