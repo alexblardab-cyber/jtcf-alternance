@@ -1544,7 +1544,7 @@ async function exporterPDFAdmin() {
     doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','normal');
     doc.text('Formation : '+r.alt.formation,20,55);
     doc.text('Entreprise : '+(r.alt.entreprise||'—')+'   ·   Maître : '+(r.alt.maitre||'—'),20,61);
-    doc.text('Jour : '+r.alt.jourCentre+'   ·   Contrat : '+r.alt.debut+' → '+r.alt.fin,20,67);
+    doc.text('Jour : '+r.alt.jourCentre+'   ·   Contrat : '+r.alt.debut+' - '+r.alt.fin,20,67);
     doc.setFillColor(...VERT);doc.rect(15,78,57,14,'F');
     doc.setFillColor(229,62,62);doc.rect(76,78,57,14,'F');
     doc.setFillColor(...BLEU);doc.rect(137,78,58,14,'F');
@@ -1699,6 +1699,7 @@ async function exporterPDFAdminPersonne(alt) {
       mode=(dataM&&dataM.mode)||(dataA&&dataA.mode)||'—';
       if(dataM){if(dataM.statut==='present'){hPs+=MATIN_H;altSigne=true;}else{hAs+=MATIN_H;absent=true;}}
       if(dataA){if(dataA.statut==='present'){hPs+=AM_H;altSigne=true;}else{hAs+=AM_H;absent=true;}}
+      formSigne = !!((dataM && dataM.form) || (dataA && dataA.form));
     }else{
       const data=dataN||{};
       absent=data.presence==='absent'; mode=data.mode||'—';
@@ -1718,7 +1719,7 @@ async function exporterPDFAdminPersonne(alt) {
   doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
   doc.text('Formation : '+alt.formation,20,55);
   doc.text('Entreprise : '+(alt.entreprise||'—')+'   ·   Maître : '+(alt.maitre||'—'),20,61);
-  doc.text('Jour : '+alt.jourCentre+'   ·   Contrat : '+alt.debut+' → '+alt.fin+'   ·   Période : '+periodeTitre,20,67);
+  doc.text('Jour : '+alt.jourCentre+'   ·   Contrat : '+alt.debut+' - '+alt.fin+'   ·   Période : '+periodeTitre,20,67);
   doc.setFillColor(...VERT); doc.rect(15,78,57,14,'F');
   doc.setFillColor(229,62,62); doc.rect(76,78,57,14,'F');
   doc.setFillColor(...BLEU); doc.rect(137,78,58,14,'F');
@@ -1750,18 +1751,18 @@ async function exporterPDFAdminPersonne(alt) {
     doc.text(s.hP>0?s.hP+'h':'—',112,y+6);
     doc.text(s.hA>0?s.hA+'h':'—',130,y+6);
     const sigAlt=s.isRetro?(s.dataM&&s.dataM.statut==='present'||s.dataA&&s.dataA.statut==='present'):s.altSigne;
-    const sigForm=s.isRetro?false:s.formSigne;
+const sigForm = s.isRetro ? !!((s.dataM&&s.dataM.form)||(s.dataA&&s.dataA.form)) : s.formSigne;
     if(!s.absent&&sigAlt&&!s.isRetro&&s.dataN&&(s.dataN.matin_alt||s.dataN.am_alt)){
       try{dessinerSignature(doc,s.dataN.matin_alt||s.dataN.am_alt,145,y,null,null); if(false) doc.addImage(s.dataN.matin_alt||s.dataN.am_alt,'JPEG',143,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓',145,y+6);}
     }else{
       doc.setTextColor(s.absent?ROUGE[0]:sigAlt?VERT[0]:GRIS[0],s.absent?ROUGE[1]:sigAlt?VERT[1]:GRIS[1],s.absent?ROUGE[2]:sigAlt?VERT[2]:GRIS[2]);
-      doc.text(s.absent?'Absent':sigAlt?'✓ Signé':'En attente',145,y+6);
+      doc.text(s.absent?'Absent':sigAlt?'Signe':'En attente',145,y+6);
     }
     if(!s.absent&&sigForm&&s.dataN&&(s.dataN.matin_form||s.dataN.am_form)){
       try{dessinerSignature(doc,s.dataN.matin_form||s.dataN.am_form,172,y,null,null); if(false) doc.addImage(s.dataN.matin_form||s.dataN.am_form,'JPEG',170,y+1,22,8);}catch(e){doc.setTextColor(...VERT);doc.text('✓',172,y+6);}
     }else{
       doc.setTextColor(s.absent?ROUGE[0]:sigForm?VERT[0]:GRIS[0],s.absent?ROUGE[1]:sigForm?VERT[1]:GRIS[1],s.absent?ROUGE[2]:sigForm?VERT[2]:GRIS[2]);
-      doc.text(s.absent?'Absent':sigForm?'✓ Signé':'En attente',172,y+6);
+      doc.text(s.absent?'Absent':sigForm?'Signe':'En attente',172,y+6);
     }
     doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10); y+=10;
   }
@@ -1976,10 +1977,10 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
         doc.setFontSize(7);
       } else {
         const sa=s.data.matin_alt||s.data.am_alt;
-        if(!s.absent&&sa){ try{ dessinerSignature(doc,sa,145,y,null,null); if(false) doc.addImage(sa,'JPEG',143,y+1,22,8);}catch(e){ doc.setTextColor.apply(doc,VERT); doc.text('✓ Signé',145,y+6);} }
+        if(!s.absent&&sa){ try{ dessinerSignature(doc,sa,145,y,null,null); if(false) doc.addImage(sa,'JPEG',143,y+1,22,8);}catch(e){ doc.setTextColor.apply(doc,VERT); doc.text('Signe',145,y+6);} }
         else { doc.setTextColor.apply(doc,s.absent?ROUGE:GRIS); doc.text(s.absent?'Absent':'En attente',145,y+6); }
         const sf=s.data.matin_form||s.data.am_form;
-        if(!s.absent&&sf){ try{ dessinerSignature(doc,sf,172,y,null,null); if(false) doc.addImage(sf,'JPEG',170,y+1,22,8);}catch(e){ doc.setTextColor.apply(doc,VERT); doc.text('✓ Signé',172,y+6);} }
+        if(!s.absent&&sf){ try{ dessinerSignature(doc,sf,172,y,null,null); if(false) doc.addImage(sf,'JPEG',170,y+1,22,8);}catch(e){ doc.setTextColor.apply(doc,VERT); doc.text('Signe',172,y+6);} }
         else { doc.setTextColor.apply(doc,s.absent?ROUGE:GRIS); doc.text(s.absent?'Absent':'En attente',172,y+6); }
       }
       doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10);
