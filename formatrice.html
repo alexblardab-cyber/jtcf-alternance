@@ -1938,10 +1938,17 @@ async function chargerDrive(){
 function dernierParaphe(liste, champs){
   for (var i = liste.length - 1; i >= 0; i--){
     var d = liste[i] || {};
-    var src = d.data || d.dataN || {};
-    for (var c = 0; c < champs.length; c++){
-      var v = src[champs[c]];
-      if (typeof v === 'string' && v.indexOf('data:image') === 0) return v;
+    // Sources possibles : format courant, ou seance importee du papier
+    var sources = [d.data, d.dataN, d.dataM, d.dataA];
+    for (var s = 0; s < sources.length; s++){
+      var src = sources[s]; if (!src) continue;
+      for (var c = 0; c < champs.length; c++){
+        var v = src[champs[c]];
+        if (typeof v === 'string' && v.indexOf('data:image') === 0) return v;
+      }
+      // Le format papier stocke le contreseing sous « form »
+      if (champs.indexOf('matin_form') >= 0 && typeof src.form === 'string'
+          && src.form.indexOf('data:image') === 0) return src.form;
     }
   }
   return null;
@@ -2315,15 +2322,19 @@ async function exporterPDFPersonne(alt) {
     doc.text(s.hA>0?s.hA+'h':'—',130,y+6);
     // Signatures
     const sigAlt = s.isRetro ? (s.dataM&&s.dataM.statut==='present'||s.dataA&&s.dataA.statut==='present') : s.altSigne;
-    const sigForm = s.isRetro ? !!((s.dataM&&s.dataM.form)||(s.dataA&&s.dataA.form)) : s.formSigne;
+    // Image du contreseing, format courant ou seance importee du papier
+    const imgForm = s.isRetro
+      ? ((s.dataM&&s.dataM.form)||(s.dataA&&s.dataA.form)||null)
+      : ((s.dataN&&(s.dataN.matin_form||s.dataN.am_form))||null);
+    const sigForm = !!imgForm || (!s.isRetro && s.formSigne);
     if (!s.absent && sigAlt && !s.isRetro && s.dataN && (s.dataN.matin_alt||s.dataN.am_alt)) {
       try { dessinerSignature(doc,s.dataN.matin_alt||s.dataN.am_alt,145,y,null,null); if(false) doc.addImage(s.dataN.matin_alt||s.dataN.am_alt,'JPEG',143,y+1,22,8); } catch(e) { doc.setTextColor(...VERT); doc.text('Signe',145,y+6); }
     } else {
       doc.setTextColor(s.absent?ROUGE[0]:sigAlt?VERT[0]:GRIS[0], s.absent?ROUGE[1]:sigAlt?VERT[1]:GRIS[1], s.absent?ROUGE[2]:sigAlt?VERT[2]:GRIS[2]);
       doc.text(s.absent?'Absent':sigAlt?'Signe':'En attente',145,y+6);
     }
-    if (!s.absent && sigForm && s.dataN && (s.dataN.matin_form||s.dataN.am_form)) {
-      try { dessinerSignature(doc,s.dataN.matin_form||s.dataN.am_form,172,y,null,null); if(false) doc.addImage(s.dataN.matin_form||s.dataN.am_form,'JPEG',170,y+1,22,8); } catch(e) { doc.setTextColor(...VERT); doc.text('Signe',172,y+6); }
+    if (!s.absent && imgForm) {
+      dessinerSignature(doc, imgForm, 172, y, null, null);
     } else {
       doc.setTextColor(s.absent?ROUGE[0]:sigForm?VERT[0]:GRIS[0], s.absent?ROUGE[1]:sigForm?VERT[1]:GRIS[1], s.absent?ROUGE[2]:sigForm?VERT[2]:GRIS[2]);
       doc.text(s.absent?'Absent':sigForm?'Signe':'En attente',172,y+6);
