@@ -209,6 +209,7 @@
             </optgroup>
           </select>
         </div>
+        <div class="form-field"><label class="form-label">✉️ Adresse Google (pour le partage Drive)</label><input class="form-input" id="formEmail" type="email" placeholder="prenom.nom@gmail.com" style="text-transform:none;" /></div>
         <div class="form-field"><label class="form-label">Entreprise</label><input class="form-input" id="formEntreprise" placeholder="Nom de l'entreprise" /></div>
         <div class="form-field"><label class="form-label">Maître d'apprentissage</label><input class="form-input" id="formMaitre" placeholder="Prénom Nom" /></div>
         <div class="form-field"><label class="form-label">Jour en centre</label>
@@ -249,6 +250,7 @@
         <div class="card-title" id="fcFormTitre">➕ Nouveau stagiaire FC</div>
         <div class="form-field"><label class="form-label">Identifiant</label><input class="form-input" id="fcFormId" placeholder="Ex: ML02" maxlength="10" /></div>
         <div class="form-field"><label class="form-label">Nom complet</label><input class="form-input" id="fcFormNom" placeholder="Prénom Nom" /></div>
+        <div class="form-field"><label class="form-label">✉️ Adresse Google (pour le partage Drive)</label><input class="form-input" id="fcFormEmail" type="email" placeholder="prenom.nom@gmail.com" style="text-transform:none;" /></div>
         <div class="form-field"><label class="form-label">Formation</label>
           <select class="form-select" id="fcFormFormation">
             <optgroup label="Administration">
@@ -677,6 +679,7 @@ function ouvrirFormAjout(){
   ['formId','formNom','formEntreprise','formMaitre','formDebut','formFin'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('formId').disabled=false;
   document.getElementById('formHeures').value='8h00 – 16h00';
+  document.getElementById('formEmail').value='';
   document.getElementById('btnSupprimer').style.display='none';
   document.getElementById('formSuccess').classList.remove('visible');
   document.getElementById('sectionDocs').style.display='none';
@@ -694,6 +697,7 @@ function ouvrirFormModif(alt){
   document.getElementById('formMaitre').value=alt.maitre||'';
   document.getElementById('formJour').value=alt.jourCentre;
   document.getElementById('formHeures').value=alt.heures||'8h00 – 16h00';
+  document.getElementById('formEmail').value=alt.email||'';
   document.getElementById('formDebut').value=alt.debut||'';
   document.getElementById('formFin').value=alt.fin||'';
   document.getElementById('btnSupprimer').style.display='block';
@@ -711,6 +715,7 @@ async function sauvegarder(e){
   if(!id){alert('Veuillez saisir un identifiant.');return;}
   const data={
     nom:document.getElementById('formNom').value.trim(),
+    email:document.getElementById('formEmail').value.trim(),
     formation:document.getElementById('formFormation').value,
     entreprise:document.getElementById('formEntreprise').value.trim(),
     maitre:document.getElementById('formMaitre').value.trim(),
@@ -1337,6 +1342,7 @@ function ouvrirFormFC(fc){
   document.querySelector('#stagiairesfc > div:first-child').style.display='none';
   const sectionDocsFC=document.getElementById('sectionDocsFC');
   sectionDocsFC.style.display=fc?'block':'none';
+  document.getElementById('fcFormEmail').value=(fc&&fc.email)||'';
   if(fc) document.getElementById('docDossierFC').value=(fc.documents&&fc.documents.dossier)?fc.documents.dossier:'';
 }
 
@@ -1352,6 +1358,7 @@ async function sauvegarderFC(e){
   if(!id){alert('Identifiant requis.');return;}
   await update(ref(db,'stagiairesFC/'+id),{   // update : ne supprime pas documents/
     nom:document.getElementById('fcFormNom').value.trim(),
+    email:document.getElementById('fcFormEmail').value.trim(),
     formation:document.getElementById('fcFormFormation').value,
     debut:document.getElementById('fcFormDebut').value.trim(),
     fin:document.getElementById('fcFormFin').value.trim(),

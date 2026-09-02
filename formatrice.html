@@ -232,6 +232,10 @@
   <!-- DRIVE -->
   <div class="section" id="drive">
     <div class="jour-titre">📁 Dossiers Google Drive — Apprenants</div>
+    <button class="btn-global" id="btnCopierMails" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);margin-bottom:12px;">📋 Copier toutes les adresses Google</button>
+    <div style="font-size:11px;color:#718096;text-align:center;line-height:1.5;margin-top:-8px;margin-bottom:12px;">
+      Pour coller directement dans la fenêtre de partage de Google Drive.
+    </div>
     <div id="listeDriveAlts"><div class="loading">Chargement...</div></div>
     <div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;padding:10px 0 6px;border-top:1px solid #e2e8f0;margin-top:10px;">🎓 Stagiaires FC</div>
     <div id="listeDriveFC"><div class="loading">Chargement...</div></div>
@@ -1919,6 +1923,7 @@ async function chargerDrive(){
     var ini=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();
     var dl=(a.documents&&a.documents.dossier)?a.documents.dossier:(a.drive||'');
     var lien=dl?'<a href="'+dl+'" target="_blank" style="padding:5px 12px;background:#C9A227;color:#2a3f4e;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
+    var mail=a.email?'<div style="font-size:11px;color:#2b6cb0;margin-top:2px;word-break:break-all;">✉️ '+a.email+'</div>':'<div style="font-size:11px;color:#e53e3e;margin-top:2px;">✉️ adresse manquante</div>';
     return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f0f2f5;"><div style="width:34px;height:34px;border-radius:50%;background:#2a3f4e;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#2a3f4e;">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:#718096;">'+(a.formation||'')+(a.jourCentre?' · '+a.jourCentre:'')+'</div></div>'+lien+'</div>';
   }).join('')||'<div style="color:#718096;font-size:13px;">Aucun alternant.</div>';
   var fSnap=await get(ref(db,'stagiairesFC')).catch(function(){return null;});var fcs2=[];
@@ -1927,6 +1932,7 @@ async function chargerDrive(){
     var ini=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();
     var dl=(a.documents&&a.documents.dossier)?a.documents.dossier:(a.drive||'');
     var lien=dl?'<a href="'+dl+'" target="_blank" style="padding:5px 12px;background:#C9A227;color:#2a3f4e;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
+    var mail=a.email?'<div style="font-size:11px;color:#2b6cb0;margin-top:2px;word-break:break-all;">✉️ '+a.email+'</div>':'<div style="font-size:11px;color:#e53e3e;margin-top:2px;">✉️ adresse manquante</div>';
     return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f0f2f5;"><div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#553c9a,#6b46c1);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#2a3f4e;">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:#718096;">'+(a.formation||'')+'</div></div>'+lien+'</div>';
   }).join('')||'<div style="color:#718096;font-size:13px;">Aucun stagiaire FC.</div>';
 }
