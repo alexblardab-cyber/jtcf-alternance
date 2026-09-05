@@ -147,6 +147,11 @@
       <div class="kpi-card"><div class="kpi-val rouge" id="kpiAbsents">0</div><div class="kpi-lbl">Absences ce mois</div></div>
     </div>
     <div class="card">
+      <div class="card-title">🩺 Contrôle des dossiers <span id="ctrlBadge" style="float:right;font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;background:#edf2f7;color:#718096;">—</span></div>
+      <div id="ctrlListe"><div class="loading">Analyse...</div></div>
+      <button class="btn-primary" id="btnCtrlSignatures" style="margin-top:12px;font-size:13px;padding:11px;">🔍 Vérifier aussi les signatures</button>
+    </div>
+    <div class="card">
       <div class="card-title">⚡ Activité récente</div>
       <div id="activiteRecente"><div class="loading">Chargement...</div></div>
     </div>
@@ -548,6 +553,7 @@ async function chargerTout() {
   afficherListeFC();
   chargerGroupes();
   remplirMoisSelect();
+  ctrlLancer();
 }
 
 function formatDate(d) {
@@ -1404,6 +1410,257 @@ document.getElementById('btnSupprimerFC').addEventListener('click',supprimerFC);
 document.getElementById('btnSupprimerFC').addEventListener('touchend',supprimerFC,{passive:false});
 document.getElementById('btnSauvegarderDocsFC').addEventListener('click',sauvegarderDocsFC);
 document.getElementById('btnSauvegarderDocsFC').addEventListener('touchend',sauvegarderDocsFC,{passive:false});
+
+/* ==========================================================================
+   CONTRÔLE DES DOSSIERS
+   Repère les oublis de saisie avant qu'ils ne posent problème :
+   lien Drive partagé par deux personnes, dates manquantes, groupe absent,
+   adresse e-mail erronée, doublons de nom.
+   Le contrôle des signatures est séparé car il lit tout l'historique.
+   ========================================================================== */
+
+var CTRL_JOURS_ALERTE = 14;   // jours sans signature avant alerte
+
+function ctrlNormLien(l){
+  if(!l) return '';
+  var m = String(l).match(/folders\/([A-Za-z0-9_-]+)/);
+  return m ? m[1] : String(l).trim().replace(/\/+$/,'');
+}
+function ctrlEmailValide(e){
+  return !!e && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e).trim());
+}
+function ctrlDate(s){
+  if(!s) return null;
+  var t = String(s).trim();
+  var m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(m) return new Date(+m[3], +m[2]-1, +m[1]);
+  m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return new Date(+m[1], +m[2]-1, +m[3]);
+  return null;
+}
+
+function ctrlAnalyser(){
+  var anomalies = [];
+  var alts = allAlternants || [], fcs = allFC || [];
+  var tous = alts.map(function(a){ return {p:a, fc:false}; })
+        .concat(fcs.map(function(a){ return {p:a, fc:true}; }));
+
+  // --- Liens Drive partagés par plusieurs personnes -----------------------
+  var parLien = {};
+  tous.forEach(function(x){
+    var l = ctrlNormLien(x.p.documents && x.p.documents.dossier);
+    if(!l) return;
+    (parLien[l] = parLien[l] || []).push(x.p.nom || x.p.id);
+  });
+  Object.keys(parLien).forEach(function(l){
+    if(parLien[l].length > 1){
+      anomalies.push({
+        grave: true,
+        titre: 'Même dossier Drive pour ' + parLien[l].length + ' personnes',
+        detail: parLien[l].join(', ') + ' — chacun doit avoir son propre dossier.'
+      });
+    }
+  });
+
+  // --- Contrôles par personne ---------------------------------------------
+  tous.forEach(function(x){
+    var p = x.p, nom = p.nom || p.id;
+    var qui = nom + ' · ' + p.id + (x.fc ? ' (FC)' : '');
+    var manques = [];
+
+    if(!(p.documents && p.documents.dossier)) manques.push('dossier Drive');
+    if(!ctrlEmailValide(p.email))            manques.push(p.email ? 'adresse e-mail invalide' : 'adresse e-mail');
+    if(!p.formation)                         manques.push('formation');
+    if(!x.fc && !p.jourCentre)               manques.push('jour de centre');
+    if(x.fc && (!p.jours || !p.jours.length)) manques.push('jours de présence');
+    if(!p.debut)                             manques.push('date de début');
+    if(!p.fin)                               manques.push('date de fin');
+
+    if(manques.length){
+      anomalies.push({
+        grave: manques.length > 2,
+        titre: qui,
+        detail: 'À compléter : ' + manques.join(', ') + '.'
+      });
+    }
+
+    var d1 = ctrlDate(p.debut), d2 = ctrlDate(p.fin);
+    if(d1 && d2 && d2 <= d1){
+      anomalies.push({ grave:true, titre: qui, detail: 'La date de fin précède la date de début.' });
+    }
+    if(d2 && d2 < new Date()){
+      anomalies.push({ grave:false, titre: qui, detail: 'Contrat terminé le ' + p.fin + ' — dossier à archiver ?' });
+    }
+  });
+
+  // --- Doublons de nom ------------------------------------------------------
+  var parNom = {};
+  tous.forEach(function(x){
+    var n = (x.p.nom||'').trim().toLowerCase().replace(/\s+/g,' ');
+    if(!n) return;
+    (parNom[n] = parNom[n] || []).push(x.p.id);
+  });
+  Object.keys(parNom).forEach(function(n){
+    if(parNom[n].length > 1){
+      anomalies.push({
+        grave: true,
+        titre: 'Nom en double',
+        detail: parNom[n].join(' et ') + ' portent le même nom — doublon à supprimer ?'
+      });
+    }
+  });
+
+  return anomalies;
+}
+
+function ctrlAfficher(anomalies, complement){
+  var zone = document.getElementById('ctrlListe');
+  var badge = document.getElementById('ctrlBadge');
+  if(!zone) return;
+
+  var graves = anomalies.filter(function(a){ return a.grave; }).length;
+
+  if(badge){
+    if(!anomalies.length){
+      badge.textContent = 'Tout est en ordre';
+      badge.style.background = '#f0fff4'; badge.style.color = '#38a169';
+    } else {
+      badge.textContent = anomalies.length + (anomalies.length>1?' points':' point');
+      badge.style.background = graves ? '#fff5f5' : '#fffaf0';
+      badge.style.color      = graves ? '#e53e3e' : '#dd6b20';
+    }
+  }
+
+  if(!anomalies.length){
+    zone.innerHTML = '<div style="padding:14px 0;font-size:13px;color:#38a169;font-weight:600;">'
+      + '✓ Aucun oubli détecté dans les dossiers.</div>'
+      + (complement || '');
+    return;
+  }
+
+  anomalies.sort(function(a,b){ return (b.grave?1:0) - (a.grave?1:0); });
+
+  zone.innerHTML = anomalies.map(function(a){
+    var c = a.grave ? '#e53e3e' : '#dd6b20';
+    var f = a.grave ? '#fff5f5' : '#fffaf0';
+    return '<div style="display:flex;gap:10px;padding:10px 12px;margin-bottom:7px;'
+      + 'background:'+f+';border-left:3px solid '+c+';border-radius:8px;">'
+      + '<div style="font-size:14px;line-height:1.2;">'+(a.grave?'⛔':'⚠️')+'</div>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+a.titre+'</div>'
+      + '<div style="font-size:11.5px;color:#4a5568;margin-top:2px;">'+a.detail+'</div>'
+      + '</div></div>';
+  }).join('') + (complement || '');
+}
+
+function ctrlLancer(){
+  try { ctrlAfficher(ctrlAnalyser()); }
+  catch(err){
+    var z = document.getElementById('ctrlListe');
+    if(z) z.innerHTML = '<div style="font-size:12px;color:#e53e3e;">Contrôle impossible : '+err.message+'</div>';
+  }
+}
+
+// Contrôle lourd : dernière signature de chacun, sur tout l'historique.
+async function ctrlSignatures(){
+  var btn = document.getElementById('btnCtrlSignatures');
+  var libelle = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Lecture de l\'historique...'; }
+
+  try {
+    var res = await Promise.all([
+      get(ref(db,'emargements')).catch(function(){return null;}),
+      get(ref(db,'emargementsFC')).catch(function(){return null;})
+    ]);
+
+    var dernieres = {};
+    function balayer(snap, suffixeFC){
+      if(!snap || !snap.exists()) return;
+      snap.forEach(function(c){
+        var k = c.key, v = c.val();
+        // format courant : ID_aaaa_m_j  (FC : ID_fc_aaaa_m_j)
+        var parts = k.split('_');
+        if(parts.length >= 4){
+          var id = parts[0];
+          var q = parts.slice(-3);
+          var d = new Date(+q[0], +q[1]-1, +q[2]);
+          if(!isNaN(d) && (v && (v.matin_alt || v.am_alt))){
+            if(!dernieres[id] || d > dernieres[id]) dernieres[id] = d;
+          }
+          return;
+        }
+        // format rétroactif : ID / aaaa-mm-jj / periode
+        if(v && typeof v === 'object'){
+          Object.keys(v).forEach(function(jour){
+            var m = jour.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if(!m) return;
+            var d = new Date(+m[1], +m[2]-1, +m[3]);
+            if(!isNaN(d) && (!dernieres[k] || d > dernieres[k])) dernieres[k] = d;
+          });
+        }
+      });
+    }
+    balayer(res[0]); balayer(res[1], true);
+
+    var aujourdhui = new Date();
+    var retards = [];
+    (allAlternants||[]).concat(allFC||[]).forEach(function(p){
+      var fin = ctrlDate(p.fin);
+      if(fin && fin < aujourdhui) return;            // contrat terminé
+      var debut = ctrlDate(p.debut);
+      if(debut && debut > aujourdhui) return;        // pas encore commencé
+
+      var d = dernieres[p.id];
+      if(!d){
+        retards.push({ nom: p.nom || p.id, jours: null });
+        return;
+      }
+      var ecart = Math.floor((aujourdhui - d) / 86400000);
+      if(ecart > CTRL_JOURS_ALERTE){
+        retards.push({ nom: p.nom || p.id, jours: ecart, date: d });
+      }
+    });
+
+    var bloc;
+    if(!retards.length){
+      bloc = '<div style="margin-top:12px;padding:11px 12px;background:#f0fff4;'
+        + 'border-left:3px solid #38a169;border-radius:8px;font-size:12.5px;color:#276749;">'
+        + '✓ Tout le monde a signé dans les ' + CTRL_JOURS_ALERTE + ' derniers jours.</div>';
+    } else {
+      bloc = '<div style="margin-top:12px;font-size:12px;font-weight:800;color:var(--bleu-fonce);">'
+        + 'Signatures en retard (' + retards.length + ')</div>'
+        + retards.map(function(r){
+            var txt = r.jours === null
+              ? 'Aucune signature enregistrée à ce jour.'
+              : 'Dernière signature il y a ' + r.jours + ' jours ('
+                + ('0'+r.date.getDate()).slice(-2) + '/'
+                + ('0'+(r.date.getMonth()+1)).slice(-2) + '/'
+                + r.date.getFullYear() + ').';
+            return '<div style="display:flex;gap:10px;padding:10px 12px;margin-top:7px;'
+              + 'background:#fffaf0;border-left:3px solid #dd6b20;border-radius:8px;">'
+              + '<div style="font-size:14px;line-height:1.2;">🕒</div>'
+              + '<div style="flex:1;min-width:0;">'
+              + '<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+r.nom+'</div>'
+              + '<div style="font-size:11.5px;color:#4a5568;margin-top:2px;">'+txt+'</div>'
+              + '</div></div>';
+          }).join('');
+    }
+
+    ctrlAfficher(ctrlAnalyser(), bloc);
+  } catch(err){
+    alert('Contrôle des signatures impossible : ' + err.message);
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = libelle || '🔍 Vérifier aussi les signatures'; }
+  }
+}
+
+(function(){
+  var b = document.getElementById('btnCtrlSignatures');
+  if(b){
+    b.addEventListener('click', ctrlSignatures);
+    b.addEventListener('touchend', function(e){ e.preventDefault(); ctrlSignatures(); }, {passive:false});
+  }
+})();
 
 </script>
 
