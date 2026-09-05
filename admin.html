@@ -1457,6 +1457,23 @@ function ctrlAnalyser(){
     }
   });
 
+  // --- Adresses e-mail utilisées par plusieurs personnes ---------------------
+  var parMail = {};
+  tous.forEach(function(x){
+    var e = (x.p.email||'').trim().toLowerCase();
+    if(!e) return;
+    (parMail[e] = parMail[e] || []).push(x.p.nom || x.p.id);
+  });
+  Object.keys(parMail).forEach(function(e){
+    if(parMail[e].length > 1){
+      anomalies.push({
+        grave: true,
+        titre: 'Même adresse pour ' + parMail[e].length + ' personnes',
+        detail: e + ' — ' + parMail[e].join(', ') + '. Le partage Drive ira au mauvais compte.'
+      });
+    }
+  });
+
   // --- Doublons de nom ------------------------------------------------------
   var parNom = {};
   tous.forEach(function(x){

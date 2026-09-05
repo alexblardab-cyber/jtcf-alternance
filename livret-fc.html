@@ -141,6 +141,7 @@
 </style>
   <script src="regles.js"></script>
   <script src="theme.js"></script>
+  <script src="adresse.js"></script>
 </head>
 <body>
 
@@ -335,6 +336,11 @@
 
   <!-- DOCUMENTS -->
   <div class="section" id="documents">
+    <div class="card">
+      <div class="card-title">📧 Mon adresse e-mail</div>
+      <div id="ligneAdresse" style="font-size:13px;color:#4a5568;">—</div>
+      <button id="btnModifierAdresse" style="width:100%;margin-top:10px;padding:11px;background:var(--bleu-clair);color:var(--bleu-fonce);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">✏️ Modifier mon adresse</button>
+    </div>
     <div class="card">
       <div class="card-title">📁 Mes documents</div>
       <div id="listeDocumentsFC"><div style="text-align:center;padding:20px;color:#718096;">Chargement...</div></div>
@@ -579,6 +585,18 @@ async function chargerUser() {
   document.getElementById('infoFormation').textContent = user.formation;
   document.getElementById('infoDebut').textContent = user.debut || '13/07/2026';
   document.getElementById('infoHeures').textContent = user.heures || '8h15 – 12h00 / 13h00 – 15h15';
+
+  // Adresse Google : demandée une fois, puis enregistrée toute seule.
+  JTCF_ADRESSE.verifier({
+    nom: user.nom,
+    adresse: user.email,
+    enregistrer: async function(mail){
+      await set(ref(db, 'stagiairesFC/' + userId + '/email'), mail);
+      await set(ref(db, 'stagiairesFC/' + userId + '/emailMaj'), new Date().toISOString());
+      user.email = mail;
+      majLigneAdresse();
+    }
+  });
 
   // Lire les jours depuis Firebase (noeud alternants)
   try {
@@ -1072,7 +1090,39 @@ document.getElementById('btnSemNext').addEventListener('touchend',function(e){e.
 document.getElementById('btnSemNext').addEventListener('click',function(){semainePlanIdx++;updatePlanning();});
 
 // Documents FC
+// Rappel visible de l'adresse enregistrée, modifiable à tout moment.
+function majLigneAdresse(){
+  const l=document.getElementById('ligneAdresse'); if(!l) return;
+  if(JTCF_ADRESSE.valide(user && user.email)){
+    l.innerHTML='<span style="font-weight:700;color:var(--bleu-fonce);">'+user.email+'</span>'
+      +'<div style="font-size:11.5px;color:#718096;margin-top:4px;">C\'est à cette adresse que votre dossier Drive est partagé.</div>';
+  } else {
+    l.innerHTML='<span style="color:#dd6b20;font-weight:700;">Aucune adresse enregistrée</span>'
+      +'<div style="font-size:11.5px;color:#718096;margin-top:4px;">Sans adresse, le centre ne peut pas vous partager vos documents.</div>';
+  }
+}
+
+(function(){
+  const b=document.getElementById('btnModifierAdresse'); if(!b) return;
+  function go(e){
+    if(e) e.preventDefault();
+    JTCF_ADRESSE.ouvrir({
+      nom: user ? user.nom : '',
+      adresse: user ? user.email : '',
+      modification: true,
+      enregistrer: async function(mail){
+        await set(ref(db,'stagiairesFC/'+userId+'/email'), mail);
+        await set(ref(db,'stagiairesFC/'+userId+'/emailMaj'), new Date().toISOString());
+        user.email=mail; majLigneAdresse();
+      }
+    });
+  }
+  b.addEventListener('click',go);
+  b.addEventListener('touchend',go,{passive:false});
+})();
+
 async function chargerDocumentsFC() {
+  majLigneAdresse();
   const snap = await get(ref(db, 'stagiairesFC/' + userId + '/documents'));
   const container = document.getElementById('listeDocumentsFC');
   if (!container) return;
