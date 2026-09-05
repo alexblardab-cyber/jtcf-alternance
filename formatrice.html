@@ -67,7 +67,7 @@
   .recap-motifs { margin-top: 8px; font-size: 11px; color: var(--gris); }
   .recap-motif-item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--gris-clair); }
   .recap-motif-item:last-child { border-bottom: none; }
-  .btn-export { width: 100%; padding: 13px; background: linear-gradient(135deg, #C9A227, #f0d98a); color: #2a3f4e; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; margin-bottom: 14px; letter-spacing: 0.5px; }
+  .btn-export { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--or), var(--or-clair)); color: var(--bleu-fonce); border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; margin-bottom: 14px; letter-spacing: 0.5px; }
 
   .total-card { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border-radius: 12px; padding: 14px; margin-bottom: 14px; color: var(--blanc); }
   .total-titre { font-size: 12px; font-weight: 700; color: var(--or); margin-bottom: 10px; text-transform: uppercase; }
@@ -106,7 +106,7 @@
   .pill { margin-left:auto; font-size:10px; font-weight:800; padding:3px 9px; border-radius:20px; background:#edf2f7; color:#4a5568; letter-spacing:0; }
   .pill.ok { background:#c6f6d5; color:#22543d; }
   .pill.or { background:#fef5e0; color:#8a6d1f; }
-  .dash-date { font-size:12px; font-weight:800; color:#2a3f4e; background:#fff; border-radius:10px; padding:9px 12px; margin-bottom:12px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .dash-date { font-size:12px; font-weight:800; color:var(--bleu-fonce); background:#fff; border-radius:10px; padding:9px 12px; margin-bottom:12px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.06); }
 
   .jour-select { display:flex; gap:3px; margin-bottom:12px; }
   .jour-btn { flex:1; padding:11px 0; border:none; background:#e8ecf0; color:#718096; font-size:12px; font-weight:700; cursor:pointer; touch-action:manipulation; transition:background .18s, color .18s; }
@@ -114,17 +114,17 @@
   .jour-btn:last-child { border-radius:0 10px 10px 0; }
   .jour-btn.actif { color:#fff; font-weight:800; }
   .jour-entete { display:flex; justify-content:space-between; align-items:center; background:#fff; border-radius:10px 10px 0 0; padding:11px 14px; }
-  .jour-entete-date { font-size:13px; font-weight:800; color:#2a3f4e; }
+  .jour-entete-date { font-size:13px; font-weight:800; color:var(--bleu-fonce); }
   .jour-entete-pct { font-size:12px; font-weight:800; }
   .barre-fond { height:5px; background:#e8ecf0; border-radius:0 0 10px 10px; overflow:hidden; margin-bottom:12px; }
   .barre-jauge { height:100%; width:0%; transition:width .45s ease, background .45s ease; }
-  .btn-am { background:linear-gradient(135deg,#2b6cb0,#3d5a6e); }
+  .btn-am { background:linear-gradient(135deg,#2b6cb0,var(--bleu)); }
   .filtre-jours { display:flex; gap:4px; margin-bottom:12px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
   .f-btn { flex-shrink:0; padding:7px 13px; border:none; border-radius:20px; background:#e8ecf0; color:#718096; font-size:12px; font-weight:700; cursor:pointer; touch-action:manipulation; }
-  .f-btn.actif { background:#2a3f4e; color:#fff; }
+  .f-btn.actif { background:var(--bleu-fonce); color:#fff; }
   .btn-global { width: 100%; padding: 13px; background: linear-gradient(135deg, #276749, #38a169); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; letter-spacing: 0.5px; }
   .btn-annuler-sign { width: 100%; padding: 8px; background: #fff5f5; color: var(--rouge); border: 1px solid #fed7d7; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; margin-top: 8px; }
-  .btn-signature-globale { width: 100%; padding: 13px; background: linear-gradient(135deg, #2a3f4e, #3d5a6e); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; letter-spacing: 0.5px; }
+  .btn-signature-globale { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 14px; letter-spacing: 0.5px; }
   .sign-label { font-size: 11px; color: var(--gris); margin-bottom: 6px; }
   .loading { text-align: center; color: var(--gris); font-size: 13px; padding: 20px; }
   @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
@@ -134,6 +134,7 @@
     font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
   .spacer { height: 20px; }
 </style>
+  <script src="theme.js"></script>
 </head>
 <body>
 
@@ -173,7 +174,7 @@
     <div style="font-size:11px;color:#718096;text-align:center;line-height:1.5;margin-top:-6px;">
       Prépare le message et ouvre WhatsApp. Vous choisissez le destinataire.
     </div>
-    <button class="btn-global" id="btnCompleterSign" style="margin-top:14px;background:linear-gradient(135deg,#b7791f,#C9A227);">🖊️ Compléter mes signatures manquantes</button>
+    <button class="btn-global" id="btnCompleterSign" style="margin-top:14px;background:linear-gradient(135deg,#b7791f,var(--or));">🖊️ Compléter mes signatures manquantes</button>
     <div style="font-size:11px;color:#718096;text-align:center;line-height:1.5;margin-top:-6px;">
       Appose votre paraphe sur toutes les séances passées que les apprenants ont signées sans contreseing.
     </div>
@@ -209,7 +210,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title" style="border-bottom-color:#C9A227;">🎓 Formation Continue <span class="pill or" id="hdr_listeFCJour">—</span></div>
+      <div class="card-title" style="border-bottom-color:var(--or);">🎓 Formation Continue <span class="pill or" id="hdr_listeFCJour">—</span></div>
       <div id="listeFCJour"><div class="loading">Chargement...</div></div>
     </div>
   </div>
@@ -236,7 +237,7 @@
   <!-- DRIVE -->
   <div class="section" id="drive">
     <div class="jour-titre">📁 Dossiers Google Drive — Apprenants</div>
-    <button class="btn-global" id="btnCopierMails" style="background:linear-gradient(135deg,#2b6cb0,#3d5a6e);margin-bottom:12px;">📋 Copier toutes les adresses Google</button>
+    <button class="btn-global" id="btnCopierMails" style="background:linear-gradient(135deg,#2b6cb0,var(--bleu));margin-bottom:12px;">📋 Copier toutes les adresses Google</button>
     <div style="font-size:11px;color:#718096;text-align:center;line-height:1.5;margin-top:-8px;margin-bottom:12px;">
       Pour coller directement dans la fenêtre de partage de Google Drive.
     </div>
@@ -291,12 +292,12 @@
 
     <button class="btn-export" id="btnExportPDF">📄 Exporter le PDF mensuel</button>
     <div style="position:relative;margin-bottom:14px;">
-      <button class="btn-export" id="btnExportPDFPersonne" style="background:linear-gradient(135deg,#3d5a6e,#2a3f4e);color:#fff;">👤 Exporter PDF par personne</button>
-      <div id="menuPersonne" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #C9A227;border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:260px;overflow-y:auto;"></div>
+      <button class="btn-export" id="btnExportPDFPersonne" style="background:linear-gradient(135deg,var(--bleu),var(--bleu-fonce));color:#fff;">👤 Exporter PDF par personne</button>
+      <div id="menuPersonne" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--or);border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:260px;overflow-y:auto;"></div>
     </div>
     <div style="position:relative;margin-bottom:14px;">
-      <button class="btn-export" id="btnExportPDFFC" style="background:linear-gradient(135deg,#C9A227,#b8901f);color:#2a3f4e;font-weight:800;">🎓 Exporter PDF — Formation Continue</button>
-      <div id="menuFC" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #C9A227;border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:300px;overflow-y:auto;"></div>
+      <button class="btn-export" id="btnExportPDFFC" style="background:linear-gradient(135deg,var(--or),#b8901f);color:var(--bleu-fonce);font-weight:800;">🎓 Exporter PDF — Formation Continue</button>
+      <div id="menuFC" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--or);border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:300px;overflow-y:auto;"></div>
     </div>
     <div id="recapListe"><div class="loading">Chargement...</div></div>
   </div>
@@ -346,7 +347,7 @@
         <button class="btn-annuler-sign" id="btnAnnulerMatin" style="display:none;" data-slot="matin_form">🗑️ Annuler ma signature matin</button>
         
         <button class="btn-annuler-sign" id="btnExceptMatin" style="display:none;background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;font-weight:800;">✍️ Signer à sa place — matin (oubli / panne / réseau)</button>
-        <button class="btn-annuler-sign" id="btnEffacerAltMatin" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant matin</button>
+        <button class="btn-annuler-sign" id="btnEffacerAltMatin" style="display:none;background:#fff8dc;color:#744210;border-color:var(--or-clair);">🗑️ Effacer signature alternant matin</button>
         <button class="btn-annuler-sign" id="btnEntreprise" style="display:none;background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;font-weight:800;">🏢 Journée en entreprise (pas en formation)</button>
         <button class="btn-annuler-sign" id="btnAnnulerAbsence" style="display:none;background:#f0fff4;color:#22543d;border-color:#9ae6b4;font-weight:800;">↩️ Annuler l'absence — l'apprenant était présent</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentMatin" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent matin (efface sig. matin)</button>
@@ -367,7 +368,7 @@
         <button class="btn-annuler-sign" id="btnAnnulerAM" style="display:none;" data-slot="am_form">🗑️ Annuler ma signature après-midi</button>
         
         <button class="btn-annuler-sign" id="btnExceptAM" style="display:none;background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;font-weight:800;">✍️ Signer à sa place — après-midi (oubli / panne / réseau)</button>
-        <button class="btn-annuler-sign" id="btnEffacerAltAM" style="display:none;background:#fff8dc;color:#744210;border-color:#f0d98a;">🗑️ Effacer signature alternant après-midi</button>
+        <button class="btn-annuler-sign" id="btnEffacerAltAM" style="display:none;background:#fff8dc;color:#744210;border-color:var(--or-clair);">🗑️ Effacer signature alternant après-midi</button>
         <button class="btn-annuler-sign" id="btnMarquerAbsentAM" style="display:none;background:#fff5f5;color:#e53e3e;border-color:#fed7d7;">❌ Absent après-midi (efface sig. AM)</button>
       </div>
     </div>
@@ -473,7 +474,7 @@ await new Promise((resolve) => {
         <p style="font-size:13px;color:#718096;margin:0 0 16px;">Accès sécurisé requis.</p>
         <input id="fbEmail" type="email" placeholder="email" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
         <input id="fbPass" type="password" placeholder="mot de passe" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
-        <button id="fbLoginBtn" style="width:100%;padding:12px;background:#C9A227;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Se connecter</button>
+        <button id="fbLoginBtn" style="width:100%;padding:12px;background:var(--or);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Se connecter</button>
         <div id="fbLoginErr" style="color:#e53e3e;font-size:12px;margin-top:8px;"></div>
       </div>`;
     document.body.appendChild(overlay);
@@ -641,7 +642,7 @@ async function chargerDashboard(){
 
   document.getElementById('dashActions').innerHTML=
     '<button class="btn-global" id="dashBtnMatin">✍️ Signer MATIN — tout le monde ('+tot+')</button>'+
-    '<button class="btn-global" id="dashBtnAM" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,#3d5a6e);">✍️ Signer APRÈS-MIDI — tout le monde ('+tot+')</button>';
+    '<button class="btn-global" id="dashBtnAM" style="margin-bottom:14px;background:linear-gradient(135deg,#2b6cb0,var(--bleu));">✍️ Signer APRÈS-MIDI — tout le monde ('+tot+')</button>';
   ['Matin','AM'].forEach(function(per){
     var b=document.getElementById('dashBtn'+per); if(!b) return;
     var pp=per==='Matin'?'matin':'am';
@@ -655,7 +656,7 @@ async function chargerDashboard(){
     function pt(ok,lbl){return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:'+(ok?'#38a169':'#cbd5e0')+';">'+(ok?'●':'○')+' '+lbl+'</span>';}
     return '<div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #f0f2f5;">'+
       '<div style="width:34px;height:34px;border-radius:50%;background:'+(l.fc?'#C9A227':'#2a3f4e')+';color:'+(l.fc?'#2a3f4e':'white')+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">'+ini+'</div>'+
-      '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:#2a3f4e;">'+l.nom+(l.fc?' <span style="font-size:9px;color:#C9A227;">FC</span>':'')+'</div>'+
+      '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+l.nom+(l.fc?' <span style="font-size:9px;color:var(--or);">FC</span>':'')+'</div>'+
       '<div style="font-size:11px;color:#718096;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+l.info+'</div></div>'+
       '<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">'+pt(l.m,'Matin')+pt(l.a,'A-M')+'</div></div>';
   }).join('');
@@ -1129,7 +1130,7 @@ function afficherListeFC(containerId, fcs, jour) {
     const initiales = fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
     const card = document.createElement('div');
     card.className = 'alternant-card';
-    card.innerHTML = '<div class="alternant-avatar" style="border-color:#C9A227;">'+initiales+'</div><div style="flex:1;min-width:0;"><div class="alternant-nom">'+fc.nom+'</div><div class="alternant-formation">'+fc.formation+'</div><div style="font-size:10px;color:#C9A227;font-weight:700;margin-top:2px;">🎓 Formation Continue</div></div><div data-etat="'+fc.id+'" style="text-align:right;min-width:66px;padding-right:4px;"></div><div class="alternant-arrow">›</div>';
+    card.innerHTML = '<div class="alternant-avatar" style="border-color:var(--or);">'+initiales+'</div><div style="flex:1;min-width:0;"><div class="alternant-nom">'+fc.nom+'</div><div class="alternant-formation">'+fc.formation+'</div><div style="font-size:10px;color:var(--or);font-weight:700;margin-top:2px;">🎓 Formation Continue</div></div><div data-etat="'+fc.id+'" style="text-align:right;min-width:66px;padding-right:4px;"></div><div class="alternant-arrow">›</div>';
     function open(e) { e.preventDefault(); ouvrirFicheFC(fc); }
     card.addEventListener('touchend', open, {passive:false});
     card.addEventListener('click', open);
@@ -1342,7 +1343,7 @@ async function chargerRecap() {
     card.className = 'recap-card';
     card.innerHTML =
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
-        '<div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;background:#C9A227;color:#2a3f4e;border-color:#C9A227;">'+ini+'</div>' +
+        '<div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;background:var(--or);color:var(--bleu-fonce);border-color:var(--or);">'+ini+'</div>' +
         '<div><div class="recap-nom">'+fc.nom+'</div>' +
         '<div style="font-size:11px;color:var(--gris);">'+fc.formation+' · 🎓 FC</div></div>' +
       '</div>' +
@@ -1988,18 +1989,18 @@ async function chargerDrive(){
   cA.innerHTML=alts2.map(function(a){
     var ini=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();
     var dl=(a.documents&&a.documents.dossier)?a.documents.dossier:(a.drive||'');
-    var lien=dl?'<a href="'+dl+'" target="_blank" style="padding:5px 12px;background:#C9A227;color:#2a3f4e;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
+    var lien=dl?'<a href="'+dl+'" target="_blank" style="padding:5px 12px;background:var(--or);color:var(--bleu-fonce);border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
     var mail=a.email?'<div style="font-size:11px;color:#2b6cb0;margin-top:2px;word-break:break-all;">✉️ '+a.email+'</div>':'<div style="font-size:11px;color:#e53e3e;margin-top:2px;">✉️ adresse manquante</div>';
-    return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f0f2f5;"><div style="width:34px;height:34px;border-radius:50%;background:#2a3f4e;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#2a3f4e;">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:#718096;">'+(a.formation||'')+(a.jourCentre?' · '+a.jourCentre:'')+'</div></div>'+lien+'</div>';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f0f2f5;"><div style="width:34px;height:34px;border-radius:50%;background:var(--bleu-fonce);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:#718096;">'+(a.formation||'')+(a.jourCentre?' · '+a.jourCentre:'')+'</div></div>'+lien+'</div>';
   }).join('')||'<div style="color:#718096;font-size:13px;">Aucun alternant.</div>';
   var fSnap=await get(ref(db,'stagiairesFC')).catch(function(){return null;});var fcs2=[];
   if(fSnap&&fSnap.exists())fSnap.forEach(function(c){var a=c.val();a.id=c.key;fcs2.push(a);});
   if(cF)cF.innerHTML=fcs2.map(function(a){
     var ini=((a.prenom||'?')[0]+(a.nom||'?')[0]).toUpperCase();
     var dl=(a.documents&&a.documents.dossier)?a.documents.dossier:(a.drive||'');
-    var lien=dl?'<a href="'+dl+'" target="_blank" style="padding:5px 12px;background:#C9A227;color:#2a3f4e;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
+    var lien=dl?'<a href="'+dl+'" target="_blank" style="padding:5px 12px;background:var(--or);color:var(--bleu-fonce);border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📂 Drive</a>':'<span style="font-size:12px;color:#718096;">Pas de lien</span>';
     var mail=a.email?'<div style="font-size:11px;color:#2b6cb0;margin-top:2px;word-break:break-all;">✉️ '+a.email+'</div>':'<div style="font-size:11px;color:#e53e3e;margin-top:2px;">✉️ adresse manquante</div>';
-    return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f0f2f5;"><div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#553c9a,#6b46c1);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#2a3f4e;">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:#718096;">'+(a.formation||'')+'</div></div>'+lien+'</div>';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f0f2f5;"><div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#553c9a,#6b46c1);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+ini+'</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+(a.prenom||'')+' '+(a.nom||a.id)+'</div><div style="font-size:11px;color:#718096;">'+(a.formation||'')+'</div></div>'+lien+'</div>';
   }).join('')||'<div style="color:#718096;font-size:13px;">Aucun stagiaire FC.</div>';
 }
 
@@ -2224,7 +2225,7 @@ document.getElementById('btnExportPDFPersonne').addEventListener('click', functi
   if (_alts.length === 0) { alert('Les alternants ne sont pas encore chargés. Patientez quelques secondes puis réessayez.'); return; }
   _alts.forEach(function(alt) {
     const item = document.createElement('div');
-    item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#2a3f4e;border-bottom:1px solid #f0f2f5;';
+    item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--bleu-fonce);border-bottom:1px solid #f0f2f5;';
     item.textContent = alt.nom + ' — ' + alt.formation;
     item.addEventListener('mouseenter', function(){ item.style.background='#fdf6e3'; });
     item.addEventListener('mouseleave', function(){ item.style.background='#fff'; });
@@ -2721,7 +2722,7 @@ document.getElementById('btnExportPDFFC').addEventListener('click', function(e){
   function ajouter(label, sousTitre, action, fond){
     const it=document.createElement('div');
     it.style.cssText='padding:11px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f2f5;'+(fond||'');
-    it.innerHTML='<div style="font-weight:700;color:#2a3f4e;">'+label+'</div>'+
+    it.innerHTML='<div style="font-weight:700;color:var(--bleu-fonce);">'+label+'</div>'+
                  (sousTitre?'<div style="font-size:11px;color:#718096;">'+sousTitre+'</div>':'');
     it.addEventListener('click', function(){
       menu.style.display='none';
@@ -2736,7 +2737,7 @@ document.getElementById('btnExportPDFFC').addEventListener('click', function(e){
   }
 
   ajouter('📚 Tous les stagiaires ('+fcs.length+')', 'Un seul PDF, une page par stagiaire',
-          function(){ return exporterPDFFC(fcs,'Tous'); }, 'background:#fdf6e3;');
+          function(){ return exporterPDFFC(fcs,'Tous'); }, 'background:var(--or-pale);');
   fcs.forEach(function(fc){
     ajouter(fc.nom, fc.formation||'', function(){ return exporterPDFFC([fc], fc.nom.replace(/ /g,'_')); });
   });
@@ -2767,23 +2768,23 @@ function chargerGroupesForm() {
       const div=document.createElement('div');
       div.style.cssText='background:'+g.bg+';border-left:4px solid '+g.color+';border-radius:12px;padding:12px;margin-bottom:10px;';
       const rows=list.length>0?list.map(function(a){return'<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;"><span>👤 '+a.nom+'</span><span style="font-size:11px;color:#718096;">'+a.formation.replace('TP ','')+'</span></div>';}).join(''):'<div style="font-size:12px;color:#a0aec0;padding:4px 0;">Aucun alternant</div>';
-      div.innerHTML='<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">'+g.jour+' — '+list.length+' alternant'+(list.length>1?'s':'')+'</div>'+rows;
+      div.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);margin-bottom:6px;">'+g.jour+' — '+list.length+' alternant'+(list.length>1?'s':'')+'</div>'+rows;
       container.appendChild(div);
     });
     const containerFC=document.getElementById('formGroupeFC');
     if(containerFC){
       containerFC.innerHTML='';
       const divFC=document.createElement('div');
-      divFC.style.cssText='background:#fdf6e3;border-left:4px solid #C9A227;border-radius:12px;padding:12px;';
+      divFC.style.cssText='background:var(--or-pale);border-left:4px solid var(--or);border-radius:12px;padding:12px;';
       const rowsFC=fcs.length>0?fcs.map(function(f){return'<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;"><span>🎓 '+f.nom+'</span><span style="font-size:11px;color:#718096;">'+f.formation+'</span></div>';}).join(''):'<div style="font-size:12px;color:#a0aec0;padding:4px 0;">Aucun stagiaire FC</div>';
-      divFC.innerHTML='<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Lundi au Jeudi — '+fcs.length+' stagiaire'+(fcs.length>1?'s':'')+'</div>'+rowsFC;
+      divFC.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);margin-bottom:6px;">Lundi au Jeudi — '+fcs.length+' stagiaire'+(fcs.length>1?'s':'')+'</div>'+rowsFC;
       containerFC.appendChild(divFC);
     }
     const parFormation={};
     alts.forEach(function(a){parFormation[a.formation]=(parFormation[a.formation]||0)+1;});
     fcs.forEach(function(f){const k=f.formation+' (FC)';parFormation[k]=(parFormation[k]||0)+1;});
     const repartition=document.getElementById('formRepartition');
-    repartition.innerHTML=Object.entries(parFormation).map(function(e){return'<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:13px;"><span style="color:#718096;font-size:12px;">'+e[0]+'</span><span style="font-weight:600;color:#2a3f4e;">'+e[1]+' personne'+(e[1]>1?'s':'')+'</span></div>';}).join('')||'<div style="color:#718096;font-size:13px;padding:10px 0;">Aucune donnée.</div>';
+    repartition.innerHTML=Object.entries(parFormation).map(function(e){return'<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:13px;"><span style="color:#718096;font-size:12px;">'+e[0]+'</span><span style="font-weight:600;color:var(--bleu-fonce);">'+e[1]+' personne'+(e[1]>1?'s':'')+'</span></div>';}).join('')||'<div style="color:#718096;font-size:13px;padding:10px 0;">Aucune donnée.</div>';
   })();
 }
 document.querySelectorAll('.nav-btn').forEach(function(btn){

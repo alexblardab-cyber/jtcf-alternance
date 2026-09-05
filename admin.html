@@ -104,6 +104,7 @@
     font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
   .spacer { height: 20px; }
 </style>
+  <script src="theme.js"></script>
 </head>
 <body>
 
@@ -141,7 +142,7 @@
     </div>
     <div class="kpi-grid">
       <div class="kpi-card"><div class="kpi-val or" id="kpiTotal">—</div><div class="kpi-lbl">Alternants actifs</div></div>
-      <div class="kpi-card"><div class="kpi-val" style="color:#C9A227;" id="kpiFC">—</div><div class="kpi-lbl">Stagiaires FC</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:var(--or);" id="kpiFC">—</div><div class="kpi-lbl">Stagiaires FC</div></div>
       <div class="kpi-card"><div class="kpi-val vert" id="kpiLundi">—</div><div class="kpi-lbl">Groupe Lundi</div></div>
       <div class="kpi-card"><div class="kpi-val rouge" id="kpiAbsents">0</div><div class="kpi-lbl">Absences ce mois</div></div>
     </div>
@@ -227,7 +228,7 @@
         <button class="btn-danger" id="btnSupprimer" style="display:none;">🗑️ Supprimer cet alternant</button>
         <div class="success-msg" id="formSuccess">✅ Alternant sauvegardé avec succès !</div>
         <div id="sectionDocs" style="display:none;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;">
-          <div style="font-size:13px;font-weight:700;color:#3d5a6e;margin-bottom:4px;">📁 Dossier Documents</div>
+          <div style="font-size:13px;font-weight:700;color:var(--bleu);margin-bottom:4px;">📁 Dossier Documents</div>
           <div style="font-size:11px;color:#718096;margin-bottom:14px;">Collez le lien du dossier Google Drive de cet alternant.</div>
           <div class="form-field"><label class="form-label">🔗 Lien dossier Google Drive</label><input class="form-input" id="docDossier" placeholder="https://drive.google.com/drive/folders/..." /></div>
           <button class="btn-primary" id="btnSauvegarderDocs">💾 Sauvegarder le lien</button>
@@ -300,7 +301,7 @@
         <button class="btn-danger" id="btnSupprimerFC" style="display:none;">🗑️ Supprimer</button>
         <div class="success-msg" id="fcFormSuccess">✅ Stagiaire FC sauvegardé !</div>
         <div id="sectionDocsFC" style="display:none;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;">
-          <div style="font-size:13px;font-weight:700;color:#3d5a6e;margin-bottom:4px;">📁 Dossier Documents</div>
+          <div style="font-size:13px;font-weight:700;color:var(--bleu);margin-bottom:4px;">📁 Dossier Documents</div>
           <div style="font-size:11px;color:#718096;margin-bottom:14px;">Collez le lien du dossier Google Drive de ce stagiaire.</div>
           <div class="form-field"><label class="form-label">🔗 Lien dossier Google Drive</label><input class="form-input" id="docDossierFC" placeholder="https://drive.google.com/drive/folders/..." /></div>
           <button class="btn-primary" id="btnSauvegarderDocsFC">💾 Sauvegarder le lien</button>
@@ -342,14 +343,14 @@
         <div class="total-item"><div class="total-val" id="adminTotalS">—</div><div class="total-lbl">Séances total</div></div>
       </div>
     </div>
-    <button class="btn-primary" id="btnExportPDFAdmin" style="margin-bottom:8px;background:linear-gradient(135deg,#C9A227,#f0d98a);color:#2a3f4e;font-weight:800;">📄 Exporter le PDF mensuel</button>
+    <button class="btn-primary" id="btnExportPDFAdmin" style="margin-bottom:8px;background:linear-gradient(135deg,var(--or),var(--or-clair));color:var(--bleu-fonce);font-weight:800;">📄 Exporter le PDF mensuel</button>
     <div style="position:relative;margin-bottom:14px;">
-      <button class="btn-primary" id="btnExportPDFAdminPersonne" style="background:linear-gradient(135deg,#3d5a6e,#2a3f4e);color:#fff;font-weight:800;">👤 Exporter PDF par personne</button>
-      <div id="menuPersonneAdmin" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #C9A227;border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:260px;overflow-y:auto;"></div>
+      <button class="btn-primary" id="btnExportPDFAdminPersonne" style="background:linear-gradient(135deg,var(--bleu),var(--bleu-fonce));color:#fff;font-weight:800;">👤 Exporter PDF par personne</button>
+      <div id="menuPersonneAdmin" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--or);border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:260px;overflow-y:auto;"></div>
     </div>
     <div style="position:relative;margin-bottom:14px;">
-      <button class="btn-primary" id="btnExportPDFFCAdmin" style="background:linear-gradient(135deg,#C9A227,#b8901f);color:#2a3f4e;font-weight:800;">🎓 Exporter PDF — Formation Continue</button>
-      <div id="menuFCAdmin" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid #C9A227;border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:300px;overflow-y:auto;"></div>
+      <button class="btn-primary" id="btnExportPDFFCAdmin" style="background:linear-gradient(135deg,var(--or),#b8901f);color:var(--bleu-fonce);font-weight:800;">🎓 Exporter PDF — Formation Continue</button>
+      <div id="menuFCAdmin" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--or);border-radius:10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:300px;overflow-y:auto;"></div>
     </div>
     <div id="adminRecapListe"><div class="loading">Chargement...</div></div>
   </div>
@@ -364,13 +365,13 @@
         La signature réutilisée est celle que l'apprenant a lui-même tracée lors d'une séance précédente.
       </div>
 
-      <label style="font-size:11px;font-weight:700;color:#2a3f4e;text-transform:uppercase;">Apprenant</label>
+      <label style="font-size:11px;font-weight:700;color:var(--bleu-fonce);text-transform:uppercase;">Apprenant</label>
       <select id="excPersonne" class="mois-select" style="display:block;width:100%;margin:4px 0 12px;"></select>
 
-      <label style="font-size:11px;font-weight:700;color:#2a3f4e;text-transform:uppercase;">Date de la séance</label>
+      <label style="font-size:11px;font-weight:700;color:var(--bleu-fonce);text-transform:uppercase;">Date de la séance</label>
       <input type="date" id="excDate" class="mois-select" style="display:block;width:100%;margin:4px 0 12px;">
 
-      <button class="btn-primary" id="excCharger" style="background:linear-gradient(135deg,#3d5a6e,#2a3f4e);color:#fff;font-weight:800;">🔍 Afficher cette séance</button>
+      <button class="btn-primary" id="excCharger" style="background:linear-gradient(135deg,var(--bleu),var(--bleu-fonce));color:#fff;font-weight:800;">🔍 Afficher cette séance</button>
     </div>
 
     <div class="card" id="excResultat" style="display:none;">
@@ -420,7 +421,7 @@ await new Promise((resolve) => {
       <p style="font-size:13px;color:#718096;margin:0 0 16px;">Accès sécurisé requis.</p>
       <input id="fbEmail" type="email" placeholder="email" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
       <input id="fbPass" type="password" placeholder="mot de passe" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
-      <button id="fbLoginBtn" style="width:100%;padding:12px;background:#C9A227;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Se connecter</button>
+      <button id="fbLoginBtn" style="width:100%;padding:12px;background:var(--or);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Se connecter</button>
       <div id="fbLoginErr" style="color:#e53e3e;font-size:12px;margin-top:8px;"></div>
     </div>`;
     document.body.appendChild(overlay);
@@ -577,7 +578,7 @@ async function chargerDashboard() {
   // ── Alternants ───────────────────────────────────────────
   if (altAujourdhui.length > 0) {
     const sepAlt = document.createElement('div');
-    sepAlt.style.cssText = 'font-size:10px;font-weight:800;color:#3d5a6e;text-transform:uppercase;letter-spacing:1px;padding:6px 0 4px;opacity:0.7;';
+    sepAlt.style.cssText = 'font-size:10px;font-weight:800;color:var(--bleu);text-transform:uppercase;letter-spacing:1px;padding:6px 0 4px;opacity:0.7;';
     sepAlt.textContent = '👥 Alternants';
     todayList.appendChild(sepAlt);
     for (const alt of altAujourdhui) {
@@ -614,7 +615,7 @@ async function chargerDashboard() {
 
   if (fcDuJour.length > 0) {
     const sepFC = document.createElement('div');
-    sepFC.style.cssText = 'font-size:10px;font-weight:800;color:#C9A227;text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid #f0f2f5;margin-top:6px;';
+    sepFC.style.cssText = 'font-size:10px;font-weight:800;color:var(--or);text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid #f0f2f5;margin-top:6px;';
     sepFC.textContent = '🎓 Formation Continue';
     todayList.appendChild(sepFC);
     for (const fc of fcDuJour) {
@@ -629,7 +630,7 @@ async function chargerDashboard() {
       if (fc._autonomie && !absent) {
         const rowA=document.createElement('div'); rowA.className='today-row';
         rowA.innerHTML='<div class="today-nom">'+fc.nom+'</div>'
-          + '<div style="font-size:10px;font-weight:800;color:#C9A227;background:rgba(201,162,39,0.15);'
+          + '<div style="font-size:10px;font-weight:800;color:var(--or);background:rgba(201,162,39,0.15);'
           + 'padding:3px 9px;border-radius:20px;white-space:nowrap;">🏠 Autonomie · 6 h</div>';
         todayList.appendChild(rowA);
         continue;
@@ -763,8 +764,8 @@ function chargerGroupes(){
     const div=document.createElement('div');
     div.style.cssText='background:'+g.bg+';border-left:4px solid '+g.color+';border-radius:12px;padding:12px;margin-bottom:10px;';
     const rows=list.length>0?list.map(function(a){return'<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;"><span>👤 '+a.nom+'</span><span style="font-size:11px;color:#718096;">'+a.formation.replace('TP ','')+'</span></div>';}).join(''):'<div style="font-size:12px;color:#a0aec0;padding:4px 0;">Aucun alternant</div>';
-    div.innerHTML='<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">'+g.jour+' — '+list.length+' alternant'+(list.length>1?'s':'')+'</div>'
-      +'<div style="background:#e2e8f0;border-radius:20px;height:8px;margin:6px 0;"><div style="height:8px;border-radius:20px;background:#C9A227;width:'+pct+'%;"></div></div>'
+    div.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);margin-bottom:6px;">'+g.jour+' — '+list.length+' alternant'+(list.length>1?'s':'')+'</div>'
+      +'<div style="background:#e2e8f0;border-radius:20px;height:8px;margin:6px 0;"><div style="height:8px;border-radius:20px;background:var(--or);width:'+pct+'%;"></div></div>'
       +'<div style="display:flex;justify-content:space-between;font-size:11px;color:#718096;margin-bottom:8px;"><span>'+list.length+'/8</span><span>'+(8-list.length)+' libre'+(8-list.length>1?'s':'')+'</span></div>'+rows;
     container.appendChild(div);
   });
@@ -772,9 +773,9 @@ function chargerGroupes(){
   if(containerFC){
     containerFC.innerHTML='';
     const divFC=document.createElement('div');
-    divFC.style.cssText='background:#fdf6e3;border-left:4px solid #C9A227;border-radius:12px;padding:12px;';
+    divFC.style.cssText='background:var(--or-pale);border-left:4px solid var(--or);border-radius:12px;padding:12px;';
     const rowsFC=allFC.length>0?allFC.map(function(f){return'<div style="font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;"><span>🎓 '+f.nom+'</span><span style="font-size:11px;color:#718096;">'+f.formation+'</span></div>';}).join(''):'<div style="font-size:12px;color:#a0aec0;padding:4px 0;">Aucun stagiaire FC</div>';
-    divFC.innerHTML='<div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Formation continue — '+allFC.length+' stagiaire'+(allFC.length>1?'s':'')+'</div>'+rowsFC;
+    divFC.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);margin-bottom:6px;">Formation continue — '+allFC.length+' stagiaire'+(allFC.length>1?'s':'')+'</div>'+rowsFC;
     containerFC.appendChild(divFC);
   }
   const parFormation={};
@@ -909,7 +910,7 @@ async function chargerRecapAdmin(){
     const jAuto=['','Lundi','Mardi','Mercredi','Jeudi','Vendredi'][jourAutonomieFC_admin(fc)];
     const card=document.createElement('div'); card.className='recap-card';
     card.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;background:#C9A227;color:#2a3f4e;border-color:#C9A227;">${ini}</div>
+      <div class="alternant-avatar" style="width:36px;height:36px;font-size:11px;background:var(--or);color:var(--bleu-fonce);border-color:var(--or);">${ini}</div>
       <div><div class="recap-nom">${fc.nom}</div><div style="font-size:11px;color:var(--gris);">${fc.formation} · 🎓 FC</div></div>
     </div>
     <div class="recap-grid">
@@ -1044,8 +1045,8 @@ async function excAfficher(){
   } else {
     if(!v.matin_alt) act+='<button id="excRegulMatin" style="'+S+'background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;">✍️ Régulariser le MATIN (sa signature)</button>';
     if(!v.am_alt)    act+='<button id="excRegulAM"    style="'+S+'background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;">✍️ Régulariser l\'APRÈS-MIDI (sa signature)</button>';
-    if(v.matin_alt)  act+='<button id="excEffMatin"   style="'+S+'background:#fffaf0;color:#744210;border-color:#f0d98a;">🗑️ Effacer la signature du matin</button>';
-    if(v.am_alt)     act+='<button id="excEffAM"      style="'+S+'background:#fffaf0;color:#744210;border-color:#f0d98a;">🗑️ Effacer la signature de l\'après-midi</button>';
+    if(v.matin_alt)  act+='<button id="excEffMatin"   style="'+S+'background:#fffaf0;color:#744210;border-color:var(--or-clair);">🗑️ Effacer la signature du matin</button>';
+    if(v.am_alt)     act+='<button id="excEffAM"      style="'+S+'background:#fffaf0;color:#744210;border-color:var(--or-clair);">🗑️ Effacer la signature de l\'après-midi</button>';
     act+='<button id="excEntreprise" style="'+S+'background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8;">🏢 Journée en entreprise (pas en formation)</button>';
     act+='<button id="excAbsent" style="'+S+'background:#fff5f5;color:#c53030;border-color:#fed7d7;">✕ Marquer absent(e) sur la journée</button>';
   }
@@ -1142,7 +1143,7 @@ async function chargerHistoriqueRegul(){
   if(lignes.length===0){ box.innerHTML='<div class="loading">Aucune régularisation enregistrée.</div>'; return; }
   box.innerHTML=lignes.map(function(l){
     return '<div style="padding:9px 0;border-bottom:1px solid #f0f2f5;">'+
-      '<div style="font-size:12px;font-weight:800;color:#2a3f4e;">'+l.nom+' · '+l.date+' · '+l.per+'</div>'+
+      '<div style="font-size:12px;font-weight:800;color:var(--bleu-fonce);">'+l.nom+' · '+l.date+' · '+l.per+'</div>'+
       '<div style="font-size:11px;color:#718096;">'+l.motif+' — par '+l.par+'</div></div>';
   }).join('');
 }
@@ -1319,8 +1320,8 @@ function afficherListeFC(){
   container.innerHTML='';
   allFC.forEach(function(fc){
     const initiales=fc.nom.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
-    const card=document.createElement('div'); card.className='alternant-card'; card.style.borderLeft='3px solid #C9A227';
-    card.innerHTML='<div class="alternant-avatar" style="border-color:#C9A227;">'+initiales+'</div><div style="flex:1"><div class="alternant-nom">'+fc.nom+'</div><div class="alternant-sub">'+fc.formation+'</div><div style="font-size:10px;color:#C9A227;font-weight:700;margin-top:2px;">🎓 FC · '+fc.debut+'</div></div><div class="alternant-arrow">✏️</div>';
+    const card=document.createElement('div'); card.className='alternant-card'; card.style.borderLeft='3px solid var(--or)';
+    card.innerHTML='<div class="alternant-avatar" style="border-color:var(--or);">'+initiales+'</div><div style="flex:1"><div class="alternant-nom">'+fc.nom+'</div><div class="alternant-sub">'+fc.formation+'</div><div style="font-size:10px;color:var(--or);font-weight:700;margin-top:2px;">🎓 FC · '+fc.debut+'</div></div><div class="alternant-arrow">✏️</div>';
     function open(e){e.preventDefault();ouvrirFormFC(fc);}
     card.addEventListener('touchend',open,{passive:false}); card.addEventListener('click',open);
     container.appendChild(card);
@@ -1620,7 +1621,7 @@ document.getElementById('btnExportPDFAdminPersonne').addEventListener('click', f
     if (snap.exists()) { snap.forEach(function(c){ const a=c.val(); a.id=c.key; alts.push(a); }); }
     alts.forEach(function(alt) {
       const item = document.createElement('div');
-      item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#2a3f4e;border-bottom:1px solid #f0f2f5;';
+      item.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--bleu-fonce);border-bottom:1px solid #f0f2f5;';
       item.textContent = alt.nom + ' — ' + alt.formation;
       item.addEventListener('mouseenter', function(){ item.style.background='#fdf6e3'; });
       item.addEventListener('mouseleave', function(){ item.style.background='#fff'; });
@@ -2041,7 +2042,7 @@ document.getElementById('btnExportPDFFCAdmin').addEventListener('click', functio
   function ajouter(label,sous,action,fond){
     const it=document.createElement('div');
     it.style.cssText='padding:11px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f2f5;'+(fond||'');
-    it.innerHTML='<div style="font-weight:700;color:#2a3f4e;">'+label+'</div>'+(sous?'<div style="font-size:11px;color:#718096;">'+sous+'</div>':'');
+    it.innerHTML='<div style="font-weight:700;color:var(--bleu-fonce);">'+label+'</div>'+(sous?'<div style="font-size:11px;color:#718096;">'+sous+'</div>':'');
     it.addEventListener('click',function(){
       menu.style.display='none';
       action().catch(function(err){
@@ -2054,7 +2055,7 @@ document.getElementById('btnExportPDFFCAdmin').addEventListener('click', functio
     menu.appendChild(it);
   }
   ajouter('📚 Tous les stagiaires ('+fcs.length+')','Un seul PDF, une page par stagiaire',
-          function(){ return exporterPDFFCAdmin(fcs,'Tous'); },'background:#fdf6e3;');
+          function(){ return exporterPDFFCAdmin(fcs,'Tous'); },'background:var(--or-pale);');
   fcs.forEach(function(fc){
     ajouter(fc.nom, fc.formation||'', function(){ return exporterPDFFCAdmin([fc], fc.nom.replace(/ /g,'_')); });
   });

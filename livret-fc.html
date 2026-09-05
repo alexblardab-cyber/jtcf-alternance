@@ -139,6 +139,7 @@
   .rule-num { font-weight: 800; color: var(--or); flex-shrink: 0; width: 20px; }
   .spacer { height: 20px; }
 </style>
+  <script src="theme.js"></script>
 </head>
 <body>
 
@@ -283,13 +284,13 @@
           </div>
         </div>
 
-        <div id="blocAutonomie" style="display:none;background:linear-gradient(135deg,#eaf0f4,#f7fafc);border:2px solid #C9A227;border-radius:12px;padding:18px 16px;text-align:center;margin-bottom:12px;">
+        <div id="blocAutonomie" style="display:none;background:linear-gradient(135deg,var(--bleu-clair),#f7fafc);border:2px solid var(--or);border-radius:12px;padding:18px 16px;text-align:center;margin-bottom:12px;">
           <div style="font-size:34px;margin-bottom:8px;">🏠</div>
-          <div style="font-size:15px;font-weight:800;color:#2a3f4e;margin-bottom:6px;">Journée en autonomie</div>
+          <div style="font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:6px;">Journée en autonomie</div>
           <div style="font-size:13px;color:#4a5568;line-height:1.6;margin-bottom:12px;">
             Vous travaillez depuis chez vous sur les activités données par votre formatrice.
           </div>
-          <div style="display:inline-block;background:#C9A227;color:#2a3f4e;font-size:13px;font-weight:800;padding:7px 16px;border-radius:20px;">
+          <div style="display:inline-block;background:var(--or);color:var(--bleu-fonce);font-size:13px;font-weight:800;padding:7px 16px;border-radius:20px;">
             ✅ 6h comptées automatiquement
           </div>
           <div style="font-size:11px;color:#718096;margin-top:12px;line-height:1.5;">
@@ -337,7 +338,7 @@
       <div class="card-title">📁 Mes documents</div>
       <div id="listeDocumentsFC"><div style="text-align:center;padding:20px;color:#718096;">Chargement...</div></div>
     </div>
-    <div style="background:#eaf0f4;border-radius:12px;padding:12px;margin-top:4px;">
+    <div style="background:var(--bleu-clair);border-radius:12px;padding:12px;margin-top:4px;">
       <div style="font-size:11px;color:#718096;text-align:center;line-height:1.6;">
         📌 Les documents s'ouvrent dans votre navigateur.<br>
         Vous pouvez les télécharger depuis Google Drive.
@@ -367,28 +368,28 @@
     <div class="card">
       <div class="card-title">📋 Règlement intérieur</div>
       <div style="font-size:11px;color:#718096;margin-bottom:12px;">JT Conseil Formation · Session 2026 · Conforme au Code du Travail art. L6352-3 et suivants</div>
-      <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🏫 Hygiène & Sécurité</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🏫 Hygiène & Sécurité</div>
       <div class="rule-item"><span class="rule-num">1.</span>Respectez les consignes incendie affichées. Repérez les extincteurs et issues de secours dès le premier jour.</div>
       <div class="rule-item"><span class="rule-num">2.</span>Alcool, drogues et stupéfiants sont strictement interdits dans les locaux. Tout manquement entraîne une exclusion immédiate.</div>
       <div class="rule-item"><span class="rule-num">3.</span>Il est interdit de fumer ou vapoter à l'intérieur. Un espace extérieur est prévu pendant les pauses.</div>
       <div class="rule-item"><span class="rule-num">4.</span>Tout accident (formation ou trajet) doit être signalé immédiatement à la direction.</div>
-      <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🕐 Assiduité & Ponctualité</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🕐 Assiduité & Ponctualité</div>
       <div class="rule-item"><span class="rule-num">5.</span>Les horaires de formation sont obligatoires. Tout retard ou absence doit être signalé avant le début de la séance.</div>
       <div class="rule-item"><span class="rule-num">6.</span>Les absences non justifiées peuvent entraîner une retenue sur rémunération (stagiaires PASS FORMATION / France Travail).</div>
       <div class="rule-item"><span class="rule-num">7.</span>La feuille d'émargement (matin et après-midi) est un document officiel transmis aux financeurs. Toute falsification est une fraude grave.</div>
       <div class="rule-item"><span class="rule-num">8.</span>Un trop grand nombre d'absences peut interdire la présentation à la certification finale.</div>
-      <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🤝 Comportement & Tenue</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🤝 Comportement & Tenue</div>
       <div class="rule-item"><span class="rule-num">9.</span>Un comportement respectueux est exigé envers tous : stagiaires, formateurs et personnel.</div>
       <div class="rule-item"><span class="rule-num">10.</span>Tout comportement harcelant, discriminatoire ou irrespectueux entraînera une exclusion immédiate.</div>
       <div class="rule-item"><span class="rule-num">11.</span>Téléphone en mode silencieux pendant les séances.</div>
       <div class="rule-item"><span class="rule-num">12.</span>Aucun enregistrement audio, vidéo ou photo sans accord explicite.</div>
-      <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">💻 Charte numérique & HADOPI</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">💻 Charte numérique & HADOPI</div>
       <div class="rule-item"><span class="rule-num">13.</span>Les équipements informatiques et la connexion Internet sont réservés exclusivement aux activités pédagogiques.</div>
       <div class="rule-item"><span class="rule-num">14.</span>Il est interdit de télécharger, reproduire ou diffuser des œuvres protégées. C'est une infraction pénale.</div>
       <div class="rule-item"><span class="rule-num">15.</span>Les logiciels de peer-to-peer, les sites pornographiques, violents ou illicites sont bloqués et strictement interdits.</div>
       <div class="rule-item"><span class="rule-num">16.</span>Les connexions au réseau JTCF sont journalisées et conservées 12 mois conformément à la loi.</div>
       <div class="rule-item"><span class="rule-num">17.</span>Aucune installation de logiciel non autorisé. Tout dommage volontaire au matériel engage la responsabilité civile.</div>
-      <div style="font-size:12px;font-weight:700;color:#C9A227;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">⚠️ Sanctions</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">⚠️ Sanctions</div>
       <div class="rule-item"><span class="rule-num">18.</span>Tout manquement peut entraîner : rappel à l'ordre oral, avertissement écrit, exclusion temporaire ou définitive.</div>
       <div class="rule-item"><span class="rule-num">19.</span>Aucune sanction sans entretien préalable. La sanction intervient entre 1 et 15 jours après l'entretien.</div>
     </div>
@@ -744,7 +745,7 @@ function afficherExplicationPlanning() {
   const g = getGroupeFC();
   const info = INFOS_GROUPE[g];
   if (!info) {
-    box.innerHTML = '<div style="background:#fdf6e3;border-left:3px solid #C9A227;border-radius:0 8px 8px 0;'
+    box.innerHTML = '<div style="background:var(--or-pale);border-left:3px solid var(--or);border-radius:0 8px 8px 0;'
       + 'padding:12px 14px;font-size:12px;color:#744210;line-height:1.6;">'
       + 'Le détail de votre parcours n\'est pas encore paramétré dans l\'application. '
       + 'Rapprochez-vous du secrétariat pour obtenir votre planning.</div>';
@@ -768,12 +769,12 @@ function afficherExplicationPlanning() {
   function ligne(icone, titre, texte){
     return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f0f2f5;">' +
       '<div style="font-size:18px;flex-shrink:0;">' + icone + '</div>' +
-      '<div><div style="font-size:13px;font-weight:700;color:#2a3f4e;">' + titre + '</div>' +
+      '<div><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">' + titre + '</div>' +
       '<div style="font-size:12px;color:#718096;line-height:1.55;">' + texte + '</div></div></div>';
   }
 
   box.innerHTML =
-    '<div style="background:#fdf6e3;border-left:3px solid #C9A227;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#744210;line-height:1.6;">' +
+    '<div style="background:var(--or-pale);border-left:3px solid var(--or);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#744210;line-height:1.6;">' +
       'Vous suivez le parcours <strong>' + info.titre + '</strong>. Voici comment votre année est organisée.' +
     '</div>' +
 
@@ -865,7 +866,7 @@ function afficherEtapesCles() {
     const bg = couleurs[e.type] || '#edf2f7';
     return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:10px;margin-bottom:6px;background:' + bg + ';">' +
       '<span style="font-size:18px;flex-shrink:0;">' + e.icone + '</span>' +
-      '<div><div style="font-weight:700;font-size:13px;color:#2a3f4e;">' + e.label + '</div>' +
+      '<div><div style="font-weight:700;font-size:13px;color:var(--bleu-fonce);">' + e.label + '</div>' +
       '<div style="font-size:11px;color:#718096;">' + e.date + '</div></div>' +
       '</div>';
   }).join('');
@@ -1081,9 +1082,9 @@ async function chargerDocumentsFC() {
   const data = snap.exists() ? snap.val() : {};
   const lien = data.dossier || '';
   if (!lien) {
-    container.innerHTML = '<div style="text-align:center;padding:24px 0;"><div style="font-size:36px;margin-bottom:10px;">📭</div><div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Aucun document disponible</div><div style="font-size:12px;color:#718096;">Vos documents apparaîtront ici dès qu\'ils seront mis en ligne.</div></div>';
+    container.innerHTML = '<div style="text-align:center;padding:24px 0;"><div style="font-size:36px;margin-bottom:10px;">📭</div><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);margin-bottom:6px;">Aucun document disponible</div><div style="font-size:12px;color:#718096;">Vos documents apparaîtront ici dès qu\'ils seront mis en ligne.</div></div>';
   } else {
-    container.innerHTML = '<div style="text-align:center;padding:10px 0 16px;"><div style="font-size:36px;margin-bottom:10px;">📂</div><div style="font-size:13px;font-weight:700;color:#2a3f4e;margin-bottom:6px;">Votre dossier est disponible</div></div><a href="'+lien+'" target="_blank" style="text-decoration:none;"><div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:linear-gradient(135deg,#2a3f4e,#3d5a6e);border-radius:12px;"><div style="font-size:20px;">📁</div><div style="color:white;font-weight:700;font-size:14px;">Ouvrir mon dossier Drive</div><div style="color:#C9A227;font-size:16px;">↗</div></div></a>';
+    container.innerHTML = '<div style="text-align:center;padding:10px 0 16px;"><div style="font-size:36px;margin-bottom:10px;">📂</div><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);margin-bottom:6px;">Votre dossier est disponible</div></div><a href="'+lien+'" target="_blank" style="text-decoration:none;"><div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));border-radius:12px;"><div style="font-size:20px;">📁</div><div style="color:white;font-weight:700;font-size:14px;">Ouvrir mon dossier Drive</div><div style="color:var(--or);font-size:16px;">↗</div></div></a>';
   }
 }
 
