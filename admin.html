@@ -104,6 +104,7 @@
     font-size: 10px; font-weight: 800; margin-left: 4px; animation: pulse 2s infinite; }
   .spacer { height: 20px; }
 </style>
+  <script src="regles.js"></script>
   <script src="theme.js"></script>
 </head>
 <body>
@@ -411,6 +412,37 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+
+/* ── Lecture accélérée ─────────────────────────────────────────────────────
+   Les émargements d'une même journée sont demandés en parallèle plutôt
+   qu'un par un, et un cache de quelques secondes évite de tout relire
+   à chaque changement d'onglet. Vidé dès qu'une écriture a lieu.
+   ────────────────────────────────────────────────────────────────────────── */
+const CACHE_MS = 20000;
+let _cache = {};
+
+function litChemin(path){
+  const n = Date.now(), e = _cache[path];
+  if (e && n - e.t < CACHE_MS) return e.p;
+  const p = get(ref(db, path))
+    .then(function(s){ return (s && s.exists()) ? s.val() : {}; })
+    .catch(function(){ return {}; });
+  _cache[path] = { t: n, p: p };
+  return p;
+}
+function videCache(){ _cache = {}; }
+
+function litJour(items, isFC, y, m, d){
+  return Promise.all(items.map(function(it){
+    const path = (isFC ? 'emargementsFC/' + it.id + '_fc_' : 'emargements/' + it.id + '_')
+               + y + '_' + m + '_' + d;
+    return litChemin(path).then(function(v){ return [it.id, v]; });
+  })).then(function(paires){
+    const o = {};
+    paires.forEach(function(p){ o[p[0]] = p[1] || {}; });
+    return o;
+  });
+}
 const auth = getAuth(app);
 
 const userId = sessionStorage.getItem('jtcf_admin_user');
@@ -440,94 +472,24 @@ await new Promise((resolve) => {
 });
 
 let allAlternants = [], allFC = [], editingId = null, editingFC = null, filterMode = 'mois';
-const MATIN_H = 4, AM_H = 3;   // 8h00–12h00 = 4h · 13h00–16h00 = 3h → 7h/jour
-// Formation continue : 8h15–12h00 = 3,75h · 13h00–15h15 = 2,25h → 6h/jour, 30h/semaine
-const MATIN_FC = 3.75, AM_FC = 2.25, JOUR_FC_H = 6;
+/* ── Règles métier ─────────────────────────────────────────────────────────
+   Volumes horaires, jours de centre, jour en autonomie, stages, vacances,
+   fériés et dates de parcours sont définis une seule fois, dans regles.js.
+   Ce qui suit ne fait que les rendre accessibles sous les noms utilisés
+   dans cette page. Ne recopiez jamais une règle ici : corrigez regles.js.
+   ────────────────────────────────────────────────────────────────────────── */
+const MATIN_H = JTCF.MATIN_H, AM_H = JTCF.AM_H;
+const MATIN_FC = JTCF.MATIN_FC, AM_FC = JTCF.AM_FC, JOUR_FC_H = JTCF.JOUR_FC_H;
+const PERIODES_FC = JTCF.PERIODES_FC, FERIES_FC = JTCF.FERIES_FC;
 
-// ASCA (Comptabilité) : centre lun/mer/jeu/ven — mardi en autonomie
-// AD / CV            : centre lun/mar/mer/jeu — vendredi en autonomie
-function estASCA_admin(f){
-  if(!f) return false;
-  if(f.jours && f.jours.indexOf && f.jours.indexOf('Vendredi')>=0) return true;
-  if(f.formation && f.formation.indexOf('Comptabilit')>=0) return true;
-  return false;
-}
-function joursSelonFormation(formation){
-  return (formation||'').indexOf('Comptabilit')>=0
-    ? ['Lundi','Mercredi','Jeudi','Vendredi']
-    : ['Lundi','Mardi','Mercredi','Jeudi'];
-}
-function jourAutonomieFC_admin(f){ return estASCA_admin(f) ? 2 : 5; }
-// ══════════════════════════════════════════════════════════════
-//  PÉRIODES HORS CENTRE — stages, vacances et jours fériés
-//  Ces journées ne sont ni des seances en centre ni des journees
-//  en autonomie : elles sortent entierement du decompte.
-// ══════════════════════════════════════════════════════════════
-var PERIODES_FC = {
-  CV:   { stages: [['2026-10-05','2026-10-30'], ['2026-11-23','2026-12-18']],
-          vacances: [['2026-12-21','2027-01-10']] },
-  AD:   { stages: [['2026-10-12','2026-11-06']],
-          vacances: [['2026-12-21','2027-01-10']] },
-  ACA:  { stages: [['2026-10-12','2026-11-06']],
-          vacances: [['2026-12-21','2027-01-10']] },
-  ACOM: { stages: [['2026-10-05','2026-10-30'], ['2027-01-18','2027-02-12']],
-          vacances: [['2026-12-21','2027-01-08']] }
-};
-
-// Jours feries a La Reunion sur la periode de formation
-var FERIES_FC = ['2026-08-15','2026-11-01','2026-11-11','2026-12-20','2026-12-25',
-                 '2027-01-01','2027-03-29','2027-05-01','2027-05-08','2027-05-13',
-                 '2027-05-24','2027-06-20','2027-07-14'];
-
-function groupeFC(fc){
-  var f = (fc && fc.formation) || '';
-  // Detection precise : avec 16 intitules, un simple mot-cle ne suffit plus.
-  if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
-  if (f.indexOf('Direction') >= 0) return 'AD';
-  if (f.indexOf('Assistant') >= 0 && f.indexOf('Commercial') >= 0) return 'ACOM';
-  if (f.indexOf('ACOM') >= 0) return 'ACOM';
-  if (f.indexOf('Conseiller') >= 0 && f.indexOf('Vente') >= 0) return 'CV';
-  if (f.indexOf('CV') >= 0) return 'CV';
-  return 'CV';   // repli neutre : aucune periode hors centre appliquee
-}
-
-function isoJour(d){
-  return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
-}
-
-// La date tombe-t-elle en stage, en vacances ou un jour ferie ?
-function horsCentreFC(fc, d){
-  var iso = isoJour(d);
-  if (FERIES_FC.indexOf(iso) >= 0) return true;
-  var p = PERIODES_FC[groupeFC(fc)];
-  if (!p) return false;
-  var listes = (p.stages || []).concat(p.vacances || []);
-  for (var i = 0; i < listes.length; i++){
-    if (iso >= listes[i][0] && iso <= listes[i][1]) return true;
-  }
-  return false;
-}
-
-// Dates propres au stagiaire : chaque parcours FC peut avoir les siennes.
-// Repli sur la promotion de juillet 2026 si le champ est vide.
-function bornesFC(fc){
-  function lire(s, defaut){
-    if(!s) return defaut;
-    var p = String(s).split('/');
-    if(p.length !== 3) return defaut;
-    var d = new Date(parseInt(p[2],10), parseInt(p[1],10)-1, parseInt(p[0],10));
-    return isNaN(d) ? defaut : d;
-  }
-  return { debut: lire(fc && fc.debut, new Date(2026,6,13)),
-           fin:   lire(fc && fc.fin,   new Date(2027,5,30)) };
-}
-
-function seancesFC_admin(fc){
-  var b=bornesFC(fc);
-  var out=[], d=new Date(b.debut), fin=b.fin;
-  while(d<=fin){ var j=d.getDay(); if(j>=1&&j<=5 && !horsCentreFC(fc,d)) out.push(new Date(d)); d.setDate(d.getDate()+1); }
-  return out;
-}
+function estASCA_admin(f){ return JTCF.estASCA(f); }
+function joursSelonFormation(formation){ return JTCF.joursSelonFormation(formation); }
+function jourAutonomieFC_admin(f){ return JTCF.jourAutonomieFC(f); }
+function groupeFC(fc){ return JTCF.groupeFC(fc); }
+function isoJour(d){ return JTCF.isoJour(d); }
+function horsCentreFC(fc, d){ return JTCF.horsCentreFC(fc, d); }
+function bornesFC(fc){ return JTCF.bornesFC(fc); }
+function seancesFC_admin(fc){ return JTCF.seancesDeFC(fc); }
 
 async function chargerTout() {
   const snap = await get(ref(db, 'alternants'));
@@ -587,11 +549,10 @@ async function chargerDashboard() {
     sepAlt.style.cssText = 'font-size:10px;font-weight:800;color:var(--bleu);text-transform:uppercase;letter-spacing:1px;padding:6px 0 4px;opacity:0.7;';
     sepAlt.textContent = '👥 Alternants';
     todayList.appendChild(sepAlt);
+    const etatsAlt = await litJour(altAujourdhui, false, today.getFullYear(), today.getMonth()+1, today.getDate());
     for (const alt of altAujourdhui) {
       totalAujourdhui++;
-      const key=alt.id+'_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
-      const snap=await get(ref(db,'emargements/'+key));
-      const data=snap.exists()?snap.val():{};
+      const data=etatsAlt[alt.id]||{};
       const absent=data.presence==='absent';
       if(absent) absentsCount++;
       const row=document.createElement('div'); row.className='today-row';
@@ -624,11 +585,10 @@ async function chargerDashboard() {
     sepFC.style.cssText = 'font-size:10px;font-weight:800;color:var(--or);text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid #f0f2f5;margin-top:6px;';
     sepFC.textContent = '🎓 Formation Continue';
     todayList.appendChild(sepFC);
+    const etatsFC = await litJour(fcDuJour, true, today.getFullYear(), today.getMonth()+1, today.getDate());
     for (const fc of fcDuJour) {
       totalAujourdhui++;
-      const key=fc.id+'_fc_'+today.getFullYear()+'_'+(today.getMonth()+1)+'_'+today.getDate();
-      const snap=await get(ref(db,'emargementsFC/'+key));
-      const data=snap.exists()?snap.val():{};
+      const data=etatsFC[fc.id]||{};
       const absent=data.presence==='absent';
       if(absent) absentsCount++;
 
@@ -1068,6 +1028,7 @@ async function excAfficher(){
     var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
     await set(ref(db,k+'/presence'),'entreprise');
     await set(ref(db,k+'/motif'),null);
+    videCache();
     alert('✅ Journée en entreprise enregistrée.');
     await excAfficher();
   });
@@ -1077,6 +1038,7 @@ async function excAfficher(){
     await set(ref(db,k+'/presence'),null);
     await set(ref(db,k+'/motif'),null);
     await set(ref(db,k+'/justificatif'),null);
+    videCache();
     alert('✅ Absence annulée. Vous pouvez régulariser sa signature.');
     await excAfficher();
   });
@@ -1112,6 +1074,7 @@ async function excReguler(slot, libelle){
   var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
   await set(ref(db,k+'/'+slot), sig);
   await set(ref(db,k+'/'+slot+'_regul'), {motif:motif, par:'Admin', le:new Date().toISOString()});
+  videCache();
   alert('✅ Régularisation enregistrée.');
   await excAfficher(); chargerHistoriqueRegul();
 }
@@ -1121,6 +1084,7 @@ async function excEffacer(slot, libelle){
   var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
   await set(ref(db,k+'/'+slot), null);
   await set(ref(db,k+'/'+slot+'_regul'), null);
+  videCache();
   await excAfficher();
 }
 
@@ -1729,7 +1693,7 @@ async function exporterPDFAdmin() {
   const filterYear=moisVal[0]; const filterMonth=moisVal[1];
   const periodeTitre=moisNoms[filterMonth]+' '+filterYear;
   const OR=[201,162,39],BLEU=[61,90,110],BLEU_FONCE=[42,63,78],GRIS=[113,128,150],VERT=[56,161,105],ROUGE=[229,62,62];
-  const MATIN_H=4,AM_H=3;
+  const MATIN_H = JTCF.MATIN_H, AM_H = JTCF.AM_H;
   const jourMap={'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5};
   let pageNum=1;
 
@@ -1910,7 +1874,7 @@ async function exporterPDFAdminPersonne(alt) {
   const moisNoms=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   const moisNomsFr=['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
   const OR=[201,162,39],BLEU=[61,90,110],BLEU_FONCE=[42,63,78],GRIS=[113,128,150],VERT=[56,161,105],ROUGE=[229,62,62];
-  const MATIN_H=4, AM_H = 3;
+  const MATIN_H = JTCF.MATIN_H, AM_H = JTCF.AM_H;
   let pageNum=1;
 
   const isMois = document.getElementById('adminFilterMois').classList.contains('active');
@@ -2061,66 +2025,17 @@ const sigForm = !!imgForm || (!s.isRetro && s.formSigne);
 //  EXPORT PDF — FORMATION CONTINUE (admin)
 //  8h15–12h00 = 3,75h · 13h00–15h15 = 2,25h · autonomie = 6h
 // ═══════════════════════════════════════════════════════════
-const MATIN_FC_P = 3.75, AM_FC_P = 2.25, AUTO_FC_P = 6;
+// Mêmes règles que le reste de l'application : elles viennent de regles.js.
+var MATIN_FC_P = JTCF.MATIN_FC, AM_FC_P = JTCF.AM_FC, AUTO_FC_P = JTCF.JOUR_FC_H;
 
-function estASCA_p(f){
-  if(!f) return false;
-  if(f.jours && f.jours.indexOf && f.jours.indexOf('Vendredi')>=0) return true;
-  if(f.formation && f.formation.indexOf('Comptabilit')>=0) return true;
-  return false;
-}
-function jourAutoFC_p(f){ return estASCA_p(f) ? 2 : 5; }
-// Periodes hors centre — copie locale, le script PDF ne voit pas le module.
-var PERIODES_FC_P = {
-  CV:   { p: [['2026-10-05','2026-10-30'],['2026-11-23','2026-12-18'],['2026-12-21','2027-01-10']] },
-  AD:   { p: [['2026-10-12','2026-11-06'],['2026-12-21','2027-01-10']] },
-  ACA:  { p: [['2026-10-12','2026-11-06'],['2026-12-21','2027-01-10']] },
-  ACOM: { p: [['2026-10-05','2026-10-30'],['2027-01-18','2027-02-12'],['2026-12-21','2027-01-08']] }
-};
-var FERIES_P = ['2026-08-15','2026-11-01','2026-11-11','2026-12-20','2026-12-25',
-                '2027-01-01','2027-03-29','2027-05-01','2027-05-08','2027-05-13',
-                '2027-05-24','2027-06-20','2027-07-14'];
-function groupeFC_p(fc){
-  var f = (fc&&fc.formation) || '';
-  // Detection precise : avec 16 intitules, un simple mot-cle ne suffit plus.
-  if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
-  if (f.indexOf('Direction') >= 0) return 'AD';
-  if (f.indexOf('Assistant') >= 0 && f.indexOf('Commercial') >= 0) return 'ACOM';
-  if (f.indexOf('ACOM') >= 0) return 'ACOM';
-  if (f.indexOf('Conseiller') >= 0 && f.indexOf('Vente') >= 0) return 'CV';
-  if (f.indexOf('CV') >= 0) return 'CV';
-  return 'CV';   // repli neutre : aucune periode hors centre appliquee
-}
-function isoJour_p(d){
-  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
-}
-function horsCentreCommun(fc,d){
-  var iso=isoJour_p(d);
-  if(FERIES_P.indexOf(iso)>=0) return true;
-  var g=PERIODES_FC_P[groupeFC_p(fc)];
-  if(!g) return false;
-  for(var i=0;i<g.p.length;i++){ if(iso>=g.p[i][0] && iso<=g.p[i][1]) return true; }
-  return false;
-}
-function horsCentrePdf(fc,d){ return horsCentreCommun(fc,d); }
-function horsCentre_p(fc,d){ return horsCentreCommun(fc,d); }
-
-function bornesFC_p(fc){
-  function lire(s, defaut){
-    if(!s) return defaut;
-    var p=String(s).split('/'); if(p.length!==3) return defaut;
-    var d=new Date(parseInt(p[2],10), parseInt(p[1],10)-1, parseInt(p[0],10));
-    return isNaN(d)?defaut:d;
-  }
-  return { debut: lire(fc&&fc.debut,new Date(2026,6,13)), fin: lire(fc&&fc.fin,new Date(2027,5,30)) };
-}
-
-function seancesFC_p(fc){
-  const b=bornesFC_p(fc);
-  const out=[]; let d=new Date(b.debut); const fin=b.fin;
-  while(d<=fin){ const j=d.getDay(); if(j>=1&&j<=5 && !horsCentre_p(fc,d)) out.push(new Date(d)); d.setDate(d.getDate()+1); }
-  return out;
-}
+function estASCA_p(f){ return JTCF.estASCA(f); }
+function jourAutoFC_p(f){ return JTCF.jourAutonomieFC(f); }
+function groupeFC_p(fc){ return JTCF.groupeFC(fc); }
+function isoJour_p(d){ return JTCF.isoJour(d); }
+function horsCentrePdf(fc,d){ return JTCF.horsCentreFC(fc,d); }
+function horsCentre_p(fc,d){ return JTCF.horsCentreFC(fc,d); }
+function bornesFC_p(fc){ return JTCF.bornesFC(fc); }
+function seancesFC_p(fc){ return JTCF.seancesDeFC(fc); }
 
 async function exporterPDFFCAdmin(listeFC, titreFichier){
   const btn=document.getElementById('btnExportPDFFCAdmin');

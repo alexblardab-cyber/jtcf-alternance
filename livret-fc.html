@@ -139,6 +139,7 @@
   .rule-num { font-weight: 800; color: var(--or); flex-shrink: 0; width: 20px; }
   .spacer { height: 20px; }
 </style>
+  <script src="regles.js"></script>
   <script src="theme.js"></script>
 </head>
 <body>
@@ -436,14 +437,10 @@ function parseDateFC(str) {
   return null;
 }
 
+// Règle commune à toute l'application — définie dans regles.js.
 // ASCA (Comptabilité) : centre lun/mer/jeu/ven — mardi en autonomie
 // AD / CV            : centre lun/mar/mer/jeu — vendredi en autonomie
-function estASCA_livret(u){
-  if(!u) return false;
-  if(u.jours && u.jours.indexOf && u.jours.indexOf('Vendredi')>=0) return true;
-  if(u.formation && u.formation.indexOf('Comptabilit')>=0) return true;
-  return false;
-}
+function estASCA_livret(u){ return JTCF.estASCA(u); }
 let jourAutonomie = 5;   // par défaut vendredi (AD/CV)
 
 function getJoursFC(joursAutorise, debutStr, finStr) {
@@ -595,7 +592,7 @@ async function chargerUser() {
     const joursFirebase = joursSnap.exists() ? Object.values(joursSnap.val()) : null;
     const debutStr  = debSnap.exists() ? debSnap.val() : (user.debut || '13/07/2026');
     const finStr    = finSnap.exists() ? finSnap.val() : (user.fin   || '30/06/2027');
-    jourAutonomie = estASCA_livret(user) ? 2 : 5;
+    jourAutonomie = JTCF.jourAutonomieFC(user);
     joursFormation  = getJoursFC(joursFirebase, debutStr, finStr);
     // Mettre à jour le message du verrou
     if (joursFirebase && joursFirebase.length > 0) {
@@ -604,7 +601,7 @@ async function chargerUser() {
     }
   } catch(e) {
     console.warn('Jours Firebase non disponibles, fallback lundi-jeudi', e);
-    jourAutonomie = estASCA_livret(user) ? 2 : 5;
+    jourAutonomie = JTCF.jourAutonomieFC(user);
     joursFormation = getJoursFC(null, user.debut, user.fin);
   }
 
