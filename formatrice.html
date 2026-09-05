@@ -169,6 +169,10 @@
     <div id="dashKpi" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;"></div>
     <div id="dashActions"></div>
     <div id="dashListe"><div class="loading">Chargement...</div></div>
+    <button class="btn-global" id="btnWhatsApp" style="margin-top:14px;background:linear-gradient(135deg,#128C7E,#25D366);">💬 Envoyer le point du jour sur WhatsApp</button>
+    <div style="font-size:11px;color:#718096;text-align:center;line-height:1.5;margin-top:-6px;">
+      Prépare le message et ouvre WhatsApp. Vous choisissez le destinataire.
+    </div>
     <button class="btn-global" id="btnCompleterSign" style="margin-top:14px;background:linear-gradient(135deg,#b7791f,#C9A227);">🖊️ Compléter mes signatures manquantes</button>
     <div style="font-size:11px;color:#718096;text-align:center;line-height:1.5;margin-top:-6px;">
       Appose votre paraphe sur toutes les séances passées que les apprenants ont signées sans contreseing.
@@ -746,6 +750,68 @@ function rendreApprenants(){
   });
 })();
 
+
+
+// ═══ POINT DU JOUR À RELAYER SUR WHATSAPP ═══
+// WhatsApp n'autorise pas l'envoi automatique sans abonnement payant.
+// On prépare donc le texte et on ouvre l'application : un clic suffit.
+async function pointDuJourWhatsApp(){
+  var noms=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var today=new Date(); today.setHours(0,0,0,0);
+  var jn=today.getDay();
+  if(jn<1||jn>5){ alert('Pas de séance le week-end.'); return; }
+  var jour=noms[jn];
+  var y=today.getFullYear(), m=today.getMonth()+1, d=today.getDate();
+
+  var alts=allAlternants.filter(function(a){ return a.jourCentre===jour; });
+  var fcs=fcDuJour(jour).filter(function(f){ return profil.fcIds?profil.fcIds.includes(f.id):true; });
+
+  var nonSignes=[], absents=[], dist=[], autonomie=[], attendus=0;
+
+  for(var i=0;i<alts.length;i++){
+    var a=alts[i]; attendus++;
+    var s=await get(ref(db,'emargements/'+a.id+'_'+y+'_'+m+'_'+d)).catch(function(){return null;});
+    var v=(s&&s.exists())?s.val():{};
+    if(v.presence==='absent'){ absents.push(a.nom+' — '+(v.motif||'sans motif')); continue; }
+    if(v.presence==='entreprise'){ absents.push(a.nom+' — en entreprise'); continue; }
+    if(v.mode==='distanciel') dist.push(a.nom);
+    if(!v.matin_alt || !v.am_alt) nonSignes.push(a.nom + (!v.matin_alt&&!v.am_alt?'':(!v.matin_alt?' (matin)':' (après-midi)')));
+  }
+  for(var i=0;i<fcs.length;i++){
+    var f=fcs[i];
+    if(jn===jourAutonomieFC(f)){ autonomie.push(f.nom); continue; }
+    attendus++;
+    var s=await get(ref(db,'emargementsFC/'+f.id+'_fc_'+y+'_'+m+'_'+d)).catch(function(){return null;});
+    var v=(s&&s.exists())?s.val():{};
+    if(v.presence==='absent'){ absents.push(f.nom+' (FC) — '+(v.motif||'sans motif')); continue; }
+    if(v.presence==='entreprise'){ absents.push(f.nom+' (FC) — en entreprise'); continue; }
+    if(v.mode==='distanciel') dist.push(f.nom+' (FC)');
+    if(!v.matin_alt || !v.am_alt) nonSignes.push(f.nom+' (FC)');
+  }
+
+  var t = '*JTCF — Point du jour*\n';
+  t += jour + ' ' + ('0'+d).slice(-2) + '/' + ('0'+m).slice(-2) + '/' + y + '\n\n';
+  t += (attendus - nonSignes.length) + ' apprenant(s) en règle sur ' + attendus + '\n';
+  if(nonSignes.length){ t += '\n*Signature manquante (' + nonSignes.length + ')*\n';
+    nonSignes.forEach(function(n){ t += '• ' + n + '\n'; }); }
+  else t += '\nToutes les signatures sont faites.\n';
+  if(absents.length){ t += '\n*Absents (' + absents.length + ')*\n';
+    absents.forEach(function(n){ t += '• ' + n + '\n'; }); }
+  if(dist.length){ t += '\n*En distanciel (' + dist.length + ')*\n';
+    dist.forEach(function(n){ t += '• ' + n + '\n'; }); }
+  if(autonomie.length){ t += '\n*En autonomie (' + autonomie.length + ')*\n';
+    autonomie.forEach(function(n){ t += '• ' + n + '\n'; }); }
+
+  window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank');
+}
+(function(){
+  var b=document.getElementById('btnWhatsApp'); if(!b) return;
+  function go(e){ e.preventDefault(); b.disabled=true; b.textContent='⏳ Préparation...';
+    pointDuJourWhatsApp().catch(function(x){ alert('Erreur : '+x.message); })
+      .finally(function(){ b.disabled=false; b.textContent='💬 Envoyer le point du jour sur WhatsApp'; });
+  }
+  b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
+})();
 
 // ═══ SIGNATURE DE RÉFÉRENCE DE LA FORMATRICE ═══
 // Réutilise son dernier paraphe manuscrit pour que les signatures groupées
