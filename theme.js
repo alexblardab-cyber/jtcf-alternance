@@ -168,6 +168,125 @@
     return null;
   }
 
+  /* ---- Décor de l'en-tête -------------------------------------------------
+     Une scène dessinée, propre à chaque saison, posée en filigrane derrière
+     le titre. Tout est vectoriel : aucune image à déposer sur GitHub, et
+     l'affichage reste net sur n'importe quel écran.
+     ------------------------------------------------------------------------ */
+
+  // Convertit une couleur #rrggbb en rgba() pour la trame de fond.
+  function trame(hex, alpha) {
+    var h = String(hex).replace('#', '');
+    if (h.length !== 6) return 'rgba(0,0,0,' + alpha + ')';
+    return 'rgba(' + parseInt(h.substr(0, 2), 16) + ','
+      + parseInt(h.substr(2, 2), 16) + ','
+      + parseInt(h.substr(4, 2), 16) + ',' + alpha + ')';
+  }
+
+  function svgScene(contenu) {
+    return '<svg viewBox="0 0 400 120" preserveAspectRatio="xMidYMax slice" '
+      + 'style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">'
+      + contenu + '</svg>';
+  }
+
+  // Silhouette des remparts, commune à toutes les saisons : on est à La Réunion.
+  // Volontairement basse : elle doit rester un filigrane sous le bloc d'accueil.
+  var RELIEF = '<path d="M0 98 L34 80 L58 92 L96 72 L126 90 L160 78 L198 98 '
+    + 'L238 82 L274 96 L312 78 L350 94 L400 84 V120 H0 Z" fill="#fff" fill-opacity=".09"/>';
+
+  function scenePluies() {
+    var pluie = '';
+    for (var i = 0; i < 30; i++) {
+      var x = 5 + i * 13.4, y = 4 + ((i * 41) % 58);
+      pluie += '<line x1="' + x + '" y1="' + y + '" x2="' + (x - 4) + '" y2="' + (y + 12)
+        + '" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-opacity=".15"/>';
+    }
+    return svgScene(
+      pluie + RELIEF
+      + '<path d="M0 106 Q50 98 100 106 T200 106 T300 106 T400 106 V120 H0 Z" fill="#fff" fill-opacity=".08"/>'
+      // fougères arborescentes
+      + '<g stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-opacity=".16">'
+      + '<path d="M26 120 V96 M26 100 C20 96 15 94 10 93 M26 106 C33 101 40 99 46 98"/>'
+      + '<path d="M372 120 V98 M372 102 C378 98 384 96 390 95 M372 108 C365 104 359 102 353 101"/>'
+      + '</g>');
+  }
+
+  function sceneCanne() {
+    var champ = '';
+    for (var i = 0; i < 26; i++) {
+      var x = 4 + i * 15.6, h = 26 + ((i * 29) % 22);
+      var t = 120 - h;
+      champ += '<g stroke="#fff" fill="none" stroke-linecap="round" stroke-opacity=".17">'
+        + '<line x1="' + x + '" y1="120" x2="' + (x + 2) + '" y2="' + t + '" stroke-width="1.6"/>'
+        + '<path d="M' + (x + 2) + ' ' + t + ' q-9 -5 -13 -1" stroke-width="1.2"/>'
+        + '<path d="M' + (x + 2) + ' ' + (t + 6) + ' q10 -6 14 -2" stroke-width="1.2"/>'
+        + '</g>';
+    }
+    return svgScene(RELIEF + champ);
+  }
+
+  function sceneBaleines() {
+    return svgScene(
+      RELIEF
+      // queue de baleine, décalée pour ne pas passer derrière le titre
+      + '<g transform="translate(58,0)">'
+      + '<path d="M0 64 C-7 78 -17 86 -29 89 C-15 92 -5 99 0 109 '
+      + 'C5 99 15 92 29 89 C17 86 7 78 0 64 Z" fill="#fff" fill-opacity=".22"/>'
+      + '</g>'
+      // souffle
+      + '<g fill="#fff" fill-opacity=".14">'
+      + '<circle cx="104" cy="74" r="2.4"/><circle cx="111" cy="66" r="1.8"/><circle cx="117" cy="60" r="1.3"/>'
+      + '</g>'
+      // houle, posée par-dessus le bas de la queue
+      + '<path d="M0 96 Q40 86 80 96 T160 96 T240 96 T320 96 T400 96 V120 H0 Z" fill="#fff" fill-opacity=".11"/>'
+      + '<path d="M0 106 Q50 97 100 106 T200 106 T300 106 T400 106 V120 H0 Z" fill="#fff" fill-opacity=".13"/>');
+  }
+
+  function sceneFlamboyants() {
+    function arbre(cx, base, hauteur, etendue, n, op) {
+      var g = '<g stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-opacity="'
+        + (op + 0.02) + '">'
+        + '<path d="M' + cx + ' ' + base + ' V' + (base - hauteur)
+        + ' M' + cx + ' ' + (base - hauteur * 0.55) + ' l-10 -8'
+        + ' M' + cx + ' ' + (base - hauteur * 0.75) + ' l11 -8"/></g>';
+      for (var i = 0; i < n; i++) {
+        var a = (i * 137.5) * Math.PI / 180;
+        var r = 4 + (i % 6) * (etendue / 6);
+        var x = cx + Math.cos(a) * r * 1.8;
+        var y = (base - hauteur - 4) + Math.sin(a) * r * 0.75;
+        g += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="'
+          + (2 + (i % 3) * 0.6).toFixed(1) + '" fill="#fff" fill-opacity="' + op + '"/>';
+      }
+      return g;
+    }
+    return svgScene(
+      RELIEF
+      + arbre(58, 120, 42, 17, 26, 0.18)
+      + arbre(342, 120, 34, 14, 20, 0.15));
+  }
+
+  var SCENES = {
+    pluies: scenePluies,
+    canne: sceneCanne,
+    baleines: sceneBaleines,
+    flamboyants: sceneFlamboyants
+  };
+
+  function poserDecor(s) {
+    var entete = document.querySelector('.header');
+    if (!entete) return;
+
+    var d = document.getElementById('jtcfDecor');
+    if (!d) {
+      d = document.createElement('div');
+      d.id = 'jtcfDecor';
+      d.setAttribute('aria-hidden', 'true');
+      d.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
+      entete.insertBefore(d, entete.firstChild);
+    }
+    d.innerHTML = (SCENES[s.id] || sceneBaleines)();
+  }
+
   /* ---- Application ------------------------------------------------------- */
 
   function appliquer() {
@@ -186,7 +305,26 @@
       '--or:' + accent + ';' +
       '--or-clair:' + accentClair + ';' +
       '--or-pale:' + accentPale + ';' +
-      '}';
+      '}' +
+
+      /* L'en-tête accueille le décor : les enfants passent au-dessus. */
+      '.header{position:relative;overflow:hidden;}' +
+      '.header > *:not(#jtcfDecor){position:relative;z-index:1;}' +
+
+      /* Voile lumineux en haut de l'en-tête, pour éviter l'aplat de couleur. */
+      '.header::before{content:"";position:absolute;top:-45%;right:-18%;' +
+      'width:75%;height:180%;border-radius:50%;pointer-events:none;' +
+      'background:radial-gradient(circle,rgba(255,255,255,.16),rgba(255,255,255,0) 68%);}' +
+
+      /* Fond de page très légèrement texturé, teinté par la saison. */
+      'body{background-color:#f0f2f5;' +
+      'background-image:radial-gradient(' + trame(accent, .10) + ' 1px,transparent 1px);' +
+      'background-size:22px 22px;background-attachment:fixed;}' +
+
+      /* Les cartes reprennent une touche de la saison. */
+      '.card{position:relative;overflow:hidden;}' +
+      '.card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;' +
+      'background:linear-gradient(90deg,var(--or),var(--or-clair));opacity:.55;}';
 
     var bal = document.getElementById('jtcfThemeStyle');
     if (!bal) {
@@ -210,6 +348,7 @@
     window.JTCF_SAISON = s;
     window.JTCF_MOMENT = m;
 
+    poserDecor(s);
     majEntete();
   }
 
@@ -359,10 +498,15 @@
 
   appliquer();
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', majEntete);
-  } else {
+  function auChargement() {
+    poserDecor(window.JTCF_SAISON || saisonChoisie());
     majEntete();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', auChargement);
+  } else {
+    auChargement();
   }
 
   // Si l'application reste ouverte plusieurs jours, on revérifie la date.
