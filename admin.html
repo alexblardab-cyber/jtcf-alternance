@@ -1039,7 +1039,7 @@ document.getElementById('adminMoisSelect').addEventListener('change',chargerReca
 // ══════════════════════════════════════════════════
 //  EXCEPTIONS / CORRECTION D'ÉMARGEMENT
 // ══════════════════════════════════════════════════
-var excSujet = null, excIsFC = false, excD = null;
+var excSujet = null, excIsFC = false, excType = 'alt', excD = null;
 
 function initExceptions(){
   var sel = document.getElementById('excPersonne');
@@ -1054,6 +1054,13 @@ function initExceptions(){
     html += '<option value="fc:'+f.id+'">'+f.nom+'</option>';
   });
   html += '</optgroup>';
+  if ((allStages||[]).length){
+    html += '<optgroup label="Stagiaires">';
+    allStages.forEach(function(st){
+      html += '<option value="stg:'+st.id+'">'+st.nom+'</option>';
+    });
+    html += '</optgroup>';
+  }
   sel.innerHTML = html;
   sel.dataset.rempli = '1';
   var di = document.getElementById('excDate');
@@ -1061,17 +1068,25 @@ function initExceptions(){
   chargerHistoriqueRegul();
 }
 
-function excKey(id, isFC, d){
+// Trois familles d'émargement, trois nœuds, trois formats de clé.
+var EXC_TYPES = {
+  alt: { base:'emargements',      suffixe:'_'     },
+  fc:  { base:'emargementsFC',    suffixe:'_fc_'  },
+  stg: { base:'emargementsStage', suffixe:'_stg_' }
+};
+function excInfo(t){ return EXC_TYPES[t] || EXC_TYPES.alt; }
+
+function excKey(id, type, d){
   var y=d.getFullYear(), m=d.getMonth()+1, j=d.getDate();
-  return isFC ? (id+'_fc_'+y+'_'+m+'_'+j) : (id+'_'+y+'_'+m+'_'+j);
+  return id + excInfo(type).suffixe + y + '_' + m + '_' + j;
 }
-function excBase(isFC){ return isFC ? 'emargementsFC' : 'emargements'; }
+function excBase(type){ return excInfo(type).base; }
 
 // Retrouve la dernière signature tracée par l'apprenant lui-même
-async function excDerniereSignature(id, isFC){
-  var snap = await get(ref(db, excBase(isFC))).catch(function(){return null;});
+async function excDerniereSignature(id, type){
+  var snap = await get(ref(db, excBase(type))).catch(function(){return null;});
   if(!snap || !snap.exists()) return null;
-  var pref = isFC ? (id+'_fc_') : (id+'_');
+  var pref = id + excInfo(type).suffixe;
   var best=null, bestT=-1;
   snap.forEach(function(c){
     var k=c.key; if(k.indexOf(pref)!==0) return;
@@ -1090,15 +1105,18 @@ async function excAfficher(){
   if(!sel){ alert('Choisissez un apprenant.'); return; }
   if(!dv){ alert('Choisissez une date.'); return; }
 
-  excIsFC = sel.indexOf('fc:')===0;
+  excType = sel.split(':')[0];
+  excIsFC = (excType === 'fc');
   var id  = sel.split(':')[1];
-  excSujet = (excIsFC?allFC:allAlternants).filter(function(x){return x.id===id;})[0];
+  var source = excType==='fc' ? allFC : (excType==='stg' ? allStages : allAlternants);
+  excSujet = (source||[]).filter(function(x){return x.id===id;})[0];
+  if(!excSujet){ alert('Fiche introuvable. Rechargez la page.'); return; }
   var pr=dv.split('-'); excD=new Date(+pr[0],+pr[1]-1,+pr[2]);
 
   var jours=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
   var jour=jours[excD.getDay()];
 
-  var snap=await get(ref(db, excBase(excIsFC)+'/'+excKey(id,excIsFC,excD))).catch(function(){return null;});
+  var snap=await get(ref(db, excBase(excType)+'/'+excKey(id,excType,excD))).catch(function(){return null;});
   var v=(snap&&snap.exists())?snap.val():{};
 
   document.getElementById('excResultat').style.display='block';
@@ -1148,7 +1166,7 @@ async function excAfficher(){
   on('excEntreprise', async function(){
     if(!confirm('Déclarer '+excSujet.nom+' en entreprise ce jour-là ?\n\n'
       +'Ni présence ni absence : la journée sera comptée en heures en entreprise.')) return;
-    var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+    var k=excBase(excType)+'/'+excKey(excSujet.id,excType,excD);
     await set(ref(db,k+'/presence'),'entreprise');
     await set(ref(db,k+'/motif'),null);
     videCache();
@@ -1157,7 +1175,7 @@ async function excAfficher(){
   });
   on('excAnnulerAbs', async function(){
     if(!confirm('Annuler l\'absence de '+excSujet.nom+' ?')) return;
-    var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+    var k=excBase(excType)+'/'+excKey(excSujet.id,excType,excD);
     await set(ref(db,k+'/presence'),null);
     await set(ref(db,k+'/motif'),null);
     await set(ref(db,k+'/justificatif'),null);
@@ -1174,7 +1192,7 @@ async function excAfficher(){
     if(m===null) return;
     var M={'1':'Maladie','2':'Absence justifiée','3':'Absence non justifiée'};
     m=M[m.trim()]||m.trim(); if(!m){alert('Motif obligatoire.');return;}
-    var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+    var k=excBase(excType)+'/'+excKey(excSujet.id,excType,excD);
     await set(ref(db,k+'/presence'),'absent');
     await set(ref(db,k+'/motif'),m);
     await set(ref(db,k+'/matin_alt'),null);
@@ -1191,10 +1209,10 @@ async function excReguler(slot, libelle){
   var M={'1':'Oubli de signature','2':'Panne de téléphone','3':'Absence de réseau'};
   motif=M[motif.trim()]||motif.trim();
   if(!motif){alert('Motif obligatoire.');return;}
-  var sig=await excDerniereSignature(excSujet.id, excIsFC);
+  var sig=await excDerniereSignature(excSujet.id, excType);
   if(!sig){ alert('❌ Aucune signature enregistrée pour '+excSujet.nom+'.\n\nIl faut qu\'il/elle ait signé au moins une fois dans l\'application.'); return; }
   if(!confirm('Confirmer ?\n\n'+excSujet.nom+' — '+libelle+'\nMotif : '+motif)) return;
-  var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+  var k=excBase(excType)+'/'+excKey(excSujet.id,excType,excD);
   await set(ref(db,k+'/'+slot), sig);
   await set(ref(db,k+'/'+slot+'_regul'), {motif:motif, par:'Admin', le:new Date().toISOString()});
   videCache();
@@ -1204,7 +1222,7 @@ async function excReguler(slot, libelle){
 
 async function excEffacer(slot, libelle){
   if(!confirm('Effacer la signature du '+libelle+' pour '+excSujet.nom+' ?')) return;
-  var k=excBase(excIsFC)+'/'+excKey(excSujet.id,excIsFC,excD);
+  var k=excBase(excType)+'/'+excKey(excSujet.id,excType,excD);
   await set(ref(db,k+'/'+slot), null);
   await set(ref(db,k+'/'+slot+'_regul'), null);
   videCache();
@@ -1215,18 +1233,21 @@ async function excEffacer(slot, libelle){
 async function chargerHistoriqueRegul(){
   var box=document.getElementById('excHistorique'); if(!box) return;
   var lignes=[];
-  for(var b=0;b<2;b++){
-    var isFC=(b===1);
-    var snap=await get(ref(db, excBase(isFC))).catch(function(){return null;});
+  var types = ['alt','fc','stg'];
+  for(var b=0;b<types.length;b++){
+    var t = types[b];
+    var snap=await get(ref(db, excBase(t))).catch(function(){return null;});
     if(!snap||!snap.exists()) continue;
+    var suffixe = excInfo(t).suffixe;
+    var source  = t==='fc' ? allFC : (t==='stg' ? allStages : allAlternants);
     snap.forEach(function(c){
       var v=c.val()||{}; var k=c.key;
       ['matin_alt_regul','am_alt_regul'].forEach(function(f){
         if(!v[f]) return;
-        var id=isFC?k.split('_fc_')[0]:k.substring(0,k.indexOf('_'));
+        var id = suffixe==='_' ? k.substring(0,k.indexOf('_')) : k.split(suffixe)[0];
         var per=(f==='matin_alt_regul')?'Matin':'A-M';
         var parts=k.split('_'); var dt=parts.slice(-3);
-        var pers=(isFC?allFC:allAlternants).filter(function(x){return x.id===id;})[0];
+        var pers=(source||[]).filter(function(x){return x.id===id;})[0];
         lignes.push({nom:pers?pers.nom:id, per:per, date:dt[2]+'/'+dt[1]+'/'+dt[0],
                      motif:v[f].motif||'—', par:v[f].par||'—', le:v[f].le||''});
       });
