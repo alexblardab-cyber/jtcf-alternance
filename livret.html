@@ -107,6 +107,7 @@
   <script src="theme.js"></script>
   <script src="adresse.js"></script>
   <script src="rdv.js"></script>
+  <script src="nouveautes.js"></script>
 </head>
 <body>
 
@@ -667,6 +668,9 @@ JTCF_RDV.connecter({
   },
   ecrire: async function(chemin, valeur){ await set(ref(db, chemin), valeur); }
 });
+
+// Explication des nouveautés, une seule fois par appareil.
+JTCF_NEWS.verifier();
 
 function ouvrirRendezVous(){
   const zone = document.getElementById('zoneRdv');

@@ -148,6 +148,7 @@
     var html = '';
     if (monCreneau) html += carteMonRdv(monCreneau);
     else if (maDemande) html += carteMaDemande(maDemande);
+    else html += blocExplication();
 
     if (!monCreneau) {
       var libres = creneaux.filter(function (c) { return !c.pris && c.date >= auj; }).sort(trierCreneaux);
@@ -194,6 +195,24 @@
       + 'style="width:100%;margin-top:14px;padding:11px;background:#fff5f5;color:#e53e3e;'
       + 'border:1px solid #fed7d7;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">'
       + 'Annuler ma demande</button></div>';
+  }
+
+  // Rappel permanent : l'onglet est nouveau, tout le monde ne devinera pas
+  // à quoi il sert. Volontairement court et sans jargon.
+  function blocExplication() {
+    return '<div style="background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));'
+      + 'color:#fff;border-radius:14px;padding:16px;margin-bottom:14px;">'
+      + '<div style="font-size:14px;font-weight:800;color:var(--or);">📅 Besoin de nous voir ?</div>'
+      + '<div style="font-size:12.5px;line-height:1.6;margin-top:7px;opacity:.92;">'
+      + 'Choisissez un créneau ci-dessous, ou dites-nous quand vous êtes disponible. '
+      + 'Suivi de parcours, question sur votre contrat, difficulté personnelle, absence à justifier : '
+      + 'tout motif est recevable.</div>'
+      + '<div style="font-size:11.5px;line-height:1.6;margin-top:8px;opacity:.75;">'
+      + 'Ce que vous nous confiez reste entre nous.</div>'
+      + '<button id="rdvRevoir" style="margin-top:11px;background:rgba(255,255,255,.15);'
+      + 'border:1px solid rgba(255,255,255,.3);color:#fff;font-size:11.5px;font-weight:700;'
+      + 'padding:7px 12px;border-radius:8px;cursor:pointer;">Comment ça marche ?</button>'
+      + '</div>';
   }
 
   function blocCreneaux(libres) {
@@ -287,6 +306,8 @@
     if (a2) a2.addEventListener('click', function () { annulerDemande(a2.getAttribute('data-demande'), boite); });
     var env = boite.querySelector('#rdvEnvoyer');
     if (env) env.addEventListener('click', function () { envoyerDemande(boite, env); });
+    var rev = boite.querySelector('#rdvRevoir');
+    if (rev && global.JTCF_NEWS) rev.addEventListener('click', function () { global.JTCF_NEWS.revoir(); });
   }
 
   async function reserver(cid, boite) {
