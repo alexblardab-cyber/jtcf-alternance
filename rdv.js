@@ -3,23 +3,29 @@
    --------------------------------------------------------------------------
    Deux mécanismes complémentaires :
 
-   1. CRÉNEAUX — vous publiez vos disponibilités depuis l'admin.
-      L'apprenant en choisit une, elle se réserve aussitôt. Personne ne
-      peut prendre le même créneau deux fois.
+   1. CRÉNEAUX — chacun publie ses disponibilités. L'apprenant en choisit
+      une, elle se réserve aussitôt. Personne ne prend le même créneau deux fois.
 
-   2. DEMANDES — si rien ne convient, l'apprenant décrit son besoin et
-      ses disponibilités. Vous confirmez en proposant un moment.
+   2. DEMANDES — si rien ne convient, l'apprenant décrit son besoin et ses
+      disponibilités. L'équipe confirme en proposant un moment.
+
+   Un rendez-vous peut réunir PLUSIEURS personnes : un entretien à deux, ou
+   toute l'équipe pédagogique. Le champ « par » reste une simple chaîne —
+   « EF » ou « AB,MG,EF » — ce qui garde lisibles les créneaux déjà créés.
+
+   Le calendrier est PARTAGÉ : chacun bascule entre son propre planning et
+   celui de toute l'équipe.
 
    Deux nœuds Firebase :
       creneaux/     → les disponibilités publiées
       rdvDemandes/  → les demandes libres
 
-   Ce fichier ne connaît pas Firebase : la page qui l'utilise lui fournit
-   trois fonctions de lecture/écriture. Il sert donc aussi bien au livret
-   de l'apprenant qu'au panneau de l'équipe.
+   Ce fichier ne connaît pas Firebase : la page qui l'utilise lui prête deux
+   fonctions de lecture/écriture. Il sert donc aussi bien au livret de
+   l'apprenant qu'au panneau de l'équipe.
 
    Chargé par : livret.html · livret-fc.html · livret-stage.html
-                admin.html · formatrice.html
+                admin.html · formatrice.html · cip.html
    ========================================================================== */
 (function (global) {
   'use strict';
@@ -27,9 +33,9 @@
   /* ---- L'équipe ----------------------------------------------------------- */
 
   var CONSEILLERS = {
-    AB: { nom: 'Alexandre Blard', role: 'Conseiller en Formation / Assistant de Direction', emoji: '👤', couleur: '#2C6E9B' },
-    MG: { nom: 'Marine Grondin', role: 'Conseillère en Insertion Professionnelle / ARH', emoji: '👤', couleur: '#6b46c1' },
-    EF: { nom: 'Emilie Fontaine', role: 'Formatrice', emoji: '👩‍🏫', couleur: '#2f855a' }
+    AB: { nom: 'Alexandre Blard', role: 'Conseiller en Formation / Assistant de Direction', couleur: '#2C6E9B' },
+    MG: { nom: 'Marine Grondin', role: 'Conseillère en Insertion Professionnelle / ARH', couleur: '#6b46c1' },
+    EF: { nom: 'Emilie Fontaine', role: 'Formatrice', couleur: '#2f855a' }
   };
 
   var MOTIFS = [
@@ -77,7 +83,40 @@
   }
 
   function conseiller(code) {
-    return CONSEILLERS[code] || { nom: code || 'L\'équipe', role: '', emoji: '👤', couleur: '#718096' };
+    return CONSEILLERS[code] || { nom: code || 'L\'équipe', role: '', couleur: '#718096' };
+  }
+
+  /* ---- Plusieurs participants --------------------------------------------- */
+
+  function codes(par) {
+    return String(par || '').split(',').map(function (c) { return c.trim(); }).filter(Boolean);
+  }
+
+  function estEquipe(par) {
+    return codes(par).length >= Object.keys(CONSEILLERS).length;
+  }
+
+  function libelleParticipants(par) {
+    var l = codes(par);
+    if (!l.length) return 'L\'équipe';
+    if (l.length === 1) return conseiller(l[0]).nom;
+    if (estEquipe(par)) return 'Toute l\'équipe pédagogique';
+    return l.map(function (c) { return conseiller(c).nom.split(' ')[0]; }).join(' et ');
+  }
+
+  function detailParticipants(par) {
+    var l = codes(par);
+    if (l.length <= 1) return conseiller(l[0] || '').role;
+    return l.map(function (c) { return conseiller(c).nom; }).join(' · ');
+  }
+
+  function couleurDe(par) {
+    var l = codes(par);
+    return l.length === 1 ? conseiller(l[0]).couleur : '#4A5568';
+  }
+
+  function participe(par, role) {
+    return role === 'admin' || codes(par).indexOf(role) >= 0;
   }
 
   function objetVersListe(o) {
@@ -98,7 +137,6 @@
     var demandes = objetVersListe(await api.lire('rdvDemandes'));
     var auj = isoAujourdhui();
 
-    // Mon rendez-vous en cours, s'il existe
     var monCreneau = creneaux.filter(function (c) {
       return c.pris && c.pris.id === moi.id && c.date >= auj;
     }).sort(trierCreneaux)[0];
@@ -108,12 +146,8 @@
     }).sort(function (a, b) { return (b.le || '').localeCompare(a.le || ''); })[0];
 
     var html = '';
-
-    if (monCreneau) {
-      html += carteMonRdv(monCreneau);
-    } else if (maDemande) {
-      html += carteMaDemande(maDemande);
-    }
+    if (monCreneau) html += carteMonRdv(monCreneau);
+    else if (maDemande) html += carteMaDemande(maDemande);
 
     if (!monCreneau) {
       var libres = creneaux.filter(function (c) { return !c.pris && c.date >= auj; }).sort(trierCreneaux);
@@ -126,20 +160,19 @@
   }
 
   function carteMonRdv(c) {
-    var p = conseiller(c.par);
-    return '<div class="card" style="border-left:4px solid ' + p.couleur + ';">'
+    return '<div class="card" style="border-left:4px solid ' + couleurDe(c.par) + ';">'
       + '<div class="card-title">✅ Votre rendez-vous</div>'
       + '<div style="font-size:17px;font-weight:800;color:var(--bleu-fonce);">'
       + joli(c.date) + ' à ' + ech(c.heure) + '</div>'
-      + '<div style="font-size:13px;color:#4a5568;margin-top:6px;">avec <strong>' + ech(p.nom) + '</strong></div>'
-      + '<div style="font-size:12px;color:#718096;margin-top:2px;">' + ech(p.role) + '</div>'
+      + '<div style="font-size:13px;color:#4a5568;margin-top:6px;">avec <strong>'
+      + ech(libelleParticipants(c.par)) + '</strong></div>'
+      + '<div style="font-size:12px;color:#718096;margin-top:2px;">' + ech(detailParticipants(c.par)) + '</div>'
       + '<div style="font-size:12px;color:#718096;margin-top:8px;">📍 ' + ech(c.lieu || LIEU_DEFAUT) + '</div>'
       + (c.pris.motif ? '<div style="font-size:12px;color:#718096;margin-top:4px;">💬 ' + ech(c.pris.motif) + '</div>' : '')
       + '<button class="btn-annuler-rdv" data-creneau="' + c._id + '" '
       + 'style="width:100%;margin-top:14px;padding:11px;background:#fff5f5;color:#e53e3e;'
       + 'border:1px solid #fed7d7;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">'
-      + 'Annuler ce rendez-vous</button>'
-      + '</div>';
+      + 'Annuler ce rendez-vous</button></div>';
   }
 
   function carteMaDemande(d) {
@@ -152,7 +185,7 @@
           : '<div style="font-size:13px;color:#4a5568;line-height:1.6;">Votre demande a bien été transmise. '
             + 'L\'équipe vous répondra rapidement, ici même et par téléphone si nécessaire.</div>')
       + '<div style="font-size:12px;color:#718096;margin-top:8px;">Avec : '
-      + ech(d.avec === '?' ? 'peu importe' : conseiller(d.avec).nom) + '</div>'
+      + ech(d.avec === '?' ? 'peu importe' : libelleParticipants(d.avec)) + '</div>'
       + '<div style="font-size:12px;color:#718096;margin-top:2px;">Motif : ' + ech(d.motif) + '</div>'
       + (d.reponse ? '<div style="margin-top:10px;padding:10px 12px;background:var(--or-pale);'
           + 'border-left:3px solid var(--or);border-radius:0 8px 8px 0;font-size:12.5px;color:#744210;">'
@@ -160,8 +193,7 @@
       + '<button class="btn-annuler-demande" data-demande="' + d._id + '" '
       + 'style="width:100%;margin-top:14px;padding:11px;background:#fff5f5;color:#e53e3e;'
       + 'border:1px solid #fed7d7;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">'
-      + 'Annuler ma demande</button>'
-      + '</div>';
+      + 'Annuler ma demande</button></div>';
   }
 
   function blocCreneaux(libres) {
@@ -180,15 +212,16 @@
       h += '<div style="font-size:11px;font-weight:800;color:var(--bleu);text-transform:uppercase;'
         + 'letter-spacing:1px;margin:14px 0 8px;">' + joli(date) + '</div>';
       parDate[date].forEach(function (c) {
-        var p = conseiller(c.par);
+        var multi = codes(c.par).length > 1;
         h += '<button class="btn-creneau" data-creneau="' + c._id + '" '
           + 'style="width:100%;display:flex;align-items:center;gap:11px;padding:11px 12px;margin-bottom:7px;'
-          + 'background:#fff;border:2px solid #edf2f7;border-left:4px solid ' + p.couleur + ';'
+          + 'background:#fff;border:2px solid #edf2f7;border-left:4px solid ' + couleurDe(c.par) + ';'
           + 'border-radius:11px;cursor:pointer;text-align:left;font-family:inherit;">'
           + '<div style="font-size:15px;font-weight:800;color:var(--bleu-fonce);min-width:46px;">' + ech(c.heure) + '</div>'
           + '<div style="flex:1;min-width:0;">'
-          + '<div style="font-size:13px;font-weight:700;color:#2d3748;">' + ech(p.nom) + '</div>'
-          + '<div style="font-size:11px;color:#718096;">' + ech(p.role) + '</div>'
+          + '<div style="font-size:13px;font-weight:700;color:#2d3748;">'
+          + (multi ? '👥 ' : '') + ech(libelleParticipants(c.par)) + '</div>'
+          + '<div style="font-size:11px;color:#718096;">' + ech(detailParticipants(c.par)) + '</div>'
           + '</div>'
           + '<div style="font-size:11px;color:#a0aec0;white-space:nowrap;">' + (c.duree || 30) + ' min</div>'
           + '</button>';
@@ -199,10 +232,17 @@
   }
 
   function blocDemande(nbLibres) {
-    var options = '<option value="?">Peu importe</option>';
+    var cases = '';
     Object.keys(CONSEILLERS).forEach(function (k) {
-      options += '<option value="' + k + '">' + ech(CONSEILLERS[k].nom) + '</option>';
+      cases += '<label style="display:flex;align-items:center;gap:9px;padding:9px 11px;margin-bottom:6px;'
+        + 'border:2px solid #edf2f7;border-radius:10px;cursor:pointer;">'
+        + '<input type="checkbox" class="rdv-qui" value="' + k + '" style="width:17px;height:17px;flex-shrink:0;" />'
+        + '<span style="flex:1;min-width:0;">'
+        + '<span style="display:block;font-size:13px;font-weight:700;color:#2d3748;">' + ech(CONSEILLERS[k].nom) + '</span>'
+        + '<span style="display:block;font-size:11px;color:#718096;">' + ech(CONSEILLERS[k].role) + '</span>'
+        + '</span></label>';
     });
+
     var motifs = '<option value="">— Choisir —</option>';
     MOTIFS.forEach(function (m) { motifs += '<option value="' + ech(m) + '">' + ech(m) + '</option>'; });
 
@@ -212,7 +252,9 @@
       + 'Décrivez votre besoin et vos disponibilités. Nous revenons vers vous rapidement.</div>'
 
       + '<div class="form-field"><label class="form-label">Avec qui ?</label>'
-      + '<select class="form-select" id="rdvAvec">' + options + '</select></div>'
+      + '<div style="font-size:11.5px;color:#718096;margin-bottom:8px;">'
+      + 'Cochez une ou plusieurs personnes. Ne rien cocher revient à dire « peu importe ».</div>'
+      + cases + '</div>'
 
       + '<div class="form-field"><label class="form-label">Motif</label>'
       + '<select class="form-select" id="rdvMotif">' + motifs + '</select></div>'
@@ -252,8 +294,7 @@
     if (!c) { alert('Ce créneau n\'existe plus.'); return rendreApprenant(boite); }
     if (c.pris) { alert('Ce créneau vient d\'être réservé par quelqu\'un d\'autre.'); return rendreApprenant(boite); }
 
-    var p = conseiller(c.par);
-    var motif = prompt('Rendez-vous avec ' + p.nom + '\n'
+    var motif = prompt('Rendez-vous avec ' + libelleParticipants(c.par) + '\n'
       + joli(c.date) + ' à ' + c.heure + '\n\n'
       + 'En quelques mots, le motif de votre demande :', '');
     if (motif === null) return;
@@ -262,7 +303,8 @@
       id: moi.id, nom: moi.nom, type: moi.type,
       motif: (motif || '').trim(), le: new Date().toISOString()
     });
-    alert('✅ Rendez-vous confirmé\n\n' + joli(c.date) + ' à ' + c.heure + '\navec ' + p.nom);
+    alert('✅ Rendez-vous confirmé\n\n' + joli(c.date) + ' à ' + c.heure
+      + '\navec ' + libelleParticipants(c.par));
     rendreApprenant(boite);
   }
 
@@ -279,7 +321,10 @@
   }
 
   async function envoyerDemande(boite, bouton) {
-    var avec = boite.querySelector('#rdvAvec').value;
+    var choisis = [];
+    boite.querySelectorAll('.rdv-qui').forEach(function (c) { if (c.checked) choisis.push(c.value); });
+    var avec = choisis.length ? choisis.join(',') : '?';
+
     var motif = boite.querySelector('#rdvMotif').value;
     var dispo = boite.querySelector('#rdvDispo').value.trim();
     var message = boite.querySelector('#rdvMessage').value.trim();
@@ -289,8 +334,7 @@
     bouton.disabled = true;
     bouton.textContent = '⏳ Envoi...';
     try {
-      var did = id('d');
-      await api.ecrire('rdvDemandes/' + did, {
+      await api.ecrire('rdvDemandes/' + id('d'), {
         qui: moi.id, nom: moi.nom, type: moi.type,
         avec: avec, motif: motif, dispo: dispo, message: message,
         etat: 'demande', reponse: '', quand: '',
@@ -306,22 +350,21 @@
   }
 
   /* ---- Vue calendrier -----------------------------------------------------
-     Un mois d'un coup d'œil : les jours qui portent des rendez-vous se
-     repèrent immédiatement. Un clic sur un jour déplie son détail.
+     Un mois d'un coup d'œil. Partagé : la bascule « Toute l'équipe » montre
+     les rendez-vous de chacun, avec une pastille de couleur par personne.
      ------------------------------------------------------------------------ */
 
   var calAnnee = new Date().getFullYear();
   var calMois = new Date().getMonth();
   var calJour = null;
   var vueEquipe = 'liste';
+  var portee = 'moi';     // 'moi' ou 'equipe'
 
   function calendrierHTML(creneaux) {
-    var premier = new Date(calAnnee, calMois, 1);
     var nbJours = new Date(calAnnee, calMois + 1, 0).getDate();
-    var decalage = (premier.getDay() + 6) % 7;      // semaine commençant le lundi
+    var decalage = (new Date(calAnnee, calMois, 1).getDay() + 6) % 7;   // semaine du lundi
     var auj = isoAujourdhui();
 
-    // Regroupement par date
     var parJour = {};
     creneaux.forEach(function (c) { (parJour[c.date] = parJour[c.date] || []).push(c); });
 
@@ -343,11 +386,24 @@
     for (var d = 1; d <= nbJours; d++) {
       var iso = calAnnee + '-' + ('0' + (calMois + 1)).slice(-2) + '-' + ('0' + d).slice(-2);
       var liste = parJour[iso] || [];
-      var pris = liste.filter(function (c) { return c.pris; }).length;
-      var libres = liste.length - pris;
       var estAuj = iso === auj;
       var actif = iso === calJour;
       var weekend = [0, 6].indexOf(new Date(calAnnee, calMois, d).getDay()) >= 0;
+
+      // Une pastille par personne concernée ce jour-là, plus une pour le libre.
+      var quiPris = {}, aLibre = false;
+      liste.forEach(function (c) {
+        if (c.pris) codes(c.par).forEach(function (k) { quiPris[k] = true; });
+        else aLibre = true;
+      });
+
+      var pastilles = '';
+      Object.keys(quiPris).forEach(function (k) {
+        pastilles += '<span style="width:5px;height:5px;border-radius:50%;background:'
+          + (actif ? '#fff' : conseiller(k).couleur) + ';"></span>';
+      });
+      if (aLibre) pastilles += '<span style="width:5px;height:5px;border-radius:50%;border:1.5px solid '
+        + (actif ? '#fff' : 'var(--or)') + ';"></span>';
 
       var fond = actif ? 'var(--bleu-fonce)' : (estAuj ? 'var(--or-pale)' : (weekend ? '#fafbfc' : '#fff'));
       var texte = actif ? '#fff' : (weekend ? '#cbd5e0' : '#2d3748');
@@ -358,19 +414,21 @@
         + 'background:' + fond + ';border:1.5px solid ' + bord + ';border-radius:9px;cursor:pointer;'
         + 'font-family:inherit;padding:0;">'
         + '<div style="font-size:12.5px;font-weight:' + (estAuj || actif ? '800' : '600') + ';color:' + texte + ';">' + d + '</div>'
-        + '<div style="display:flex;gap:2px;height:5px;align-items:center;">'
-        + (pris ? '<span style="width:5px;height:5px;border-radius:50%;background:' + (actif ? '#9AE6B4' : '#38a169') + ';"></span>' : '')
-        + (libres ? '<span style="width:5px;height:5px;border-radius:50%;background:' + (actif ? '#FAF089' : 'var(--or)') + ';"></span>' : '')
-        + '</div></button>';
+        + '<div style="display:flex;gap:2px;height:6px;align-items:center;">' + pastilles + '</div>'
+        + '</button>';
     }
 
     h += '</div>';
-    h += '<div style="display:flex;gap:14px;justify-content:center;margin-top:10px;font-size:10.5px;color:#718096;">'
-      + '<span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38a169;margin-right:4px;"></span>Réservé</span>'
-      + '<span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--or);margin-right:4px;"></span>Libre</span>'
-      + '</div>';
 
-    // Détail du jour sélectionné
+    // Légende : les couleurs de l'équipe
+    h += '<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:10px;font-size:10.5px;color:#718096;">';
+    Object.keys(CONSEILLERS).forEach(function (k) {
+      h += '<span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'
+        + CONSEILLERS[k].couleur + ';margin-right:4px;"></span>' + ech(CONSEILLERS[k].nom.split(' ')[0]) + '</span>';
+    });
+    h += '<span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;'
+      + 'border:1.5px solid var(--or);margin-right:4px;"></span>Libre</span></div>';
+
     if (calJour) {
       var duJour = (parJour[calJour] || []).sort(trierCreneaux);
       h += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #edf2f7;">'
@@ -379,14 +437,15 @@
         h += '<div style="font-size:12.5px;color:#718096;">Aucun créneau ce jour-là.</div>';
       } else {
         duJour.forEach(function (c) {
-          var p = conseiller(c.par);
           h += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f7fafc;">'
-            + '<div style="font-size:13px;font-weight:800;color:' + p.couleur + ';min-width:46px;">' + ech(c.heure) + '</div>'
+            + '<div style="font-size:13px;font-weight:800;color:' + couleurDe(c.par) + ';min-width:46px;">' + ech(c.heure) + '</div>'
             + '<div style="flex:1;min-width:0;">'
             + (c.pris
                 ? '<div style="font-size:12.5px;font-weight:700;color:var(--bleu-fonce);">' + ech(c.pris.nom) + '</div>'
-                  + '<div style="font-size:11px;color:#718096;">' + ech(p.nom) + (c.pris.motif ? ' · ' + ech(c.pris.motif) : '') + '</div>'
-                : '<div style="font-size:12.5px;color:#a0aec0;font-style:italic;">Libre — ' + ech(p.nom) + '</div>')
+                  + '<div style="font-size:11px;color:#718096;">' + ech(libelleParticipants(c.par))
+                    + (c.pris.motif ? ' · ' + ech(c.pris.motif) : '') + '</div>'
+                : '<div style="font-size:12.5px;color:#a0aec0;font-style:italic;">Libre — '
+                  + ech(libelleParticipants(c.par)) + '</div>')
             + '</div></div>';
         });
       }
@@ -419,6 +478,14 @@
 
   /* ---- Côté équipe -------------------------------------------------------- */
 
+  function bouton(id, libelle, actif) {
+    return '<button id="' + id + '" style="flex:1;padding:10px;border-radius:10px;font-size:13px;'
+      + 'font-weight:700;cursor:pointer;font-family:inherit;border:2px solid '
+      + (actif ? 'var(--bleu-fonce);background:var(--bleu-fonce);color:#fff;'
+               : '#e2e8f0;background:#fff;color:#718096;')
+      + '">' + libelle + '</button>';
+  }
+
   async function rendreEquipe(boite, role) {
     boite.innerHTML = '<div class="loading">Chargement...</div>';
 
@@ -426,30 +493,34 @@
     var demandes = objetVersListe(await api.lire('rdvDemandes'));
     var auj = isoAujourdhui();
 
-    var mien = function (c) { return role === 'admin' || c.par === role || c.avec === role || c.avec === '?'; };
+    // Le calendrier est partagé : chacun bascule entre son planning et celui
+    // de toute l'équipe. L'admin voit tout dans les deux cas.
+    function retenu(x) {
+      if (role === 'admin' || portee === 'equipe') return true;
+      if (x.avec === '?') return true;               // demande laissée au choix
+      return participe(x.par || x.avec, role);
+    }
 
-    var enAttente = demandes.filter(function (d) { return d.etat === 'demande' && mien(d); })
+    var enAttente = demandes.filter(function (d) { return d.etat === 'demande' && retenu(d); })
       .sort(function (a, b) { return (a.le || '').localeCompare(b.le || ''); });
-
-    var prochains = creneaux.filter(function (c) { return c.pris && c.date >= auj && mien(c); }).sort(trierCreneaux);
-    var libres = creneaux.filter(function (c) { return !c.pris && c.date >= auj && mien(c); }).sort(trierCreneaux);
+    var prochains = creneaux.filter(function (c) { return c.pris && c.date >= auj && retenu(c); }).sort(trierCreneaux);
+    var libres = creneaux.filter(function (c) { return !c.pris && c.date >= auj && retenu(c); }).sort(trierCreneaux);
 
     var h = '';
 
-    // Bascule entre les deux lectures : la liste pour agir, le calendrier pour voir venir.
-    h += '<div style="display:flex;gap:7px;margin-bottom:14px;">'
-      + '<button id="vueListe" style="flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:700;'
-      + 'cursor:pointer;font-family:inherit;border:2px solid '
-      + (vueEquipe === 'liste' ? 'var(--bleu-fonce);background:var(--bleu-fonce);color:#fff;' : '#e2e8f0;background:#fff;color:#718096;')
-      + '">📋 Liste</button>'
-      + '<button id="vueCal" style="flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:700;'
-      + 'cursor:pointer;font-family:inherit;border:2px solid '
-      + (vueEquipe === 'calendrier' ? 'var(--bleu-fonce);background:var(--bleu-fonce);color:#fff;' : '#e2e8f0;background:#fff;color:#718096;')
-      + '">🗓️ Calendrier</button></div>';
-
-    if (vueEquipe === 'calendrier') {
-      h += calendrierHTML(creneaux.filter(mien));
+    // Deux bascules : ce que je regarde, et comment je le regarde.
+    if (role !== 'admin') {
+      h += '<div style="display:flex;gap:7px;margin-bottom:8px;">'
+        + bouton('porteeMoi', '👤 Mon planning', portee === 'moi')
+        + bouton('porteeEquipe', '👥 Toute l\'équipe', portee === 'equipe')
+        + '</div>';
     }
+    h += '<div style="display:flex;gap:7px;margin-bottom:14px;">'
+      + bouton('vueListe', '📋 Liste', vueEquipe === 'liste')
+      + bouton('vueCal', '🗓️ Calendrier', vueEquipe === 'calendrier')
+      + '</div>';
+
+    if (vueEquipe === 'calendrier') h += calendrierHTML(creneaux.filter(retenu));
 
     // Demandes à traiter
     h += '<div class="card"><div class="card-title">📨 Demandes à traiter'
@@ -467,7 +538,7 @@
           + (d.dispo ? '<div style="font-size:11.5px;color:#718096;margin-top:3px;">🕐 ' + ech(d.dispo) + '</div>' : '')
           + (d.message ? '<div style="font-size:11.5px;color:#718096;margin-top:3px;">💬 ' + ech(d.message) + '</div>' : '')
           + '<div style="font-size:11px;color:#a0aec0;margin-top:3px;">Souhaite voir : '
-          + ech(d.avec === '?' ? 'peu importe' : conseiller(d.avec).nom) + '</div>'
+          + ech(d.avec === '?' ? 'peu importe' : libelleParticipants(d.avec)) + '</div>'
           + '<div style="display:flex;gap:7px;margin-top:9px;">'
           + '<button class="rdv-confirmer" data-d="' + d._id + '" style="flex:1;padding:9px;background:#38a169;'
           + 'color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Confirmer</button>'
@@ -478,41 +549,48 @@
     }
     h += '</div>';
 
-    // Rendez-vous pris
     if (vueEquipe === 'liste') {
-    h += '<div class="card"><div class="card-title">📅 Prochains rendez-vous</div>';
-    if (!prochains.length) {
-      h += '<div style="font-size:13px;color:#718096;padding:6px 0;">Aucun rendez-vous à venir.</div>';
-    } else {
-      prochains.forEach(function (c) {
-        var p = conseiller(c.par);
-        h += '<div style="display:flex;gap:11px;padding:10px 0;border-bottom:1px solid #f0f2f5;">'
-          + '<div style="min-width:52px;"><div style="font-size:14px;font-weight:800;color:' + p.couleur + ';">'
-          + ech(c.heure) + '</div><div style="font-size:10px;color:#a0aec0;">' + ech(c.date.slice(8) + '/' + c.date.slice(5, 7)) + '</div></div>'
-          + '<div style="flex:1;min-width:0;">'
-          + '<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">' + ech(c.pris.nom) + '</div>'
-          + '<div style="font-size:11px;color:#718096;">' + ech(p.nom) + (c.pris.motif ? ' · ' + ech(c.pris.motif) : '') + '</div>'
-          + '</div>'
-          + '<button class="rdv-liberer" data-c="' + c._id + '" title="Annuler ce rendez-vous" '
-          + 'style="background:none;border:none;color:#e53e3e;font-size:15px;cursor:pointer;">✕</button>'
-          + '</div>';
-      });
-    }
-    h += '</div>';
+      h += '<div class="card"><div class="card-title">📅 Prochains rendez-vous</div>';
+      if (!prochains.length) {
+        h += '<div style="font-size:13px;color:#718096;padding:6px 0;">Aucun rendez-vous à venir.</div>';
+      } else {
+        prochains.forEach(function (c) {
+          h += '<div style="display:flex;gap:11px;padding:10px 0;border-bottom:1px solid #f0f2f5;">'
+            + '<div style="min-width:52px;"><div style="font-size:14px;font-weight:800;color:' + couleurDe(c.par) + ';">'
+            + ech(c.heure) + '</div><div style="font-size:10px;color:#a0aec0;">'
+            + ech(c.date.slice(8) + '/' + c.date.slice(5, 7)) + '</div></div>'
+            + '<div style="flex:1;min-width:0;">'
+            + '<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">' + ech(c.pris.nom) + '</div>'
+            + '<div style="font-size:11px;color:#718096;">' + ech(libelleParticipants(c.par))
+              + (c.pris.motif ? ' · ' + ech(c.pris.motif) : '') + '</div>'
+            + '</div>'
+            + '<button class="rdv-liberer" data-c="' + c._id + '" title="Annuler ce rendez-vous" '
+            + 'style="background:none;border:none;color:#e53e3e;font-size:15px;cursor:pointer;">✕</button>'
+            + '</div>';
+        });
+      }
+      h += '</div>';
     }
 
-    // Publication de créneaux
-    var opts = '';
+    // Publication de créneaux — une ou plusieurs personnes
+    var cases = '';
     Object.keys(CONSEILLERS).forEach(function (k) {
-      if (role !== 'admin' && k !== role) return;
-      opts += '<option value="' + k + '">' + ech(CONSEILLERS[k].nom) + '</option>';
+      var coche = (role === k) || (role === 'admin' && k === 'AB');
+      cases += '<label style="display:flex;align-items:center;gap:9px;padding:9px 11px;margin-bottom:6px;'
+        + 'border:2px solid #edf2f7;border-radius:10px;cursor:pointer;">'
+        + '<input type="checkbox" class="cr-qui" value="' + k + '"' + (coche ? ' checked' : '')
+        + ' style="width:17px;height:17px;flex-shrink:0;" />'
+        + '<span style="flex:1;min-width:0;">'
+        + '<span style="display:block;font-size:13px;font-weight:700;color:#2d3748;">' + ech(CONSEILLERS[k].nom) + '</span>'
+        + '<span style="display:block;font-size:11px;color:#718096;">' + ech(CONSEILLERS[k].role) + '</span>'
+        + '</span></label>';
     });
 
     h += '<div class="card"><div class="card-title">➕ Ouvrir des créneaux</div>'
       + '<div style="font-size:12px;color:#718096;line-height:1.6;margin-bottom:12px;">'
-      + 'Indiquez une plage horaire : l\'application la découpe en rendez-vous de la durée choisie.</div>'
-      + '<div class="form-field"><label class="form-label">Pour</label>'
-      + '<select class="form-select" id="crPar">' + opts + '</select></div>'
+      + 'Indiquez une plage horaire : l\'application la découpe en rendez-vous de la durée choisie. '
+      + 'Cochez plusieurs personnes pour un entretien à plusieurs — toute l\'équipe, par exemple.</div>'
+      + '<div class="form-field"><label class="form-label">Qui reçoit ?</label>' + cases + '</div>'
       + '<div class="form-field"><label class="form-label">Date</label>'
       + '<input class="form-input" type="date" id="crDate" style="text-transform:none;" /></div>'
       + '<div style="display:flex;gap:10px;">'
@@ -531,31 +609,32 @@
       + 'font-size:14px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));color:#fff;">'
       + 'Publier ces créneaux</button></div>';
 
-    // Créneaux libres publiés
     if (vueEquipe === 'liste') {
-    h += '<div class="card"><div class="card-title">🕐 Créneaux ouverts non réservés</div>';
-    if (!libres.length) {
-      h += '<div style="font-size:13px;color:#718096;padding:6px 0;">Aucun créneau ouvert.</div>';
-    } else {
-      var parDate = {};
-      libres.forEach(function (c) { (parDate[c.date] = parDate[c.date] || []).push(c); });
-      Object.keys(parDate).sort().forEach(function (date) {
-        h += '<div style="font-size:11px;font-weight:800;color:var(--bleu);text-transform:uppercase;'
-          + 'letter-spacing:1px;margin:12px 0 6px;">' + joli(date) + '</div>'
-          + '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-        parDate[date].forEach(function (c) {
-          var p = conseiller(c.par);
-          h += '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;'
-            + 'background:#f7fafc;border:1px solid #e2e8f0;border-left:3px solid ' + p.couleur + ';'
-            + 'border-radius:8px;font-size:12px;font-weight:700;color:#2d3748;">' + ech(c.heure)
-            + '<button class="rdv-supprimer" data-c="' + c._id + '" title="Retirer" '
-            + 'style="background:none;border:none;color:#a0aec0;cursor:pointer;font-size:13px;padding:0;">✕</button>'
-            + '</span>';
+      h += '<div class="card"><div class="card-title">🕐 Créneaux ouverts non réservés</div>';
+      if (!libres.length) {
+        h += '<div style="font-size:13px;color:#718096;padding:6px 0;">Aucun créneau ouvert.</div>';
+      } else {
+        var parDate = {};
+        libres.forEach(function (c) { (parDate[c.date] = parDate[c.date] || []).push(c); });
+        Object.keys(parDate).sort().forEach(function (date) {
+          h += '<div style="font-size:11px;font-weight:800;color:var(--bleu);text-transform:uppercase;'
+            + 'letter-spacing:1px;margin:12px 0 6px;">' + joli(date) + '</div>'
+            + '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+          parDate[date].forEach(function (c) {
+            var multi = codes(c.par).length > 1;
+            h += '<span title="' + ech(libelleParticipants(c.par)) + '" '
+              + 'style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;'
+              + 'background:#f7fafc;border:1px solid #e2e8f0;border-left:3px solid ' + couleurDe(c.par) + ';'
+              + 'border-radius:8px;font-size:12px;font-weight:700;color:#2d3748;">'
+              + (multi ? '👥 ' : '') + ech(c.heure)
+              + '<button class="rdv-supprimer" data-c="' + c._id + '" title="Retirer" '
+              + 'style="background:none;border:none;color:#a0aec0;cursor:pointer;font-size:13px;padding:0;">✕</button>'
+              + '</span>';
+          });
+          h += '</div>';
         });
-        h += '</div>';
-      });
-    }
-    h += '</div>';
+      }
+      h += '</div>';
     }
 
     boite.innerHTML = h;
@@ -569,6 +648,10 @@
     var bl = boite.querySelector('#vueListe'), bc = boite.querySelector('#vueCal');
     if (bl) bl.addEventListener('click', function () { vueEquipe = 'liste'; recharger(); });
     if (bc) bc.addEventListener('click', function () { vueEquipe = 'calendrier'; recharger(); });
+
+    var pm = boite.querySelector('#porteeMoi'), pe = boite.querySelector('#porteeEquipe');
+    if (pm) pm.addEventListener('click', function () { portee = 'moi'; recharger(); });
+    if (pe) pe.addEventListener('click', function () { portee = 'equipe'; recharger(); });
 
     boite.querySelectorAll('.rdv-confirmer').forEach(function (b) {
       b.addEventListener('click', async function () {
@@ -614,7 +697,10 @@
 
     var pub = boite.querySelector('#crPublier');
     if (pub) pub.addEventListener('click', async function () {
-      var par = boite.querySelector('#crPar').value;
+      var qui = [];
+      boite.querySelectorAll('.cr-qui').forEach(function (c) { if (c.checked) qui.push(c.value); });
+      if (!qui.length) { alert('Cochez au moins une personne.'); return; }
+
       var date = boite.querySelector('#crDate').value;
       var deb = boite.querySelector('#crDebut').value;
       var fin = boite.querySelector('#crFin').value;
@@ -630,7 +716,10 @@
 
       var nb = Math.floor((m2 - m1) / duree);
       if (!nb) { alert('La plage est trop courte pour un créneau de ' + duree + ' minutes.'); return; }
-      if (!confirm('Publier ' + nb + ' créneau(x) de ' + duree + ' minutes\nle ' + joli(date) + ' ?')) return;
+
+      var par = qui.join(',');
+      if (!confirm('Publier ' + nb + ' créneau(x) de ' + duree + ' minutes\n'
+        + 'le ' + joli(date) + '\navec ' + libelleParticipants(par) + ' ?')) return;
 
       pub.disabled = true; pub.textContent = '⏳ Publication...';
       try {
@@ -657,7 +746,9 @@
     var demandes = objetVersListe(await api.lire('rdvDemandes'));
     return demandes.filter(function (d) {
       if (d.etat !== 'demande') return false;
-      return role === 'admin' || d.avec === role || d.avec === '?';
+      if (role === 'admin') return true;
+      if (d.avec === '?') return true;
+      return participe(d.avec, role);
     }).length;
   }
 
@@ -666,12 +757,10 @@
   global.JTCF_RDV = {
     CONSEILLERS: CONSEILLERS,
     MOTIFS: MOTIFS,
-    // adaptateur : { lire(chemin) -> valeur, ecrire(chemin, valeur) }
+    codes: codes,
+    libelleParticipants: libelleParticipants,
     connecter: function (adaptateur) { api = adaptateur; },
-    apprenant: function (profil, boite) {
-      moi = profil;
-      return rendreApprenant(boite);
-    },
+    apprenant: function (profil, boite) { moi = profil; return rendreApprenant(boite); },
     equipe: function (boite, role) { return rendreEquipe(boite, role || 'admin'); },
     enAttente: nombreEnAttente
   };
