@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer les comptes CIP – JTCF</title>
+<style>
+  body { font-family:'Segoe UI',sans-serif; background:linear-gradient(160deg,#2a3f4e,#3d5a6e);
+         min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; margin:0; }
+  .boite { background:#fff; border-radius:20px; padding:32px 26px; max-width:420px; width:100%;
+           box-shadow:0 20px 60px rgba(0,0,0,.3); }
+  h1 { font-size:18px; color:#2a3f4e; margin:0 0 6px; }
+  p { font-size:13px; color:#718096; line-height:1.6; margin:0 0 18px; }
+  .ligne { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid #f0f2f5; font-size:13px; }
+  .ligne b { color:#2a3f4e; }
+  button { width:100%; margin-top:18px; padding:14px; background:linear-gradient(135deg,#2a3f4e,#3d5a6e);
+           color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; }
+  button:disabled { opacity:.6; }
+  #msg { margin-top:14px; font-size:13px; font-weight:600; text-align:center; }
+</style>
+</head>
+<body>
+<div class="boite">
+  <h1>Créer les comptes CIP</h1>
+  <p>Cette page ne sert qu'une fois. Elle enregistre les deux accès à l'espace CIP
+     dans Firebase. Vous pourrez ensuite la supprimer du dépôt.</p>
+  <div class="ligne"><span>CIP01</span><b>Alexandre Blard</b></div>
+  <div class="ligne"><span>CIP02</span><b>Marine Grondin</b></div>
+  <button id="btn">Créer les deux comptes</button>
+  <div id="msg"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+});
+const db = getDatabase(app);
+
+document.getElementById('btn').addEventListener('click', async function(){
+  const b = this, m = document.getElementById('msg');
+  b.disabled = true; b.textContent = 'Création en cours...';
+  try {
+    await set(ref(db, 'cips/CIP01'), {
+      nom: 'Alexandre Blard', code: 'AB',
+      role: 'Conseiller en Formation / Assistant de Direction',
+      email: 'contact@tbrgroup.fr'
+    });
+    await set(ref(db, 'cips/CIP02'), {
+      nom: 'Marine Grondin', code: 'MG',
+      role: 'Conseillère en Insertion Professionnelle / Assistante Ressources Humaines',
+      email: 'commercial@tbrgroup.fr'
+    });
+    m.style.color = '#38a169';
+    m.textContent = '✅ Comptes créés. Connectez-vous avec CIP01 ou CIP02.';
+    b.textContent = 'Terminé';
+  } catch(e){
+    m.style.color = '#e53e3e';
+    m.textContent = 'Erreur : ' + e.message;
+    b.disabled = false; b.textContent = 'Réessayer';
+  }
+});
+</script>
+</body>
+</html>

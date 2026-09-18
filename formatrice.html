@@ -136,6 +136,7 @@
 </style>
   <script src="regles.js"></script>
   <script src="theme.js"></script>
+  <script src="rdv.js"></script>
 </head>
 <body>
 
@@ -156,6 +157,7 @@
 <div class="nav" id="mainNav">
   <a class="nav-btn active" data-target="dashboard">🏠 Accueil</a>
   <a class="nav-btn" data-target="emargement">✍️ Émargement</a>
+  <a class="nav-btn" data-target="rendezvous">📅 Rendez-vous <span id="badgeRdv" style="display:none;background:#e53e3e;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;margin-left:2px;">0</span></a>
   <a class="nav-btn" data-target="apprenants">👥 Apprenants</a>
   <a class="nav-btn" data-target="fc">🎓 FC</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
@@ -217,6 +219,10 @@
   </div>
 
   <!-- APPRENANTS -->
+  <div class="section" id="rendezvous">
+    <div id="zoneRdvEquipe"><div class="loading">Chargement...</div></div>
+  </div>
+
   <div class="section" id="apprenants">
     <input type="text" id="rechApprenant" placeholder="🔍 Rechercher un nom, une formation..." autocomplete="off"
       style="width:100%;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;margin-bottom:12px;box-sizing:border-box;-webkit-appearance:none;">
@@ -1723,6 +1729,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     btn.classList.add('active');
     if (target==='recap') chargerRecap();
     if (target==='drive') chargerDrive();
+    if (target==='rendezvous') ouvrirRdvEquipe();
     if (target==='dashboard') chargerDashboard();
     if (target==='emargement') rendreJour(jourActif||jourParDefaut());
     if (target==='apprenants') rendreApprenants();
@@ -1971,6 +1978,38 @@ async function signerGlobalJour(jour, period) {
   if(typeof rendreJour==='function' && jourActif) rendreJour(jourActif);
 }
 var signerGlobalAlt = signerGlobalJour;
+/* ---- Rendez-vous ---------------------------------------------------------
+   Emilie ne voit que ce qui la concerne : ses créneaux, et les demandes
+   qui lui sont adressées ou laissées au choix de l'équipe.
+   ------------------------------------------------------------------------ */
+
+JTCF_RDV.connecter({
+  lire: async function(chemin){
+    const sn = await get(ref(db, chemin)).catch(function(){ return null; });
+    return (sn && sn.exists()) ? sn.val() : null;
+  },
+  ecrire: async function(chemin, valeur){ await set(ref(db, chemin), valeur); }
+});
+
+function ouvrirRdvEquipe(){
+  var zone = document.getElementById('zoneRdvEquipe');
+  if (!zone) return;
+  JTCF_RDV.equipe(zone, 'EF')
+    .then(majBadgeRdv)
+    .catch(function(e){ zone.innerHTML = '<div class="loading">Chargement impossible : ' + e.message + '</div>'; });
+}
+
+async function majBadgeRdv(){
+  var b = document.getElementById('badgeRdv');
+  if (!b) return;
+  try {
+    var n = await JTCF_RDV.enAttente('EF');
+    b.textContent = n;
+    b.style.display = n ? 'inline-block' : 'none';
+  } catch(e){ b.style.display = 'none'; }
+}
+majBadgeRdv();
+
 (function(){
   var b=document.getElementById('btnCompleterSign'); if(!b) return;
   function go(e){ e.preventDefault(); b.disabled=true; b.textContent='⏳ Analyse en cours...';

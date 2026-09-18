@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Espace CIP – JTCF</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a202c; }
+  :root {
+    --or: #C9A227; --or-clair: #f0d98a; --or-pale: #fdf6e3;
+    --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --bleu-clair: #eaf0f4;
+    --blanc: #ffffff; --gris: #718096; --gris-clair: #f0f2f5;
+    --vert: #38a169; --vert-clair: #f0fff4;
+    --rouge: #e53e3e; --rouge-clair: #fff5f5;
+  }
+  .header { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: var(--blanc); padding: 20px 20px 14px; text-align: center; }
+  .header .stars { font-size: 13px; color: var(--or); letter-spacing: 4px; margin-bottom: 4px; }
+  .header .logo { font-size: 18px; font-weight: 800; color: var(--or); text-transform: uppercase; letter-spacing: 2px; }
+  .header .logo-sub { font-size: 10px; opacity: 0.75; letter-spacing: 1px; text-transform: uppercase; }
+  .header .welcome { margin-top: 14px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); border-radius: 12px; padding: 11px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+  .welcome-left .name { font-size: 15px; font-weight: 700; }
+  .welcome-left .role { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+  .btn-logout { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 11px; padding: 6px 10px; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+  .nav { display: flex; overflow-x: auto; background: var(--bleu-fonce); padding: 0 4px; -webkit-overflow-scrolling: touch; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex-shrink: 0; padding: 14px 12px; border: none; background: none; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; user-select: none; display: block; }
+  .nav-btn.active { color: var(--or); border-bottom-color: var(--or); font-weight: 700; }
+  .content { padding: 16px; max-width: 520px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .card { background: var(--blanc); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(61,90,110,0.1); }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--bleu); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--or); }
+  .loading { text-align: center; padding: 18px; color: var(--gris); font-size: 13px; }
+  .today-card { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: var(--blanc); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .today-titre { font-size: 13px; font-weight: 700; color: var(--or); margin-bottom: 4px; }
+  .today-date { font-size: 11px; opacity: 0.8; margin-bottom: 10px; }
+  .today-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .today-row:last-child { border-bottom: none; }
+  .today-nom { font-size: 13px; font-weight: 600; }
+  .today-statuts { display: flex; gap: 5px; }
+  .dot-sign { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-sign.signe { background: #68d391; }
+  .dot-sign.attente { background: #fc8181; }
+  .dot-sign.absent { background: #a0aec0; }
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .kpi-card { background: var(--blanc); border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 1px 6px rgba(61,90,110,0.1); }
+  .kpi-val { font-size: 26px; font-weight: 800; color: var(--bleu-fonce); }
+  .kpi-val.vert { color: var(--vert); }
+  .kpi-val.or { color: var(--or); }
+  .kpi-val.rouge { color: var(--rouge); }
+  .kpi-lbl { font-size: 11px; color: var(--gris); margin-top: 4px; }
+  .info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--gris); font-size: 12px; }
+  .info-value { font-weight: 600; text-align: right; max-width: 62%; color: var(--bleu-fonce); }
+  .alternant-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; margin-bottom: 8px; background: var(--gris-clair); cursor: pointer; border: 2px solid transparent; }
+  .alternant-card:hover { border-color: var(--or); background: var(--or-pale); }
+  .alternant-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+  .alternant-nom { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); }
+  .alternant-sub { font-size: 11px; color: var(--gris); }
+  .alternant-arrow { margin-left: auto; color: var(--or); font-size: 18px; font-weight: 700; }
+  .form-field { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 11px; font-weight: 700; color: var(--bleu); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .form-input { width: 100%; padding: 11px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; color: var(--bleu-fonce); outline: none; -webkit-appearance: none; }
+  .form-input:focus { border-color: var(--or); }
+  .form-select { width: 100%; padding: 11px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; color: var(--bleu-fonce); outline: none; -webkit-appearance: none; background: white; }
+  .btn-primary { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+  .back-btn { display: flex; align-items: center; gap: 6px; color: var(--or); font-weight: 700; font-size: 13px; margin-bottom: 14px; cursor: pointer; border: none; background: none; }
+  .vigil { display: flex; gap: 10px; padding: 11px 12px; margin-bottom: 8px; border-radius: 9px; }
+  .vigil-t { font-size: 13px; font-weight: 700; color: var(--bleu-fonce); }
+  .vigil-d { font-size: 11.5px; color: #4a5568; margin-top: 2px; }
+  .filtre { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 2px; }
+  .filtre button { flex-shrink: 0; padding: 7px 13px; border-radius: 20px; border: 2px solid #e2e8f0; background: #fff; color: #718096; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .filtre button.actif { border-color: var(--bleu-fonce); background: var(--bleu-fonce); color: #fff; }
+</style>
+  <script src="regles.js"></script>
+  <script src="theme.js"></script>
+  <script src="rdv.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <div class="stars">★ ★ ★</div>
+  <div class="logo">JT Conseil Formation</div>
+  <div class="logo-sub">Saint-Joseph · Espace CIP</div>
+  <div class="welcome">
+    <div class="welcome-left">
+      <div class="name" id="headerNom">Espace CIP</div>
+      <div class="role" id="headerRole">Conseiller en Insertion Professionnelle</div>
+    </div>
+    <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+  </div>
+</div>
+
+<div class="nav">
+  <a class="nav-btn active" data-target="aujourdhui">🏠 Aujourd'hui</a>
+  <a class="nav-btn" data-target="rendezvous">📅 Rendez-vous <span id="badgeRdv" style="display:none;background:#e53e3e;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;margin-left:2px;">0</span></a>
+  <a class="nav-btn" data-target="apprenants">👥 Apprenants</a>
+  <a class="nav-btn" data-target="vigilance">🩺 Vigilance <span id="badgeVigil" style="display:none;background:#dd6b20;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;margin-left:2px;">0</span></a>
+</div>
+
+<div class="content">
+
+  <div class="section active" id="aujourdhui">
+    <div class="today-card">
+      <div class="today-titre">📅 En centre aujourd'hui</div>
+      <div class="today-date" id="todayDate">—</div>
+      <div id="todayList"><div style="opacity:.7;font-size:12px;">Chargement...</div></div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-val" id="kpiPresents">—</div><div class="kpi-lbl">Attendus ce jour</div></div>
+      <div class="kpi-card"><div class="kpi-val rouge" id="kpiManquants">—</div><div class="kpi-lbl">Sans signature</div></div>
+      <div class="kpi-card"><div class="kpi-val or" id="kpiRdv">—</div><div class="kpi-lbl">Mes rendez-vous</div></div>
+      <div class="kpi-card"><div class="kpi-val vert" id="kpiSuivis">—</div><div class="kpi-lbl">Personnes suivies</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📅 Mes rendez-vous du jour</div>
+      <div id="rdvDuJour"><div class="loading">Chargement...</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="rendezvous">
+    <div id="zoneRdvEquipe"><div class="loading">Chargement...</div></div>
+  </div>
+
+  <div class="section" id="apprenants">
+    <div id="listeVue">
+      <input class="form-input" id="rech" placeholder="Rechercher un nom, une formation, une entreprise" style="margin-bottom:12px;" />
+      <div class="filtre" id="filtres">
+        <button data-f="tous" class="actif">Tous</button>
+        <button data-f="alt">Alternants</button>
+        <button data-f="fc">Formation continue</button>
+        <button data-f="stg">Stagiaires</button>
+      </div>
+      <div style="font-size:11px;color:var(--gris);margin-bottom:8px;" id="compteur">—</div>
+      <div id="liste"><div class="loading">Chargement...</div></div>
+    </div>
+    <div id="ficheVue" style="display:none;">
+      <button class="back-btn" id="btnRetour">◀ Retour à la liste</button>
+      <div id="fiche"></div>
+    </div>
+  </div>
+
+  <div class="section" id="vigilance">
+    <div class="card">
+      <div class="card-title">🩺 Points de vigilance</div>
+      <div style="font-size:12px;color:var(--gris);line-height:1.6;margin-bottom:12px;">
+        Signatures manquantes depuis longtemps, absences répétées, dossiers incomplets.
+        Ce que l'on repère tôt se rattrape encore.
+      </div>
+      <div id="listeVigil"><div class="loading">Analyse en cours...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const userId = sessionStorage.getItem('jtcf_cip_user');
+if (!userId) { window.location.href = 'index.html'; }
+
+// Le code (AB, MG) est celui de rdv.js : c'est lui qui filtre les rendez-vous.
+const PROFILS = {
+  CIP01: { nom: 'Alexandre Blard', code: 'AB', role: 'Conseiller en Formation / Assistant de Direction' },
+  CIP02: { nom: 'Marine Grondin',  code: 'MG', role: 'Conseillère en Insertion Professionnelle / ARH' }
+};
+const profil = PROFILS[userId] || { nom: userId, code: 'AB', role: 'Conseiller en Insertion Professionnelle' };
+
+document.getElementById('headerNom').textContent = profil.nom;
+document.getElementById('headerRole').textContent = profil.role;
+
+/* ── Lecture accélérée, même principe que les autres espaces ─────────── */
+const CACHE_MS = 20000;
+let _cache = {};
+function litChemin(chemin){
+  const n = Date.now(), e = _cache[chemin];
+  if (e && n - e.t < CACHE_MS) return e.p;
+  const p = get(ref(db, chemin))
+    .then(function(s){ return (s && s.exists()) ? s.val() : null; })
+    .catch(function(){ return null; });
+  _cache[chemin] = { t: n, p: p };
+  return p;
+}
+function videCache(){ _cache = {}; }
+
+JTCF_RDV.connecter({
+  lire: litChemin,
+  ecrire: async function(chemin, valeur){ await set(ref(db, chemin), valeur); videCache(); }
+});
+
+/* ── Données ──────────────────────────────────────────────────────────── */
+let alternants = [], fcs = [], stages = [], creneaux = [];
+
+function enListe(o, type){
+  if (!o) return [];
+  return Object.keys(o).map(function(k){ const v = o[k] || {}; v.id = k; v._type = type; return v; });
+}
+
+async function chargerTout(){
+  const lots = await Promise.all([
+    litChemin('alternants'), litChemin('stagiairesFC'),
+    litChemin('stagiaires'), litChemin('creneaux')
+  ]);
+  alternants = enListe(lots[0], 'alt');
+  fcs        = enListe(lots[1], 'fc');
+  stages     = enListe(lots[2], 'stg');
+  const c    = lots[3] || {};
+  creneaux   = Object.keys(c).map(function(k){ const v = c[k]; v._id = k; return v; });
+
+  rendreAujourdhui();
+  rendreListe();
+  rendreVigilance();
+  majBadgeRdv();
+}
+
+function tous(){ return alternants.concat(fcs).concat(stages); }
+
+function iso(d){
+  return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+}
+function cleJour(p, d){
+  const y = d.getFullYear(), m = d.getMonth()+1, j = d.getDate();
+  if (p._type === 'fc')  return 'emargementsFC/' + p.id + '_fc_' + y + '_' + m + '_' + j;
+  if (p._type === 'stg') return 'emargementsStage/' + p.id + '_stg_' + y + '_' + m + '_' + j;
+  return 'emargements/' + p.id + '_' + y + '_' + m + '_' + j;
+}
+function libelleType(t){
+  return t === 'fc' ? 'Formation continue' : (t === 'stg' ? 'Stagiaire' : 'Alternance');
+}
+function couleurType(t){
+  return t === 'fc' ? 'var(--or)' : (t === 'stg' ? '#2f855a' : 'var(--bleu-fonce)');
+}
+
+// Qui est attendu en centre à cette date ? Les règles viennent de regles.js.
+function attendus(d){
+  const jn = d.getDay();
+  if (jn < 1 || jn > 5) return [];
+  const noms = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const out = [];
+
+  alternants.forEach(function(a){ if (a.jourCentre === noms[jn]) out.push(a); });
+
+  fcs.forEach(function(f){
+    const b = JTCF.bornesFC(f);
+    const j0 = new Date(d); j0.setHours(0,0,0,0);
+    if (j0 < b.debut || j0 > b.fin) return;
+    if (JTCF.horsCentreFC(f, d)) return;
+    if (JTCF.joursDeFC(f).indexOf(jn) < 0) return;
+    if (jn === JTCF.jourAutonomieFC(f)) return;
+    out.push(f);
+  });
+
+  stages.forEach(function(st){
+    if (!JTCF.stageEnCours(st, d)) return;
+    if (JTCF.horsStage(st, d)) return;
+    out.push(st);
+  });
+
+  return out;
+}
+
+/* ── Aujourd'hui ──────────────────────────────────────────────────────── */
+async function rendreAujourdhui(){
+  const auj = new Date(); auj.setHours(0,0,0,0);
+  const noms = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  document.getElementById('todayDate').textContent =
+    noms[auj.getDay()] + ' ' + auj.getDate() + '/' + (auj.getMonth()+1) + '/' + auj.getFullYear();
+
+  const liste = attendus(auj);
+  const boite = document.getElementById('todayList');
+
+  document.getElementById('kpiSuivis').textContent = tous().length;
+
+  if (!liste.length){
+    boite.innerHTML = '<div style="opacity:.7;font-size:12px;">Personne en centre aujourd\'hui.</div>';
+    document.getElementById('kpiPresents').textContent = '0';
+    document.getElementById('kpiManquants').textContent = '0';
+  } else {
+    const etats = await Promise.all(liste.map(function(p){ return litChemin(cleJour(p, auj)); }));
+    let manquants = 0;
+    boite.innerHTML = liste.map(function(p, i){
+      const v = etats[i] || {};
+      const abs = v.presence === 'absent';
+      if (!abs && (!v.matin_alt || !v.am_alt)) manquants++;
+      function pt(ok){ return '<div class="dot-sign ' + (abs ? 'absent' : (ok ? 'signe' : 'attente')) + '"></div>'; }
+      return '<div class="today-row"><div class="today-nom">' + p.nom
+        + (abs ? ' <span style="font-size:10px;opacity:.8;">absent</span>' : '') + '</div>'
+        + '<div class="today-statuts">' + pt(v.matin_alt) + pt(v.am_alt) + '</div></div>';
+    }).join('');
+    document.getElementById('kpiPresents').textContent = liste.length;
+    document.getElementById('kpiManquants').textContent = manquants;
+  }
+
+  const aujIso = iso(auj);
+  const miens = creneaux.filter(function(c){
+    return c.date === aujIso && c.pris && c.par === profil.code;
+  }).sort(function(a, b){ return a.heure.localeCompare(b.heure); });
+
+  document.getElementById('kpiRdv').textContent = miens.length;
+  const zone = document.getElementById('rdvDuJour');
+  zone.innerHTML = miens.length
+    ? miens.map(function(c){
+        return '<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f5;">'
+          + '<div style="font-size:15px;font-weight:800;color:var(--bleu-fonce);min-width:50px;">' + c.heure + '</div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">' + c.pris.nom + '</div>'
+          + '<div style="font-size:11px;color:var(--gris);">' + (c.pris.motif || 'sans motif précisé') + '</div>'
+          + '</div></div>';
+      }).join('')
+    : '<div style="font-size:13px;color:var(--gris);padding:4px 0;">Aucun rendez-vous aujourd\'hui.</div>';
+}
+
+/* ── Apprenants ───────────────────────────────────────────────────────── */
+let filtre = 'tous';
+
+function rendreListe(){
+  const q = (document.getElementById('rech').value || '').trim().toLowerCase();
+  let items = tous();
+  if (filtre !== 'tous') items = items.filter(function(p){ return p._type === filtre; });
+  if (q) items = items.filter(function(p){
+    return ((p.nom||'') + ' ' + (p.formation||'') + ' ' + (p.entreprise||'')).toLowerCase().indexOf(q) >= 0;
+  });
+  items.sort(function(a, b){ return (a.nom||'').localeCompare(b.nom||''); });
+
+  document.getElementById('compteur').textContent =
+    items.length + (items.length > 1 ? ' personnes' : ' personne');
+
+  const boite = document.getElementById('liste');
+  if (!items.length){ boite.innerHTML = '<div class="loading">Aucun résultat.</div>'; return; }
+
+  boite.innerHTML = '';
+  items.forEach(function(p){
+    const ini = (p.nom||'?').split(' ').map(function(n){ return n[0]; }).join('').substring(0,2).toUpperCase();
+    const c = document.createElement('div');
+    c.className = 'alternant-card';
+    c.style.borderLeft = '3px solid ' + couleurType(p._type);
+    c.innerHTML = '<div class="alternant-avatar" style="border-color:' + couleurType(p._type) + ';">' + ini + '</div>'
+      + '<div style="flex:1;min-width:0;"><div class="alternant-nom">' + (p.nom||p.id) + '</div>'
+      + '<div class="alternant-sub">' + (p.formation||'—') + '</div>'
+      + '<div style="font-size:10px;font-weight:700;color:' + couleurType(p._type) + ';margin-top:2px;">'
+      + libelleType(p._type) + '</div></div><div class="alternant-arrow">›</div>';
+    c.addEventListener('click', function(){ ouvrirFiche(p); });
+    boite.appendChild(c);
+  });
+}
+
+async function ouvrirFiche(p){
+  document.getElementById('listeVue').style.display = 'none';
+  document.getElementById('ficheVue').style.display = 'block';
+  const f = document.getElementById('fiche');
+  f.innerHTML = '<div class="loading">Chargement du dossier...</div>';
+
+  const bilan = await bilanPersonne(p);
+  const drive = p.documents && p.documents.dossier;
+
+  function ligne(l, v){
+    return '<div class="info-row"><span class="info-label">' + l + '</span>'
+      + '<span class="info-value">' + (v || '—') + '</span></div>';
+  }
+
+  f.innerHTML =
+    '<div class="card" style="border-left:4px solid ' + couleurType(p._type) + ';">'
+    + '<div class="card-title">' + (p.nom||p.id) + '</div>'
+    + ligne('Parcours', libelleType(p._type))
+    + ligne('Formation', p.formation)
+    + ligne('Période', (p.debut||'—') + ' → ' + (p.fin||'—'))
+    + (p._type === 'alt' ? ligne('Entreprise', p.entreprise) + ligne('Maître d\'apprentissage', p.maitre) + ligne('Jour en centre', p.jourCentre) : '')
+    + (p._type === 'stg' ? ligne('Établissement', p.etablissement) + ligne('Tuteur', p.tuteur) : '')
+    + ligne('Adresse', p.email)
+    + '</div>'
+
+    + '<div class="card">'
+    + '<div class="card-title">📊 Assiduité</div>'
+    + '<div class="kpi-grid">'
+    + '<div class="kpi-card"><div class="kpi-val vert" style="font-size:22px;">' + bilan.signees + '</div><div class="kpi-lbl">Demi-journées signées</div></div>'
+    + '<div class="kpi-card"><div class="kpi-val rouge" style="font-size:22px;">' + bilan.absences + '</div><div class="kpi-lbl">Absences</div></div>'
+    + '</div>'
+    + '<div style="font-size:12.5px;color:#4a5568;line-height:1.6;margin-top:8px;">'
+    + (bilan.derniere
+        ? 'Dernière signature le <strong>' + bilan.derniere + '</strong>'
+          + (bilan.ecart > 14 ? ' — <span style="color:#e53e3e;font-weight:700;">il y a ' + bilan.ecart + ' jours</span>' : '')
+        : '<span style="color:#dd6b20;font-weight:700;">Aucune signature enregistrée à ce jour.</span>')
+    + '</div></div>'
+
+    + '<div class="card"><div class="card-title">📞 Joindre</div>'
+    + (p.email
+        ? '<a href="mailto:' + p.email + '" style="display:block;text-align:center;padding:12px;margin-bottom:8px;'
+          + 'background:var(--bleu-clair);color:var(--bleu-fonce);border-radius:10px;text-decoration:none;'
+          + 'font-size:13px;font-weight:700;">✉ ' + p.email + '</a>'
+        : '<div style="font-size:12.5px;color:#dd6b20;margin-bottom:8px;">Aucune adresse enregistrée.</div>')
+    + (drive
+        ? '<a href="' + drive + '" target="_blank" style="display:block;text-align:center;padding:12px;'
+          + 'background:var(--or-pale);color:#744210;border-radius:10px;text-decoration:none;'
+          + 'font-size:13px;font-weight:700;">📁 Ouvrir son dossier Drive</a>'
+        : '<div style="font-size:12.5px;color:#dd6b20;">Aucun dossier Drive rattaché.</div>')
+    + '</div>';
+}
+
+// Compte les demi-journées signées et les absences sur tout l'historique.
+async function bilanPersonne(p){
+  const noeud = p._type === 'fc' ? 'emargementsFC'
+              : (p._type === 'stg' ? 'emargementsStage' : 'emargements');
+  const suffixe = p._type === 'fc' ? '_fc_' : (p._type === 'stg' ? '_stg_' : '_');
+  const tout = await litChemin(noeud) || {};
+
+  let signees = 0, absences = 0, best = null;
+  Object.keys(tout).forEach(function(k){
+    if (k.indexOf(p.id + suffixe) !== 0) return;
+    const v = tout[k] || {};
+    if (v.presence === 'absent') { absences++; return; }
+    if (v.matin_alt) signees++;
+    if (v.am_alt) signees++;
+    if (v.matin_alt || v.am_alt){
+      const q = k.split('_').slice(-3);
+      const d = new Date(+q[0], +q[1]-1, +q[2]);
+      if (!isNaN(d) && (!best || d > best)) best = d;
+    }
+  });
+
+  return {
+    signees: signees, absences: absences,
+    derniere: best ? best.toLocaleDateString('fr-FR') : null,
+    ecart: best ? Math.floor((new Date() - best) / 86400000) : null
+  };
+}
+
+/* ── Vigilance ────────────────────────────────────────────────────────── */
+async function rendreVigilance(){
+  const boite = document.getElementById('listeVigil');
+  const gens = tous();
+  const auj = new Date();
+
+  const bilans = await Promise.all(gens.map(bilanPersonne));
+  const alertes = [];
+
+  gens.forEach(function(p, i){
+    const b = bilans[i];
+    if (p.fin && JTCF.bornesFC(p).fin < auj) return;      // parcours terminé
+
+    if (!b.derniere){
+      alertes.push({ n:3, t:p.nom, d:'Aucune signature depuis le début du parcours.' });
+    } else if (b.ecart > 21){
+      alertes.push({ n:3, t:p.nom, d:'Plus de trois semaines sans signer — dernière le ' + b.derniere + '.' });
+    } else if (b.ecart > 14){
+      alertes.push({ n:2, t:p.nom, d:'Deux semaines sans signer — dernière le ' + b.derniere + '.' });
+    }
+    if (b.absences >= 5){
+      alertes.push({ n:2, t:p.nom, d:b.absences + ' absences enregistrées.' });
+    }
+    if (!p.email){
+      alertes.push({ n:1, t:p.nom, d:'Pas d\'adresse e-mail — impossible de partager son dossier.' });
+    }
+    if (!(p.documents && p.documents.dossier)){
+      alertes.push({ n:1, t:p.nom, d:'Aucun dossier Drive rattaché.' });
+    }
+  });
+
+  alertes.sort(function(a, b){ return b.n - a.n; });
+
+  const badge = document.getElementById('badgeVigil');
+  const graves = alertes.filter(function(a){ return a.n >= 2; }).length;
+  badge.textContent = graves;
+  badge.style.display = graves ? 'inline-block' : 'none';
+
+  if (!alertes.length){
+    boite.innerHTML = '<div style="font-size:13px;color:#38a169;font-weight:600;padding:6px 0;">'
+      + '✓ Rien à signaler. Tout le monde est à jour.</div>';
+    return;
+  }
+
+  boite.innerHTML = alertes.map(function(a){
+    const c = a.n === 3 ? '#e53e3e' : (a.n === 2 ? '#dd6b20' : '#a0aec0');
+    const f = a.n === 3 ? '#fff5f5' : (a.n === 2 ? '#fffaf0' : '#f7fafc');
+    const ic = a.n === 3 ? '⛔' : (a.n === 2 ? '⚠️' : 'ℹ️');
+    return '<div class="vigil" style="background:' + f + ';border-left:3px solid ' + c + ';">'
+      + '<div style="font-size:14px;line-height:1.2;">' + ic + '</div>'
+      + '<div style="flex:1;min-width:0;"><div class="vigil-t">' + a.t + '</div>'
+      + '<div class="vigil-d">' + a.d + '</div></div></div>';
+  }).join('');
+}
+
+/* ── Rendez-vous ──────────────────────────────────────────────────────── */
+function ouvrirRdvEquipe(){
+  const zone = document.getElementById('zoneRdvEquipe');
+  JTCF_RDV.equipe(zone, profil.code)
+    .then(majBadgeRdv)
+    .catch(function(e){ zone.innerHTML = '<div class="loading">Chargement impossible : ' + e.message + '</div>'; });
+}
+
+async function majBadgeRdv(){
+  const b = document.getElementById('badgeRdv');
+  try {
+    const n = await JTCF_RDV.enAttente(profil.code);
+    b.textContent = n;
+    b.style.display = n ? 'inline-block' : 'none';
+  } catch(e){ b.style.display = 'none'; }
+}
+
+/* ── Navigation ───────────────────────────────────────────────────────── */
+document.querySelectorAll('.nav-btn').forEach(function(btn){
+  function aller(e){
+    e.preventDefault();
+    const cible = btn.getAttribute('data-target');
+    document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
+    document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.getElementById(cible).classList.add('active');
+    btn.classList.add('active');
+    if (cible === 'rendezvous') ouvrirRdvEquipe();
+    if (cible === 'vigilance')  rendreVigilance();
+  }
+  btn.addEventListener('click', aller);
+  btn.addEventListener('touchend', aller, { passive: false });
+});
+
+document.getElementById('rech').addEventListener('input', rendreListe);
+document.getElementById('filtres').addEventListener('click', function(e){
+  const b = e.target.closest('button'); if (!b) return;
+  filtre = b.getAttribute('data-f');
+  document.querySelectorAll('#filtres button').forEach(function(x){ x.classList.remove('actif'); });
+  b.classList.add('actif');
+  rendreListe();
+});
+document.getElementById('btnRetour').addEventListener('click', function(){
+  document.getElementById('ficheVue').style.display = 'none';
+  document.getElementById('listeVue').style.display = 'block';
+});
+document.getElementById('btnLogout').addEventListener('click', function(){
+  sessionStorage.removeItem('jtcf_cip_user');
+  window.location.href = 'index.html';
+});
+
+chargerTout();
+</script>
+</body>
+</html>
