@@ -169,6 +169,17 @@
 
   function joursDeStage() { return [1, 2, 3, 4, 5]; }
 
+  // Volume horaire propre au stagiaire, quand il diffère du standard.
+  // Une PFMP scolaire fait 7 h par jour ; un stage pratique de titre
+  // professionnel ou un stage de 3e peuvent en faire moins.
+  function heuresStage(st) {
+    var m = parseFloat(String((st && st.heuresMatin) || '').replace(',', '.'));
+    var a = parseFloat(String((st && st.heuresAM) || '').replace(',', '.'));
+    if (isNaN(m) || m < 0) m = MATIN_STAGE;
+    if (isNaN(a) || a < 0) a = AM_STAGE;
+    return { matin: m, am: a, jour: m + a };
+  }
+
   function bornesStage(st) {
     var b = bornesFC(st);
     // Pas de repli sur la promotion FC : un stage sans dates n'a pas de séances.
@@ -222,6 +233,7 @@
     MATIN_STAGE: MATIN_STAGE, AM_STAGE: AM_STAGE, JOUR_STAGE_H: JOUR_STAGE_H,
     HORAIRES_STAGE: HORAIRES_STAGE,
     joursDeStage: joursDeStage,
+    heuresStage: heuresStage,
     bornesStage: bornesStage,
     fermeturesStage: fermeturesStage,
     horsStage: horsStage,

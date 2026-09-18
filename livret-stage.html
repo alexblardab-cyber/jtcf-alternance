@@ -288,22 +288,10 @@
           </div>
         </div>
 
-        <div id="blocAutonomie" style="display:none;background:linear-gradient(135deg,var(--bleu-clair),#f7fafc);border:2px solid var(--or);border-radius:12px;padding:18px 16px;text-align:center;margin-bottom:12px;">
-          <div style="font-size:34px;margin-bottom:8px;">🏠</div>
-          <div style="font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:6px;">Journée en autonomie</div>
-          <div style="font-size:13px;color:#4a5568;line-height:1.6;margin-bottom:12px;">
-            Vous travaillez depuis chez vous sur les activités données par votre formatrice.
-          </div>
-          <div style="display:inline-block;background:var(--or);color:var(--bleu-fonce);font-size:13px;font-weight:800;padding:7px 16px;border-radius:20px;">
-            ✅ 6h comptées automatiquement
-          </div>
-          <div style="font-size:11px;color:#718096;margin-top:12px;line-height:1.5;">
-            Aucune signature nécessaire.<br>En cas d'empêchement, prévenez l'équipe avant 8h00.
-          </div>
-        </div>
+        <!-- pas de journée en autonomie pour un stagiaire -->
 
         <div class="emarg-bloc" id="blocMatin">
-          <div class="emarg-titre">🌅 Matin · 8h00 – 12h00</div>
+          <div class="emarg-titre" id="titreMatin">🌅 Matin</div>
           <div class="emarg-row"><span class="emarg-label">Stagiaire</span><span class="emarg-status status-attente" id="statusMatinAlt">En attente</span></div>
           <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="statusMatinForm">En attente</span></div>
           <div class="sign-zone" id="zoneMatinAlt">
@@ -317,7 +305,7 @@
         </div>
 
         <div class="emarg-bloc" id="blocAM">
-          <div class="emarg-titre">🌇 Après-midi · 13h00 – 16h00</div>
+          <div class="emarg-titre" id="titreAM">🌇 Après-midi</div>
           <div class="emarg-row"><span class="emarg-label">Stagiaire</span><span class="emarg-status status-attente" id="statusAMAlt">En attente</span></div>
           <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="statusAMForm">En attente</span></div>
           <div id="verouAM" style="display:none;background:var(--or-pale);border:1px solid var(--or-clair);border-radius:10px;padding:12px;margin-top:8px;text-align:center;font-size:12px;color:#744210;">
@@ -593,6 +581,14 @@ async function chargerUser() {
   document.getElementById('infoFin').textContent = user.fin || '—';
   document.getElementById('infoEtablissement').textContent = user.etablissement || '—';
   document.getElementById('infoTuteur').textContent = user.tuteur || '—';
+
+  // Les horaires affichés viennent de sa fiche : un stage pratique de titre
+  // professionnel n'a pas forcément les mêmes qu'une PFMP scolaire.
+  const plages = String(user.heures || JTCF.HORAIRES_STAGE).split('/');
+  const tM = document.getElementById('titreMatin');
+  const tA = document.getElementById('titreAM');
+  if (tM) tM.textContent = '🌅 Matin · ' + (plages[0] || '').trim();
+  if (tA) tA.textContent = '🌇 Après-midi · ' + (plages[1] || '').trim();
   document.getElementById('infoHeures').textContent = user.heures || JTCF.HORAIRES_STAGE;
 
   // Adresse Google : demandée une fois, puis enregistrée toute seule.
@@ -880,7 +876,7 @@ async function updateEmargement() {
 
   const verouJour = document.getElementById('verouJour');
   const zoneEmarg = document.getElementById('zoneEmarg');
-  const blocAuto  = document.getElementById('blocAutonomie');
+  const blocAuto  = null;   // un stagiaire n'a pas de journée en autonomie
 
   // Journée en autonomie : 6h comptées d'office, rien à signer
   if (estJourAutonomie(d)) {

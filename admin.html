@@ -349,11 +349,23 @@
               <option value="BTS CG — Comptabilité et Gestion">BTS CG — Comptabilité et Gestion</option>
               <option value="BTS SP3S — Services et Prestations des Secteurs Sanitaire et Social">BTS SP3S</option>
             </optgroup>
+            <optgroup label="Titre professionnel (stage pratique)">
+              <option value="TP FPA — Formateur Professionnel d'Adultes">TP FPA — Formateur Professionnel d'Adultes</option>
+              <option value="TP CIP — Conseiller en Insertion Professionnelle">TP CIP — Conseiller en Insertion Professionnelle</option>
+              <option value="TP Assistant(e) de Direction">TP Assistant(e) de Direction</option>
+              <option value="TP Assistant(e) Ressources Humaines">TP Assistant(e) Ressources Humaines</option>
+              <option value="TP Secrétaire Assistant(e)">TP Secrétaire Assistant(e)</option>
+              <option value="TP Conseiller(ère) de Vente">TP Conseiller(ère) de Vente</option>
+              <option value="TP Assistant(e) Commercial(e)">TP Assistant(e) Commercial(e)</option>
+              <option value="TP Responsable de Formation">TP Responsable de Formation</option>
+              <option value="Autre titre professionnel">Autre titre professionnel</option>
+            </optgroup>
             <optgroup label="Autres">
               <option value="CAP">CAP</option>
               <option value="Licence professionnelle">Licence professionnelle</option>
-              <option value="Titre professionnel">Titre professionnel</option>
+              <option value="Master">Master</option>
               <option value="Stage de découverte (3e)">Stage de découverte (3e)</option>
+              <option value="Période d'immersion (PMSMP)">Période d'immersion (PMSMP)</option>
               <option value="Autre">Autre</option>
             </optgroup>
           </select>
@@ -362,6 +374,14 @@
         <div class="form-field"><label class="form-label">Tuteur chez JTCF</label><input class="form-input" id="stgFormTuteur" placeholder="Prénom Nom" style="text-transform:none;" /></div>
         <div class="form-field"><label class="form-label">Date de début</label><input class="form-input" id="stgFormDebut" placeholder="JJ/MM/AAAA" /></div>
         <div class="form-field"><label class="form-label">Date de fin</label><input class="form-input" id="stgFormFin" placeholder="JJ/MM/AAAA" /></div>
+        <div class="form-field"><label class="form-label">Horaires affichés</label><input class="form-input" id="stgFormHoraires" placeholder="8h00 – 12h00 / 13h00 – 16h00" style="text-transform:none;" />
+          <div style="font-size:11px;color:#718096;margin-top:4px;">Texte affiché dans son livret. Laissez vide pour les horaires standard.</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div class="form-field" style="flex:1;"><label class="form-label">Heures le matin</label><input class="form-input" id="stgFormHMatin" placeholder="4" style="text-transform:none;" /></div>
+          <div class="form-field" style="flex:1;"><label class="form-label">Heures l'après-midi</label><input class="form-input" id="stgFormHAM" placeholder="3" style="text-transform:none;" /></div>
+        </div>
+        <div style="font-size:11px;color:#718096;margin:-6px 0 14px;">Par défaut 4 h et 3 h, soit 35 h par semaine. À ajuster pour un stage plus court.</div>
         <div class="form-field"><label class="form-label">Fermetures exceptionnelles</label><input class="form-input" id="stgFormFermetures" placeholder="25/12/2026, 01/01/2027" style="text-transform:none;" />
           <div style="font-size:11px;color:#718096;margin-top:4px;">Séparez par des virgules. Les jours fériés sont déjà exclus automatiquement.</div>
         </div>
@@ -1501,6 +1521,7 @@ function afficherListeStages(){
     const initiales = (st.nom||'?').split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
     const enCours = JTCF.stageEnCours(st, aujourdhui);
     const nb = JTCF.seancesDeStage(st).length;
+    const hJour = JTCF.heuresStage(st).jour;
 
     let etat, coul;
     if (enCours)                       { etat = '● En cours';  coul = '#38a169'; }
@@ -1518,7 +1539,7 @@ function afficherListeStages(){
       + '<div class="alternant-sub">'+(st.formation||'—')+'</div>'
       + '<div style="font-size:10px;color:'+coul+';font-weight:700;margin-top:2px;">'
       + etat + (st.debut ? ' · ' + st.debut + ' → ' + (st.fin||'?') : '')
-      + (nb ? ' · ' + nb + ' j · ' + (nb*JTCF.JOUR_STAGE_H) + ' h' : '')
+      + (nb ? ' · ' + nb + ' j · ' + String(nb*hJour).replace('.',',') + ' h' : '')
       + '</div></div><div class="alternant-arrow">✏️</div>';
 
     function ouvrir(e){ e.preventDefault(); ouvrirFormStage(st); }
@@ -1546,6 +1567,9 @@ function ouvrirFormStage(st){
   document.getElementById('stgFormDebut').value = st ? (st.debut||'') : '';
   document.getElementById('stgFormFin').value = st ? (st.fin||'') : '';
   document.getElementById('stgFormFermetures').value = st ? (st.fermetures||'') : '';
+  document.getElementById('stgFormHoraires').value = st ? (st.heures||'') : '';
+  document.getElementById('stgFormHMatin').value = st ? (st.heuresMatin||'') : '';
+  document.getElementById('stgFormHAM').value = st ? (st.heuresAM||'') : '';
   document.getElementById('btnSupprimerStage').style.display = st ? 'block' : 'none';
   document.getElementById('btnAttestationStage').style.display = st ? 'block' : 'none';
   document.getElementById('sectionDocsStage').style.display = st ? 'block' : 'none';
@@ -1595,7 +1619,9 @@ async function sauvegarderStage(e){
     fin: fin,
     fermetures: document.getElementById('stgFormFermetures').value.trim(),
     jours: ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],
-    heures: JTCF.HORAIRES_STAGE,
+    heures: document.getElementById('stgFormHoraires').value.trim() || JTCF.HORAIRES_STAGE,
+    heuresMatin: document.getElementById('stgFormHMatin').value.trim(),
+    heuresAM: document.getElementById('stgFormHAM').value.trim(),
     type: 'stage'
   });
 
@@ -1670,6 +1696,7 @@ async function attestationStage(st){
   const snap = await get(ref(db,'emargementsStage')).catch(function(){ return null; });
   const tout = (snap && snap.exists()) ? snap.val() : {};
 
+  const H = JTCF.heuresStage(st);
   const lignes = [];
   let hPres = 0, hAbs = 0, nbAbs = 0;
 
@@ -1680,12 +1707,12 @@ async function attestationStage(st){
 
     if (v.presence === 'absent'){
       etat = 'Absent — ' + (v.motif || 'sans motif');
-      hAbs += JTCF.JOUR_STAGE_H; nbAbs++;
+      hAbs += H.jour; nbAbs++;
     } else {
-      if (v.matin_alt) h += JTCF.MATIN_STAGE;
-      if (v.am_alt)    h += JTCF.AM_STAGE;
+      if (v.matin_alt) h += H.matin;
+      if (v.am_alt)    h += H.am;
       hPres += h;
-      etat = h === JTCF.JOUR_STAGE_H ? 'Présent'
+      etat = h === H.jour ? 'Présent'
            : h > 0 ? 'Présent (demi-journée)'
            : 'Non signé';
     }
@@ -1721,7 +1748,7 @@ async function attestationStage(st){
     ['Etablissement',    st.etablissement || '-'],
     ['Tuteur JTCF',      st.tuteur || '-'],
     ['Periode',          (st.debut||'-') + ' au ' + (st.fin||'-')],
-    ['Horaires',         '8h00-12h00 / 13h00-16h00 (7 h par jour)']
+    ['Horaires',         (st.heures || JTCF.HORAIRES_STAGE).replace(/–/g,'-') + '  (' + String(H.jour).replace('.',',') + ' h par jour)']
   ];
   infos.forEach(function(l){
     doc.setFont('helvetica','bold'); doc.text(l[0] + ' :', 15, y);
@@ -1739,7 +1766,7 @@ async function attestationStage(st){
   doc.text('Heures effectuees : ' + String(hPres).replace('.',',') + ' h', 80, y+2);
   doc.text('Absences : ' + nbAbs + ' jour(s)', 145, y+2);
   doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, GRIS);
-  doc.text('Volume theorique : ' + (journees.length * JTCF.JOUR_STAGE_H) + ' h', 20, y+9);
+  doc.text('Volume theorique : ' + String(journees.length * H.jour).replace('.',',') + ' h', 20, y+9);
   y += 24;
 
   // Tableau
