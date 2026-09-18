@@ -534,6 +534,7 @@ await new Promise((resolve) => {
 });
 
 let allAlternants = [];
+let allStages = [];   // stagiaires en PFMP
 let allFC = [];
 let currentAlt = null;
 let currentFC = null;
@@ -562,6 +563,15 @@ function bornesFC(fc){ return JTCF.bornesFC(fc); }
 function seancesDeFC(fc){ return JTCF.seancesDeFC(fc); }
 
 // Propre à cette page : dépend de la liste chargée en mémoire.
+// Stagiaires en PFMP présents à une date donnée.
+function stagesDuJour(d){
+  var j = (d||new Date());
+  if (j.getDay() < 1 || j.getDay() > 5) return [];
+  return (allStages||[]).filter(function(st){
+    return JTCF.stageEnCours(st, j) && !JTCF.horsStage(st, j);
+  });
+}
+
 function fcDuJour(jour){
   var n = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5}[jour];
   return allFC.filter(function(fc){ return joursDeFC(fc).indexOf(n)>=0; });
@@ -589,8 +599,17 @@ async function chargerDashboard(){
 
   var sM=0,sA=0,tot=alts.length+fcs.length;
   var lignes=[];
-  var lots = await Promise.all([ litJour(alts,false,y,m,d), litJour(fcs,true,y,m,d) ]);
-  var eA=lots[0], eF=lots[1];
+  var stgs = stagesDuJour(today);
+  tot += stgs.length;
+  var lots = await Promise.all([
+    litJour(alts,false,y,m,d),
+    litJour(fcs,true,y,m,d),
+    Promise.all(stgs.map(function(st){
+      return litChemin('emargementsStage/'+st.id+'_stg_'+y+'_'+m+'_'+d)
+        .then(function(v){ return [st.id, v]; });
+    })).then(function(p){ var o={}; p.forEach(function(x){ o[x[0]]=x[1]||{}; }); return o; })
+  ]);
+  var eA=lots[0], eF=lots[1], eS=lots[2];
   alts.forEach(function(a){
     var v=eA[a.id]||{};
     if(v.matin_alt) sM++; if(v.am_alt) sA++;
@@ -600,6 +619,12 @@ async function chargerDashboard(){
     var v=eF[f.id]||{};
     if(v.matin_alt) sM++; if(v.am_alt) sA++;
     lignes.push({nom:f.nom,info:f.formation||'',fc:true,m:!!v.matin_alt,a:!!v.am_alt,abs:v.presence==='absent'});
+  });
+  stgs.forEach(function(st){
+    var v=eS[st.id]||{};
+    if(v.matin_alt) sM++; if(v.am_alt) sA++;
+    lignes.push({nom:st.nom,info:(st.formation||'')+' · stage',fc:false,stage:true,
+                 m:!!v.matin_alt,a:!!v.am_alt,abs:v.presence==='absent'});
   });
 
   var kpi=document.getElementById('dashKpi');
@@ -621,8 +646,8 @@ async function chargerDashboard(){
     var ini=(l.nom||'?').split(' ').map(function(x){return x[0];}).join('').substring(0,2).toUpperCase();
     function pt(ok,lbl){return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:'+(ok?'#38a169':'#cbd5e0')+';">'+(ok?'●':'○')+' '+lbl+'</span>';}
     return '<div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #f0f2f5;">'+
-      '<div style="width:34px;height:34px;border-radius:50%;background:'+(l.fc?'#C9A227':'#2a3f4e')+';color:'+(l.fc?'#2a3f4e':'white')+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">'+ini+'</div>'+
-      '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+l.nom+(l.fc?' <span style="font-size:9px;color:var(--or);">FC</span>':'')+'</div>'+
+      '<div style="width:34px;height:34px;border-radius:50%;background:'+(l.stage?'#2f855a':(l.fc?'#C9A227':'#2a3f4e'))+';color:'+(l.fc?'#2a3f4e':'white')+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">'+ini+'</div>'+
+      '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">'+l.nom+(l.fc?' <span style="font-size:9px;color:var(--or);">FC</span>':'')+(l.stage?' <span style="font-size:9px;color:#2f855a;">STAGE</span>':'')+'</div>'+
       '<div style="font-size:11px;color:#718096;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+l.info+'</div></div>'+
       '<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">'+pt(l.m,'Matin')+pt(l.a,'A-M')+'</div></div>';
   }).join('');
@@ -640,6 +665,13 @@ async function chargerAlternants() {
     allFC = [];
     fcSnap.forEach(function(child) { const fc = child.val(); fc.id = child.key; allFC.push(fc); });
   }
+  const stgSnap = await get(ref(db, 'stagiaires')).catch(function(){ return null; });
+  allStages = [];
+  if (stgSnap && stgSnap.exists()) {
+    stgSnap.forEach(function(child) { const st = child.val(); st.id = child.key; allStages.push(st); });
+  }
+  window.allStages = allStages;
+
   // Filtrer FC selon profil
   const fcFiltered = profil.fcIds ? allFC.filter(fc => profil.fcIds.includes(fc.id)) : allFC;
   afficherListeFC('listeFC', fcFiltered);
@@ -735,8 +767,16 @@ async function pointDuJourWhatsApp(){
 
   var nonSignes=[], absents=[], dist=[], autonomie=[], attendus=0;
 
-  var lotsW = await Promise.all([ litJour(alts,false,y,m,d), litJour(fcs,true,y,m,d) ]);
-  var wA=lotsW[0], wF=lotsW[1];
+  var stgs = stagesDuJour(today);
+  var lotsW = await Promise.all([
+    litJour(alts,false,y,m,d),
+    litJour(fcs,true,y,m,d),
+    Promise.all(stgs.map(function(st){
+      return litChemin('emargementsStage/'+st.id+'_stg_'+y+'_'+m+'_'+d)
+        .then(function(v){ return [st.id, v]; });
+    })).then(function(p){ var o={}; p.forEach(function(x){ o[x[0]]=x[1]||{}; }); return o; })
+  ]);
+  var wA=lotsW[0], wF=lotsW[1], wS=lotsW[2];
 
   alts.forEach(function(a){
     attendus++;
@@ -754,6 +794,13 @@ async function pointDuJourWhatsApp(){
     if(v.presence==='entreprise'){ absents.push(f.nom+' (FC) — en entreprise'); return; }
     if(v.mode==='distanciel') dist.push(f.nom+' (FC)');
     if(!v.matin_alt || !v.am_alt) nonSignes.push(f.nom+' (FC)');
+  });
+
+  stgs.forEach(function(st){
+    attendus++;
+    var v=wS[st.id]||{};
+    if(v.presence==='absent'){ absents.push(st.nom+' (stage) — '+(v.motif||'sans motif')); return; }
+    if(!v.matin_alt || !v.am_alt) nonSignes.push(st.nom+' (stage)');
   });
 
   var t = '*JTCF — Point du jour*\n';

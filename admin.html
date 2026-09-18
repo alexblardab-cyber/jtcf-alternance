@@ -127,6 +127,7 @@
   <a class="nav-btn active" data-target="dashboard">📊 Tableau de bord</a>
   <a class="nav-btn" data-target="alternants">👥 Alternants</a>
   <a class="nav-btn" data-target="stagiairesfc">🎓 FC</a>
+  <a class="nav-btn" data-target="stages">🎒 Stages</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📈 Récap heures</a>
   <a class="nav-btn" data-target="exceptions">✏️ Exceptions</a>
@@ -317,6 +318,68 @@
     </div>
   </div>
 
+  <!-- STAGIAIRES EN PFMP -->
+  <div class="section" id="stages">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--bleu);">Stagiaires en entreprise</div>
+      <button class="btn-primary" id="btnAjouterStage" style="width:auto;padding:8px 14px;font-size:12px;">+ Ajouter</button>
+    </div>
+    <div id="listeStages"><div class="loading">Chargement...</div></div>
+
+    <div id="stageFormView" style="display:none;">
+      <button class="back-btn" id="btnRetourListeStage">◀ Retour</button>
+      <div class="card">
+        <div class="card-title" id="stageFormTitre">➕ Nouveau stagiaire</div>
+        <div class="form-field"><label class="form-label">Identifiant</label><input class="form-input" id="stgFormId" placeholder="Ex: STG01" maxlength="10" /></div>
+        <div class="form-field"><label class="form-label">Nom complet</label><input class="form-input" id="stgFormNom" placeholder="Prénom Nom" /></div>
+        <div class="form-field"><label class="form-label">✉️ Adresse e-mail</label><input class="form-input" id="stgFormEmail" type="email" placeholder="prenom.nom@exemple.com" style="text-transform:none;" /></div>
+        <div class="form-field"><label class="form-label">Diplôme préparé</label>
+          <select class="form-select" id="stgFormFormation">
+            <optgroup label="Baccalauréat professionnel">
+              <option value="Bac Pro AGOrA — Assistance à la Gestion des Organisations et de leurs Activités">Bac Pro AGOrA</option>
+              <option value="Bac Pro MCV — Métiers du Commerce et de la Vente">Bac Pro MCV — Commerce et Vente</option>
+              <option value="Bac Pro AEPA — Animation Enfance et Personnes Âgées">Bac Pro AEPA</option>
+              <option value="Bac Pro ASSP — Accompagnement, Soins et Services à la Personne">Bac Pro ASSP</option>
+            </optgroup>
+            <optgroup label="BTS">
+              <option value="BTS GPME — Gestion de la PME">BTS GPME — Gestion de la PME</option>
+              <option value="BTS SAM — Support à l'Action Managériale">BTS SAM</option>
+              <option value="BTS NDRC — Négociation et Digitalisation de la Relation Client">BTS NDRC</option>
+              <option value="BTS MCO — Management Commercial Opérationnel">BTS MCO</option>
+              <option value="BTS CG — Comptabilité et Gestion">BTS CG — Comptabilité et Gestion</option>
+              <option value="BTS SP3S — Services et Prestations des Secteurs Sanitaire et Social">BTS SP3S</option>
+            </optgroup>
+            <optgroup label="Autres">
+              <option value="CAP">CAP</option>
+              <option value="Licence professionnelle">Licence professionnelle</option>
+              <option value="Titre professionnel">Titre professionnel</option>
+              <option value="Stage de découverte (3e)">Stage de découverte (3e)</option>
+              <option value="Autre">Autre</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Établissement d'origine</label><input class="form-input" id="stgFormEtab" placeholder="Ex : Lycée Paul Langevin" style="text-transform:none;" /></div>
+        <div class="form-field"><label class="form-label">Tuteur chez JTCF</label><input class="form-input" id="stgFormTuteur" placeholder="Prénom Nom" style="text-transform:none;" /></div>
+        <div class="form-field"><label class="form-label">Date de début</label><input class="form-input" id="stgFormDebut" placeholder="JJ/MM/AAAA" /></div>
+        <div class="form-field"><label class="form-label">Date de fin</label><input class="form-input" id="stgFormFin" placeholder="JJ/MM/AAAA" /></div>
+        <div class="form-field"><label class="form-label">Fermetures exceptionnelles</label><input class="form-input" id="stgFormFermetures" placeholder="25/12/2026, 01/01/2027" style="text-transform:none;" />
+          <div style="font-size:11px;color:#718096;margin-top:4px;">Séparez par des virgules. Les jours fériés sont déjà exclus automatiquement.</div>
+        </div>
+        <button class="btn-primary" id="btnSauvegarderStage">💾 Sauvegarder</button>
+        <button class="btn-primary" id="btnAttestationStage" style="background:linear-gradient(135deg,#2f855a,#38a169);margin-top:8px;">📄 Attestation de présence (PDF)</button>
+        <button class="btn-danger" id="btnSupprimerStage" style="display:none;">🗑️ Supprimer</button>
+        <div class="success-msg" id="stgFormSuccess">✅ Stagiaire sauvegardé !</div>
+        <div id="sectionDocsStage" style="display:none;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;">
+          <div style="font-size:13px;font-weight:700;color:var(--bleu);margin-bottom:4px;">📁 Dossier Documents</div>
+          <div style="font-size:11px;color:#718096;margin-bottom:14px;">Collez le lien du dossier Google Drive de ce stagiaire.</div>
+          <div class="form-field"><label class="form-label">🔗 Lien dossier Google Drive</label><input class="form-input" id="docDossierStage" placeholder="https://drive.google.com/drive/folders/..." style="text-transform:none;" /></div>
+          <button class="btn-primary" id="btnSauvegarderDocsStage">💾 Sauvegarder le lien</button>
+          <div class="success-msg" id="docsStageSuccess">✅ Lien sauvegardé !</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- GROUPES -->
   <div class="section" id="groupes">
     <div class="card">
@@ -471,7 +534,7 @@ await new Promise((resolve) => {
   });
 });
 
-let allAlternants = [], allFC = [], editingId = null, editingFC = null, filterMode = 'mois';
+let allAlternants = [], allFC = [], allStages = [], editingId = null, editingFC = null, editingStage = null, filterMode = 'mois';
 /* ── Règles métier ─────────────────────────────────────────────────────────
    Volumes horaires, jours de centre, jour en autonomie, stages, vacances,
    fériés et dates de parcours sont définis une seule fois, dans regles.js.
@@ -510,9 +573,15 @@ async function chargerTout() {
       }
     }
   }
+  const stgSnap = await get(ref(db, 'stagiaires')).catch(function(){ return null; });
+  allStages = [];
+  if (stgSnap && stgSnap.exists()) { stgSnap.forEach(function(c){ const a=c.val(); a.id=c.key; allStages.push(a); }); }
+  window.allStages = allStages;
+
   chargerDashboard();
   afficherListeAlternants();
   afficherListeFC();
+  afficherListeStages();
   chargerGroupes();
   remplirMoisSelect();
   ctrlLancer();
@@ -614,6 +683,40 @@ async function chargerDashboard() {
       </div>`;
       todayList.appendChild(row);
     }
+  }
+
+  // ── Stagiaires en PFMP ────────────────────────────────────
+  const stagesDuJour = (allStages||[]).filter(function(st){
+    if (jourNum < 1 || jourNum > 5) return false;
+    if (!JTCF.stageEnCours(st, today)) return false;
+    return !JTCF.horsStage(st, today);
+  });
+
+  if (stagesDuJour.length > 0) {
+    const sepS = document.createElement('div');
+    sepS.style.cssText = 'font-size:10px;font-weight:800;color:var(--bleu);text-transform:uppercase;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid #f0f2f5;margin-top:6px;';
+    sepS.textContent = '🎒 Stagiaires';
+    todayList.appendChild(sepS);
+
+    const etatsStg = await Promise.all(stagesDuJour.map(function(st){
+      return litChemin('emargementsStage/' + st.id + '_stg_'
+        + today.getFullYear() + '_' + (today.getMonth()+1) + '_' + today.getDate());
+    }));
+
+    stagesDuJour.forEach(function(st, i){
+      totalAujourdhui++;
+      const data = etatsStg[i] || {};
+      const absent = data.presence === 'absent';
+      if (absent) absentsCount++;
+      const row = document.createElement('div'); row.className = 'today-row';
+      row.innerHTML = '<div class="today-nom">' + st.nom + '</div><div class="today-statuts">'
+        + '<div class="dot-sign ' + (absent?'absent':data.matin_alt?'signe':'attente') + '" title="Matin stagiaire"></div>'
+        + '<div class="dot-sign ' + (absent?'absent':data.matin_form?'signe':'attente') + '" title="Matin tuteur"></div>'
+        + '<div class="dot-sign ' + (absent?'absent':data.am_alt?'signe':'attente') + '" title="AM stagiaire"></div>'
+        + '<div class="dot-sign ' + (absent?'absent':data.am_form?'signe':'attente') + '" title="AM tuteur"></div>'
+        + '</div>';
+      todayList.appendChild(row);
+    });
   }
 
   if (totalAujourdhui === 0) {
@@ -1376,6 +1479,311 @@ document.getElementById('btnSauvegarderDocsFC').addEventListener('click',sauvega
 document.getElementById('btnSauvegarderDocsFC').addEventListener('touchend',sauvegarderDocsFC,{passive:false});
 
 /* ==========================================================================
+   STAGIAIRES EN PFMP
+   Une convention de stage, pas un contrat : ces heures ne partent pas à un
+   OPCO, elles servent l'attestation de présence remise à l'établissement.
+   Les règles horaires vivent dans regles.js.
+   ========================================================================== */
+
+function afficherListeStages(){
+  const container = document.getElementById('listeStages');
+  if (!container) return;
+
+  if (!allStages.length){
+    container.innerHTML = '<div class="loading">Aucun stagiaire enregistré.</div>';
+    return;
+  }
+
+  const aujourdhui = new Date();
+  container.innerHTML = '';
+
+  allStages.forEach(function(st){
+    const initiales = (st.nom||'?').split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
+    const enCours = JTCF.stageEnCours(st, aujourdhui);
+    const nb = JTCF.seancesDeStage(st).length;
+
+    let etat, coul;
+    if (enCours)                       { etat = '● En cours';  coul = '#38a169'; }
+    else if (JTCF.bornesStage(st) && JTCF.bornesStage(st).fin < aujourdhui) { etat = '○ Terminé'; coul = '#a0aec0'; }
+    else if (JTCF.bornesStage(st))     { etat = '◔ À venir';   coul = '#dd6b20'; }
+    else                               { etat = '⚠ Sans dates'; coul = '#e53e3e'; }
+
+    const card = document.createElement('div');
+    card.className = 'alternant-card';
+    card.style.borderLeft = '3px solid ' + coul;
+    card.innerHTML =
+      '<div class="alternant-avatar" style="border-color:'+coul+';">'+initiales+'</div>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div class="alternant-nom">'+(st.nom||st.id)+'</div>'
+      + '<div class="alternant-sub">'+(st.formation||'—')+'</div>'
+      + '<div style="font-size:10px;color:'+coul+';font-weight:700;margin-top:2px;">'
+      + etat + (st.debut ? ' · ' + st.debut + ' → ' + (st.fin||'?') : '')
+      + (nb ? ' · ' + nb + ' j · ' + (nb*JTCF.JOUR_STAGE_H) + ' h' : '')
+      + '</div></div><div class="alternant-arrow">✏️</div>';
+
+    function ouvrir(e){ e.preventDefault(); ouvrirFormStage(st); }
+    card.addEventListener('touchend', ouvrir, {passive:false});
+    card.addEventListener('click', ouvrir);
+    container.appendChild(card);
+  });
+}
+
+function ouvrirFormStage(st){
+  editingStage = st ? st.id : null;
+  document.getElementById('listeStages').style.display = st ? 'none' : 'none';
+  document.getElementById('stageFormView').style.display = 'block';
+  document.querySelector('#stages > div').style.display = 'none';
+
+  document.getElementById('stageFormTitre').textContent = st ? ('✏️ ' + (st.nom||st.id)) : '➕ Nouveau stagiaire';
+  document.getElementById('stgFormId').value = st ? st.id : '';
+  document.getElementById('stgFormId').disabled = !!st;
+  document.getElementById('stgFormNom').value = st ? (st.nom||'') : '';
+  document.getElementById('stgFormEmail').value = st ? (st.email||'') : '';
+  document.getElementById('stgFormFormation').value = st && st.formation ? st.formation
+    : document.getElementById('stgFormFormation').options[0].value;
+  document.getElementById('stgFormEtab').value = st ? (st.etablissement||'') : '';
+  document.getElementById('stgFormTuteur').value = st ? (st.tuteur||'') : '';
+  document.getElementById('stgFormDebut').value = st ? (st.debut||'') : '';
+  document.getElementById('stgFormFin').value = st ? (st.fin||'') : '';
+  document.getElementById('stgFormFermetures').value = st ? (st.fermetures||'') : '';
+  document.getElementById('btnSupprimerStage').style.display = st ? 'block' : 'none';
+  document.getElementById('btnAttestationStage').style.display = st ? 'block' : 'none';
+  document.getElementById('sectionDocsStage').style.display = st ? 'block' : 'none';
+  document.getElementById('docDossierStage').value = st && st.documents ? (st.documents.dossier||'') : '';
+  document.getElementById('stgFormSuccess').classList.remove('visible');
+}
+
+function retourListeStage(){
+  document.getElementById('stageFormView').style.display = 'none';
+  document.getElementById('listeStages').style.display = 'block';
+  document.querySelector('#stages > div').style.display = 'flex';
+  editingStage = null;
+}
+
+function dateValide(t){
+  if (!t) return true;                       // champ vide toléré
+  const p = String(t).trim().split('/');
+  if (p.length !== 3) return false;
+  const d = new Date(+p[2], +p[1]-1, +p[0]);
+  return !isNaN(d) && d.getDate() === +p[0];
+}
+
+async function sauvegarderStage(e){
+  if (e) e.preventDefault();
+  const id = editingStage || document.getElementById('stgFormId').value.trim().toUpperCase();
+  if (!id) { alert('Veuillez saisir un identifiant.'); return; }
+
+  const debut = document.getElementById('stgFormDebut').value.trim();
+  const fin   = document.getElementById('stgFormFin').value.trim();
+  if (!dateValide(debut) || !dateValide(fin)){
+    alert('Les dates doivent être au format JJ/MM/AAAA.'); return;
+  }
+  if (debut && fin){
+    const p1 = debut.split('/'), p2 = fin.split('/');
+    if (new Date(+p2[2],+p2[1]-1,+p2[0]) <= new Date(+p1[2],+p1[1]-1,+p1[0])){
+      alert('La date de fin doit suivre la date de début.'); return;
+    }
+  }
+
+  await update(ref(db,'stagiaires/'+id), {   // update : ne supprime pas documents/
+    nom: document.getElementById('stgFormNom').value.trim(),
+    email: document.getElementById('stgFormEmail').value.trim(),
+    formation: document.getElementById('stgFormFormation').value,
+    etablissement: document.getElementById('stgFormEtab').value.trim(),
+    tuteur: document.getElementById('stgFormTuteur').value.trim(),
+    debut: debut,
+    fin: fin,
+    fermetures: document.getElementById('stgFormFermetures').value.trim(),
+    jours: ['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],
+    heures: JTCF.HORAIRES_STAGE,
+    type: 'stage'
+  });
+
+  videCache();
+  document.getElementById('stgFormSuccess').classList.add('visible');
+  await chargerTout();
+  setTimeout(retourListeStage, 1500);
+}
+
+async function supprimerStage(e){
+  if (e) e.preventDefault();
+  if (!editingStage) return;
+  if (!confirm('Supprimer définitivement ce stagiaire et ses émargements ?')) return;
+  await set(ref(db,'stagiaires/'+editingStage), null);
+  videCache();
+  await chargerTout();
+  retourListeStage();
+}
+
+async function sauvegarderDocsStage(e){
+  if (e) e.preventDefault();
+  if (!editingStage) return;
+  const lien = document.getElementById('docDossierStage').value.trim();
+  await set(ref(db,'stagiaires/'+editingStage+'/documents/dossier'), lien || null);
+  document.getElementById('docsStageSuccess').classList.add('visible');
+  await chargerTout();
+  setTimeout(function(){ document.getElementById('docsStageSuccess').classList.remove('visible'); }, 2000);
+}
+
+(function(){
+  function brancher(id, fn){
+    const b = document.getElementById(id); if (!b) return;
+    b.addEventListener('click', fn);
+    b.addEventListener('touchend', function(e){ e.preventDefault(); fn(e); }, {passive:false});
+  }
+  brancher('btnAjouterStage', function(){ ouvrirFormStage(null); });
+  brancher('btnRetourListeStage', retourListeStage);
+  brancher('btnSauvegarderStage', sauvegarderStage);
+  brancher('btnSupprimerStage', supprimerStage);
+  brancher('btnSauvegarderDocsStage', sauvegarderDocsStage);
+  brancher('btnAttestationStage', function(){
+    const st = (allStages||[]).filter(function(x){ return x.id === editingStage; })[0];
+    if (!st){ alert('Enregistrez d\'abord le stagiaire.'); return; }
+    const b = document.getElementById('btnAttestationStage');
+    b.disabled = true; b.textContent = '⏳ Génération...';
+    attestationStage(st)
+      .catch(function(e){ alert('Génération impossible : ' + e.message); })
+      .finally(function(){ b.disabled = false; b.textContent = '📄 Attestation de présence (PDF)'; });
+  });
+})();
+
+/* ---- Attestation de présence (PDF) --------------------------------------
+   Document remis à l'établissement d'origine du stagiaire. Il récapitule
+   les journées effectuées et les absences, et se termine par les deux
+   cadres de signature exigés par les conventions de stage.
+   ------------------------------------------------------------------------ */
+
+async function attestationStage(st){
+  if (!window.jspdf){
+    await new Promise(function(res, rej){
+      const sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      sc.onload = res; sc.onerror = rej;
+      document.head.appendChild(sc);
+    });
+  }
+
+  const journees = JTCF.seancesDeStage(st);
+  if (!journees.length){ alert('Renseignez d\'abord les dates de stage.'); return; }
+
+  // Lecture de tous les émargements du stagiaire, en une seule fois.
+  const snap = await get(ref(db,'emargementsStage')).catch(function(){ return null; });
+  const tout = (snap && snap.exists()) ? snap.val() : {};
+
+  const lignes = [];
+  let hPres = 0, hAbs = 0, nbAbs = 0;
+
+  journees.forEach(function(d){
+    const cle = st.id + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+    const v = tout[cle] || {};
+    let etat, h = 0;
+
+    if (v.presence === 'absent'){
+      etat = 'Absent — ' + (v.motif || 'sans motif');
+      hAbs += JTCF.JOUR_STAGE_H; nbAbs++;
+    } else {
+      if (v.matin_alt) h += JTCF.MATIN_STAGE;
+      if (v.am_alt)    h += JTCF.AM_STAGE;
+      hPres += h;
+      etat = h === JTCF.JOUR_STAGE_H ? 'Présent'
+           : h > 0 ? 'Présent (demi-journée)'
+           : 'Non signé';
+    }
+    lignes.push([
+      ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear(),
+      ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][d.getDay()],
+      etat,
+      h ? h.toString().replace('.',',') + ' h' : '—'
+    ]);
+  });
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const BLEU = [42,63,78], OR = [201,162,39], GRIS = [113,128,150];
+
+  function entete(){
+    doc.setFillColor.apply(doc, BLEU); doc.rect(0,0,210,30,'F');
+    doc.setTextColor.apply(doc, OR); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('JT CONSEIL FORMATION', 15, 12);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
+    doc.text('20a rue du General Lambert, 97480 Saint-Joseph - La Reunion', 15, 18);
+    doc.setFontSize(10); doc.setFont('helvetica','bold');
+    doc.text('ATTESTATION DE PRESENCE EN STAGE', 15, 25);
+  }
+
+  entete();
+  let y = 40;
+
+  doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  const infos = [
+    ['Stagiaire',        st.nom || st.id],
+    ['Diplome prepare',  st.formation || '-'],
+    ['Etablissement',    st.etablissement || '-'],
+    ['Tuteur JTCF',      st.tuteur || '-'],
+    ['Periode',          (st.debut||'-') + ' au ' + (st.fin||'-')],
+    ['Horaires',         '8h00-12h00 / 13h00-16h00 (7 h par jour)']
+  ];
+  infos.forEach(function(l){
+    doc.setFont('helvetica','bold'); doc.text(l[0] + ' :', 15, y);
+    doc.setFont('helvetica','normal'); doc.text(String(l[1]), 60, y);
+    y += 6;
+  });
+
+  y += 3;
+  doc.setDrawColor(220,220,220); doc.line(15, y, 195, y); y += 8;
+
+  // Synthèse
+  doc.setFillColor(245,247,250); doc.rect(15, y-5, 180, 20, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text('Journees prevues : ' + journees.length, 20, y+2);
+  doc.text('Heures effectuees : ' + String(hPres).replace('.',',') + ' h', 80, y+2);
+  doc.text('Absences : ' + nbAbs + ' jour(s)', 145, y+2);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, GRIS);
+  doc.text('Volume theorique : ' + (journees.length * JTCF.JOUR_STAGE_H) + ' h', 20, y+9);
+  y += 24;
+
+  // Tableau
+  function enteteTableau(){
+    doc.setFillColor.apply(doc, BLEU); doc.rect(15, y-5, 180, 8, 'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8);
+    doc.text('DATE', 18, y); doc.text('JOUR', 45, y);
+    doc.text('PRESENCE', 80, y); doc.text('HEURES', 170, y);
+    y += 8;
+    doc.setTextColor(0,0,0); doc.setFont('helvetica','normal');
+  }
+  enteteTableau();
+
+  lignes.forEach(function(l, i){
+    if (y > 265){
+      doc.addPage(); entete(); y = 40; enteteTableau();
+    }
+    if (i % 2) { doc.setFillColor(249,250,251); doc.rect(15, y-4.5, 180, 6.5, 'F'); }
+    doc.setFontSize(8);
+    if (l[2].indexOf('Absent') === 0) doc.setTextColor(200,50,50);
+    else if (l[2] === 'Non signe' || l[2] === 'Non signé') doc.setTextColor(200,120,40);
+    else doc.setTextColor(0,0,0);
+    doc.text(l[0], 18, y); doc.text(l[1], 45, y);
+    doc.text(l[2].substring(0,58), 80, y); doc.text(l[3], 170, y);
+    y += 6.5;
+  });
+
+  // Cadres de signature
+  if (y > 220){ doc.addPage(); entete(); y = 45; }
+  y += 12;
+  doc.setTextColor(0,0,0); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Fait a Saint-Joseph, le ' + new Date().toLocaleDateString('fr-FR'), 15, y);
+  y += 8;
+  doc.setDrawColor(180,180,180);
+  doc.rect(15, y, 85, 30); doc.rect(110, y, 85, 30);
+  doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('Le stagiaire', 18, y+5);
+  doc.text('Le tuteur - ' + (st.tuteur || 'JT Conseil Formation'), 113, y+5);
+
+  const nomFichier = 'Attestation_stage_' + (st.nom||st.id).replace(/[^A-Za-z0-9]/g,'_') + '.pdf';
+  doc.save(nomFichier);
+}
+
+/* ==========================================================================
    CONTRÔLE DES DOSSIERS
    Repère les oublis de saisie avant qu'ils ne posent problème :
    lien Drive partagé par deux personnes, dates manquantes, groupe absent,
@@ -1405,9 +1813,10 @@ function ctrlDate(s){
 
 function ctrlAnalyser(){
   var anomalies = [];
-  var alts = allAlternants || [], fcs = allFC || [];
+  var alts = allAlternants || [], fcs = allFC || [], stgs = allStages || [];
   var tous = alts.map(function(a){ return {p:a, fc:false}; })
-        .concat(fcs.map(function(a){ return {p:a, fc:true}; }));
+        .concat(fcs.map(function(a){ return {p:a, fc:true}; }))
+        .concat(stgs.map(function(a){ return {p:a, fc:false, stage:true}; }));
 
   // --- Liens Drive partagés par plusieurs personnes -----------------------
   var parLien = {};
@@ -1429,14 +1838,16 @@ function ctrlAnalyser(){
   // --- Contrôles par personne ---------------------------------------------
   tous.forEach(function(x){
     var p = x.p, nom = p.nom || p.id;
-    var qui = nom + ' · ' + p.id + (x.fc ? ' (FC)' : '');
+    var qui = nom + ' · ' + p.id + (x.fc ? ' (FC)' : (x.stage ? ' (stage)' : ''));
     var manques = [];
 
     if(!(p.documents && p.documents.dossier)) manques.push('dossier Drive');
     if(!ctrlEmailValide(p.email))            manques.push(p.email ? 'adresse e-mail invalide' : 'adresse e-mail');
     if(!p.formation)                         manques.push('formation');
-    if(!x.fc && !p.jourCentre)               manques.push('jour de centre');
+    if(!x.fc && !x.stage && !p.jourCentre)     manques.push('jour de centre');
     if(x.fc && (!p.jours || !p.jours.length)) manques.push('jours de présence');
+    if(x.stage && !p.tuteur)                  manques.push('tuteur');
+    if(x.stage && !p.etablissement)           manques.push('établissement');
     if(!p.debut)                             manques.push('date de début');
     if(!p.fin)                               manques.push('date de fin');
 
@@ -1551,7 +1962,8 @@ async function ctrlSignatures(){
   try {
     var res = await Promise.all([
       get(ref(db,'emargements')).catch(function(){return null;}),
-      get(ref(db,'emargementsFC')).catch(function(){return null;})
+      get(ref(db,'emargementsFC')).catch(function(){return null;}),
+      get(ref(db,'emargementsStage')).catch(function(){return null;})
     ]);
 
     var dernieres = {};
@@ -1581,11 +1993,11 @@ async function ctrlSignatures(){
         }
       });
     }
-    balayer(res[0]); balayer(res[1], true);
+    balayer(res[0]); balayer(res[1], true); balayer(res[2], true);
 
     var aujourdhui = new Date();
     var retards = [];
-    (allAlternants||[]).concat(allFC||[]).forEach(function(p){
+    (allAlternants||[]).concat(allFC||[]).concat(allStages||[]).forEach(function(p){
       var fin = ctrlDate(p.fin);
       if(fin && fin < aujourdhui) return;            // contrat terminé
       var debut = ctrlDate(p.debut);

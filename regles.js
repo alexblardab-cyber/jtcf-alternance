@@ -29,6 +29,15 @@
   var AM_FC = 2.25;
   var JOUR_FC_H = 6;
 
+  // Stagiaire en PFMP (Bac Pro, BTS…) : 8h00–12h00 = 4 h · 13h00–16h00 = 3 h
+  // → 7 h par journée, 35 h par semaine du lundi au vendredi.
+  // Une convention de stage, pas un contrat : ces heures ne sont pas
+  // déclarées à un OPCO, elles servent l'attestation de présence.
+  var MATIN_STAGE = 4;
+  var AM_STAGE = 3;
+  var JOUR_STAGE_H = 7;
+  var HORAIRES_STAGE = '8h00 – 12h00 / 13h00 – 16h00';
+
   /* ---- Jours de présence ------------------------------------------------- */
   // ASCA (Comptabilité) : centre lundi, mercredi, jeudi, vendredi — mardi en autonomie
   // AD / CV / ACOM      : centre lundi, mardi, mercredi, jeudi   — vendredi en autonomie
@@ -151,11 +160,73 @@
     return out;
   }
 
+  /* ---- Stagiaires en PFMP -------------------------------------------------
+     Un stagiaire est présent tous les jours ouvrés de sa période de stage.
+     Pas de jour en autonomie, pas de période de stage à exclure — il EST
+     en stage. Seuls les jours fériés sortent du décompte, auxquels
+     s'ajoutent les éventuelles fermetures saisies dans sa fiche.
+     ------------------------------------------------------------------------ */
+
+  function joursDeStage() { return [1, 2, 3, 4, 5]; }
+
+  function bornesStage(st) {
+    var b = bornesFC(st);
+    // Pas de repli sur la promotion FC : un stage sans dates n'a pas de séances.
+    if (!(st && st.debut) || !(st && st.fin)) return null;
+    return b;
+  }
+
+  // Fermetures propres au stagiaire : "25/12/2026, 01/01/2027" dans sa fiche.
+  function fermeturesStage(st) {
+    var brut = (st && st.fermetures) || '';
+    return String(brut).split(/[;,\n]/).map(function (t) {
+      var p = t.trim().split('/');
+      if (p.length !== 3) return null;
+      return p[2] + '-' + ('0' + p[1]).slice(-2) + '-' + ('0' + p[0]).slice(-2);
+    }).filter(Boolean);
+  }
+
+  function horsStage(st, d) {
+    var iso = isoJour(d);
+    if (FERIES_FC.indexOf(iso) >= 0) return true;
+    return fermeturesStage(st).indexOf(iso) >= 0;
+  }
+
+  function seancesDeStage(st) {
+    var b = bornesStage(st);
+    if (!b) return [];
+    var out = [], d = new Date(b.debut), fin = b.fin;
+    while (d <= fin) {
+      var j = d.getDay();
+      if (j >= 1 && j <= 5 && !horsStage(st, d)) out.push(new Date(d));
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  }
+
+  // Le stage est-il en cours à cette date ?
+  function stageEnCours(st, d) {
+    var b = bornesStage(st);
+    if (!b) return false;
+    var j = new Date(d || new Date()); j.setHours(0, 0, 0, 0);
+    var d1 = new Date(b.debut); d1.setHours(0, 0, 0, 0);
+    var d2 = new Date(b.fin); d2.setHours(23, 59, 59, 0);
+    return j >= d1 && j <= d2;
+  }
+
   /* ---- Publication -------------------------------------------------------- */
 
   global.JTCF = {
     MATIN_H: MATIN_H, AM_H: AM_H,
     MATIN_FC: MATIN_FC, AM_FC: AM_FC, JOUR_FC_H: JOUR_FC_H,
+    MATIN_STAGE: MATIN_STAGE, AM_STAGE: AM_STAGE, JOUR_STAGE_H: JOUR_STAGE_H,
+    HORAIRES_STAGE: HORAIRES_STAGE,
+    joursDeStage: joursDeStage,
+    bornesStage: bornesStage,
+    fermeturesStage: fermeturesStage,
+    horsStage: horsStage,
+    seancesDeStage: seancesDeStage,
+    stageEnCours: stageEnCours,
     estASCA: estASCA,
     joursDeFC: joursDeFC,
     joursSelonFormation: joursSelonFormation,

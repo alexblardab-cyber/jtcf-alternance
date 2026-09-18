@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mon Livret – JTCF Stage</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a202c; }
+  :root {
+    --or: #C9A227; --or-clair: #f0d98a; --or-pale: #fdf6e3;
+    --bleu: #3d5a6e; --bleu-fonce: #2a3f4e; --bleu-clair: #eaf0f4;
+    --blanc: #ffffff; --gris: #718096; --gris-clair: #f0f2f5;
+    --vert: #38a169; --vert-clair: #f0fff4;
+    --rouge: #e53e3e; --rouge-clair: #fff5f5;
+    --violet: #6b46c1; --violet-clair: #faf5ff;
+    --orange: #dd6b20; --orange-clair: #fff9f0;
+  }
+
+  .header { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); color: var(--blanc); padding: 20px 20px 14px; text-align: center; }
+  .header .stars { font-size: 13px; color: var(--or); letter-spacing: 4px; margin-bottom: 4px; }
+  .header .logo { font-size: 18px; font-weight: 800; color: var(--or); text-transform: uppercase; letter-spacing: 2px; }
+  .header .logo-sub { font-size: 10px; opacity: 0.75; letter-spacing: 1px; text-transform: uppercase; }
+  .header .badge-fc { display: inline-block; margin-top: 8px; background: var(--or); color: var(--bleu-fonce); font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 1px; }
+  .header .welcome { margin-top: 14px; background: rgba(201,162,39,0.15); border: 1px solid rgba(201,162,39,0.3); border-radius: 12px; padding: 11px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+  .welcome-left .name { font-size: 15px; font-weight: 700; }
+  .welcome-left .formation { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+  .btn-logout { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 11px; padding: 6px 10px; border-radius: 8px; cursor: pointer; flex-shrink: 0; touch-action: manipulation; -webkit-appearance: none; }
+
+  .nav { display: flex; overflow-x: auto; background: var(--bleu-fonce); padding: 0 4px; -webkit-overflow-scrolling: touch; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn { flex-shrink: 0; padding: 14px 12px; border: none; background: none; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; -webkit-appearance: none; touch-action: manipulation; -webkit-user-select: none; user-select: none; display: block; }
+  .nav-btn.active { color: var(--or); border-bottom-color: var(--or); font-weight: 700; }
+
+  .content { padding: 16px; max-width: 480px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card { background: var(--blanc); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(61,90,110,0.1); }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--bleu); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 2px solid var(--or); }
+  .info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--gris); font-size: 12px; }
+  .info-value { font-weight: 600; text-align: right; max-width: 60%; color: var(--bleu-fonce); }
+
+  .alert { background: var(--or-pale); border-left: 4px solid var(--or); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--bleu-fonce); margin-bottom: 14px; font-weight: 500; }
+  .slogan-card { background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border-radius: 14px; padding: 16px; margin-bottom: 14px; text-align: center; color: var(--blanc); }
+  .slogan-card .slogan { font-size: 14px; font-weight: 800; color: var(--or); }
+  .slogan-card .sub { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+
+  /* PLANNING */
+  .semaine-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .btn-sem { padding: 7px 12px; border: 2px solid var(--or); border-radius: 8px; background: none; color: var(--or); font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-sem:disabled { opacity: 0.3; }
+  .semaine-titre { font-size: 13px; font-weight: 700; color: var(--bleu-fonce); }
+  .jour-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; margin-bottom: 6px; }
+  .jour-row.formation { background: var(--bleu-clair); border-left: 3px solid var(--bleu); }
+  .jour-row.repos { background: var(--gris-clair); border-left: 3px solid #a0aec0; opacity: 0.7; }
+  .jour-row.ferie { background: var(--violet-clair); border-left: 3px solid var(--violet); }
+  .jour-row.today { background: var(--or-pale); border-left: 3px solid var(--or); }
+  .jour-row.stage { background: var(--orange-clair); border-left: 3px solid var(--orange); }
+  .jour-row.vacances { background: var(--rouge-clair); border-left: 3px solid var(--rouge); }
+  .jour-nom { font-weight: 600; font-size: 13px; width: 90px; color: var(--bleu-fonce); flex-shrink: 0; }
+  .jour-info { font-size: 12px; color: var(--gris); flex: 1; }
+  .jour-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
+  .badge-formation { background: var(--bleu-clair); color: var(--bleu); }
+  .badge-repos { background: #e2e8f0; color: #718096; }
+  .badge-ferie { background: var(--violet-clair); color: var(--violet); }
+  .badge-today { background: var(--or); color: var(--bleu-fonce); }
+  .badge-stage { background: #feebc8; color: var(--orange); }
+  .badge-vacances { background: #fed7d7; color: var(--rouge); }
+
+  /* Légende */
+  .legende { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .leg-formation { background: var(--bleu-clair); color: var(--bleu); }
+  .leg-stage { background: #feebc8; color: var(--orange); }
+  .leg-vacances { background: #fed7d7; color: var(--rouge); }
+  .leg-ferie { background: var(--violet-clair); color: var(--violet); }
+  .leg-etape { background: #f0fff4; color: var(--vert); border: 1px solid #c6f6d5; }
+
+  /* Étape clé dans le planning */
+  .etape-inline { margin-top: 4px; font-size: 11px; font-weight: 700; color: var(--vert); background: #f0fff4; border: 1px solid #c6f6d5; border-radius: 6px; padding: 2px 7px; display: inline-block; }
+
+  /* ÉMARGEMENT */
+  .emarg-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .btn-nav { padding: 8px 14px; border: 2px solid var(--or); border-radius: 8px; background: none; color: var(--or); font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-nav:disabled { opacity: 0.3; }
+  .emarg-date { background: var(--or-pale); border: 2px solid var(--or); border-radius: 10px; padding: 10px; text-align: center; margin-bottom: 12px; font-weight: 800; font-size: 14px; color: var(--bleu-fonce); }
+  .emarg-bloc { border: 2px solid var(--gris-clair); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .emarg-bloc.signe { border-color: var(--vert); background: var(--vert-clair); }
+  .emarg-bloc.absent-bloc { border-color: var(--rouge); background: var(--rouge-clair); }
+  .emarg-titre { font-size: 12px; font-weight: 700; color: var(--bleu); margin-bottom: 10px; text-transform: uppercase; }
+  .emarg-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .emarg-label { font-size: 12px; color: var(--gris); }
+  .emarg-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .status-signe { background: #c6f6d5; color: #276749; }
+  .status-attente { background: #fed7d7; color: #c53030; }
+  .status-distanciel { background: #e9d8fd; color: #6b46c1; }
+  .sign-zone { border: 2px dashed var(--or-clair); border-radius: 10px; background: var(--or-pale); padding: 8px; margin-top: 8px; text-align: center; }
+  .sign-canvas { width: 100%; height: 80px; border-radius: 6px; background: white; display: block; cursor: crosshair; touch-action: none; }
+  .sign-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: center; }
+  .btn-sign { padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-appearance: none; }
+  .btn-valider { background: var(--vert); color: white; }
+  .btn-effacer { background: #e2e8f0; color: var(--bleu-fonce); }
+  .sign-label { font-size: 11px; color: var(--gris); margin-bottom: 6px; }
+
+  .mode-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .mode-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 12px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; }
+  .mode-btn.active-presentiel { border-color: var(--vert); background: var(--vert-clair); color: var(--vert); }
+  .mode-btn.active-distanciel { border-color: var(--violet); background: var(--violet-clair); color: var(--violet); }
+  .presence-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .presence-btn { flex: 1; padding: 10px; border: 2px solid var(--gris-clair); border-radius: 10px; background: var(--gris-clair); font-size: 12px; font-weight: 700; color: var(--gris); cursor: pointer; text-align: center; touch-action: manipulation; -webkit-appearance: none; }
+  .presence-btn.active-present { border-color: var(--vert); background: var(--vert-clair); color: var(--vert); }
+  .presence-btn.active-absent { border-color: var(--rouge); background: var(--rouge-clair); color: var(--rouge); }
+  .motif-zone { background: var(--rouge-clair); border: 1px solid #fed7d7; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .motif-label { font-size: 11px; font-weight: 700; color: var(--rouge); margin-bottom: 8px; text-transform: uppercase; }
+  .motif-select { width: 100%; padding: 10px; border: 1px solid #fed7d7; border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--bleu-fonce); background: white; -webkit-appearance: none; outline: none; margin-bottom: 10px; }
+  .btn-motif-valider { width: 100%; padding: 10px; background: var(--rouge); color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; margin-bottom: 10px; }
+  .justif-zone { background: var(--vert-clair); border: 2px dashed #68d391; border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; }
+  .justif-label-upload { display: block; padding: 10px; background: var(--vert); color: white; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+  .justif-input { display: none; }
+  .justif-deja { background: var(--vert-clair); border: 1px solid #c6f6d5; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--vert); font-weight: 600; display: none; align-items: center; gap: 6px; margin-top: 8px; }
+
+  .verrou-box { background: var(--or-pale); border: 2px solid var(--or); border-radius: 10px; padding: 14px; margin-bottom: 12px; text-align: center; }
+
+  .contact-card { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gris-clair); }
+  .contact-card:last-child { border-bottom: none; }
+  .contact-avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--bleu-fonce), var(--bleu)); border: 2px solid var(--or); color: var(--blanc); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .contact-name { font-weight: 700; font-size: 13px; color: var(--bleu-fonce); }
+  .contact-role { font-size: 11px; color: var(--gris); }
+  .contact-btns { display: flex; gap: 6px; margin-top: 6px; }
+  .btn-contact { padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .btn-tel { background: var(--bleu-clair); color: var(--bleu); }
+  .btn-wa { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+
+  .rule-item { padding: 10px 0; border-bottom: 1px solid var(--gris-clair); font-size: 13px; line-height: 1.6; display: flex; gap: 10px; color: #2d3748; }
+  .rule-item:last-child { border-bottom: none; }
+  .rule-num { font-weight: 800; color: var(--or); flex-shrink: 0; width: 20px; }
+  .spacer { height: 20px; }
+</style>
+  <script src="regles.js"></script>
+  <script src="theme.js"></script>
+  <script src="adresse.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <div class="stars">★ ★ ★</div>
+  <div class="logo">JT Conseil Formation</div>
+  <div class="logo-sub">Saint-Joseph</div>
+  <div class="badge-fc">🎓 Stagiaire</div>
+  <div class="welcome">
+    <div class="welcome-left">
+      <div class="name" id="headerNom">👋 Bonjour</div>
+      <div class="formation" id="headerFormation"></div>
+    </div>
+    <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+  </div>
+</div>
+
+<div class="nav">
+  <a class="nav-btn active" data-target="accueil">🏠 Accueil</a>
+  <a class="nav-btn" data-target="planning">📅 Mon stage</a>
+  <a class="nav-btn" data-target="emargement">✍️ Émargement</a>
+  <a class="nav-btn" data-target="documents">📁 Documents</a>
+  <a class="nav-btn" data-target="contacts">📞 Contacts</a>
+  <a class="nav-btn" data-target="reglement">📋 Règlement</a>
+</div>
+
+<div class="content">
+
+  <!-- ACCUEIL -->
+  <div class="section active" id="accueil">
+    <div class="slogan-card">
+      <div class="slogan">NOTRE OBJECTIF = VOTRE RÉUSSITE</div>
+      <div class="sub">JT Conseil Formation Saint-Joseph</div>
+    </div>
+    <div class="alert" id="alertProchaine">📢 Chargement...</div>
+    <div class="card">
+      <div class="card-title">🎓 Mon stage</div>
+      <div class="info-row"><span class="info-label">Nom</span><span class="info-value" id="infoNom">—</span></div>
+      <div class="info-row"><span class="info-label">Diplôme préparé</span><span class="info-value" id="infoFormation">—</span></div>
+      <div class="info-row"><span class="info-label">Type</span><span class="info-value">Stage en entreprise</span></div>
+      <div class="info-row"><span class="info-label">Établissement</span><span class="info-value" id="infoEtablissement">—</span></div>
+      <div class="info-row"><span class="info-label">Tuteur</span><span class="info-value" id="infoTuteur">—</span></div>
+      <div class="info-row"><span class="info-label">Début</span><span class="info-value" id="infoDebut">—</span></div>
+      <div class="info-row"><span class="info-label">Fin</span><span class="info-value" id="infoFin">—</span></div>
+      <div class="info-row"><span class="info-label">Jours de présence</span><span class="info-value">Lundi au vendredi</span></div>
+      <div class="info-row"><span class="info-label">Horaires</span><span class="info-value" id="infoHeures">—</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📍 Infos pratiques</div>
+      <div class="info-row"><span class="info-label">Adresse</span><span class="info-value">20a rue du Général Lambert, St Joseph</span></div>
+      <div class="info-row"><span class="info-label">Bus</span><span class="info-value">Arrêt directement devant</span></div>
+      <div class="info-row"><span class="info-label">Parking</span><span class="info-value">Places privées disponibles</span></div>
+      <div class="info-row"><span class="info-label">Boissons</span><span class="info-value">Chaudes et froides offertes ☕</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">💬 Mot d'accueil</div>
+      <p style="font-size:13px;line-height:1.7;color:#4a5568;">Bienvenue chez JT Conseil Formation. Nous sommes heureux de vous accueillir pour votre période de formation en milieu professionnel. Vous ferez partie de l'équipe le temps de votre stage : posez des questions, observez, participez. N'hésitez jamais à nous solliciter.</p>
+    </div>
+  </div>
+
+  <!-- PLANNING -->
+  <div class="section" id="planning">
+    <div class="card">
+      <div class="card-title">📖 Comment se déroule ma formation</div>
+      <div id="explicPlanning"><div style="font-size:12px;color:#718096;">Chargement...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📅 Planning de formation</div>
+      <div class="legende">
+        <span class="leg-item leg-formation">🏫 Formation</span>
+        <span class="leg-item leg-stage">🏢 Stage</span>
+        <span class="leg-item leg-vacances">🔴 Vacances</span>
+        <span class="leg-item leg-ferie">📅 Férié</span>
+        <span class="leg-item leg-etape">⭐ Étape clé</span>
+      </div>
+      <div class="semaine-nav">
+        <button class="btn-sem" id="btnSemPrev">◀ Préc.</button>
+        <div class="semaine-titre" id="semaineTitrePlan">Semaine —</div>
+        <button class="btn-sem" id="btnSemNext">Suiv. ▶</button>
+      </div>
+      <div id="planningJours"></div>
+    </div>
+
+    <!-- Étapes clés du parcours -->
+    <div class="card">
+      <div class="card-title">🎯 Étapes clés du parcours</div>
+      <div style="font-size:12px;color:#718096;margin-bottom:12px;" id="sousTitreEtapes">—</div>
+      <div id="etapesList"></div>
+    </div>
+  </div>
+
+  <!-- ÉMARGEMENT -->
+  <div class="section" id="emargement">
+    <div class="card">
+      <div class="card-title">✍️ Feuille d'émargement</div>
+      <div class="emarg-nav">
+        <button class="btn-nav" id="btnPrev">◀ Préc.</button>
+        <div class="emarg-date" id="emargDate">—</div>
+        <button class="btn-nav" id="btnNext">Suiv. ▶</button>
+      </div>
+
+      <div class="verrou-box" id="verouJour" style="display:none;">
+        <div style="font-size:20px;margin-bottom:6px;">🔒</div>
+        <div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">Signature disponible</div>
+        <div style="font-size:13px;font-weight:700;color:var(--or);" id="msgJoursFormation">les jours de formation</div>
+        <div style="font-size:11px;color:var(--gris);margin-top:4px;">Vous pouvez consulter vos autres informations librement</div>
+      </div>
+
+      <div id="zoneEmarg">
+        <div style="margin-bottom:12px;" id="modeToggleWrap">
+          <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Mode de la séance</div>
+          <div class="mode-toggle">
+            <button class="mode-btn" id="btnPresentiel" data-mode="presentiel">🏫 Présentiel</button>
+            <button class="mode-btn" id="btnDistanciel" data-mode="distanciel">💻 Distanciel</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px;" id="presenceToggleWrap">
+          <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Ma présence</div>
+          <div class="presence-toggle">
+            <button class="presence-btn" id="btnPresent" data-presence="present">✅ Présent(e)</button>
+            <button class="presence-btn" id="btnAbsent" data-presence="absent">❌ Absent(e)</button>
+          </div>
+        </div>
+
+        <div class="motif-zone" id="motifZone" style="display:none;">
+          <div class="motif-label">⚠️ Motif d'absence</div>
+          <select class="motif-select" id="motifSelect">
+            <option value="">-- Choisir un motif --</option>
+            <option value="Maladie">🤒 Maladie</option>
+            <option value="Convenance personnelle">👤 Convenance personnelle</option>
+            <option value="Cas de force majeure">⚡ Cas de force majeure</option>
+            <option value="Sans justificatif">📄 Sans justificatif</option>
+            <option value="Autre">📝 Autre</option>
+          </select>
+          <button class="btn-motif-valider" id="btnMotifValider">Enregistrer le motif</button>
+          <div class="justif-zone">
+            <div style="font-size:11px;font-weight:700;color:var(--vert);margin-bottom:8px;text-transform:uppercase;">📎 Justificatif</div>
+            <div id="justifDeja" class="justif-deja">✅ Justificatif déjà envoyé</div>
+            <img id="justifPreview" style="width:100%;max-height:150px;object-fit:contain;border-radius:8px;margin-bottom:8px;display:none;" alt="Aperçu" />
+            <label class="justif-label-upload" for="justifInput">📷 Prendre une photo ou choisir un fichier</label>
+            <input type="file" id="justifInput" class="justif-input" accept="image/*" />
+          </div>
+        </div>
+
+        <div id="blocAutonomie" style="display:none;background:linear-gradient(135deg,var(--bleu-clair),#f7fafc);border:2px solid var(--or);border-radius:12px;padding:18px 16px;text-align:center;margin-bottom:12px;">
+          <div style="font-size:34px;margin-bottom:8px;">🏠</div>
+          <div style="font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:6px;">Journée en autonomie</div>
+          <div style="font-size:13px;color:#4a5568;line-height:1.6;margin-bottom:12px;">
+            Vous travaillez depuis chez vous sur les activités données par votre formatrice.
+          </div>
+          <div style="display:inline-block;background:var(--or);color:var(--bleu-fonce);font-size:13px;font-weight:800;padding:7px 16px;border-radius:20px;">
+            ✅ 6h comptées automatiquement
+          </div>
+          <div style="font-size:11px;color:#718096;margin-top:12px;line-height:1.5;">
+            Aucune signature nécessaire.<br>En cas d'empêchement, prévenez l'équipe avant 8h00.
+          </div>
+        </div>
+
+        <div class="emarg-bloc" id="blocMatin">
+          <div class="emarg-titre">🌅 Matin · 8h00 – 12h00</div>
+          <div class="emarg-row"><span class="emarg-label">Stagiaire</span><span class="emarg-status status-attente" id="statusMatinAlt">En attente</span></div>
+          <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="statusMatinForm">En attente</span></div>
+          <div class="sign-zone" id="zoneMatinAlt">
+            <div class="sign-label">Votre signature</div>
+            <canvas class="sign-canvas" id="canvasMatinAlt"></canvas>
+            <div class="sign-actions">
+              <button class="btn-sign btn-effacer" data-canvas="canvasMatinAlt">Effacer</button>
+              <button class="btn-sign btn-valider" data-slot="matin_alt">✅ Valider</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="emarg-bloc" id="blocAM">
+          <div class="emarg-titre">🌇 Après-midi · 13h00 – 16h00</div>
+          <div class="emarg-row"><span class="emarg-label">Stagiaire</span><span class="emarg-status status-attente" id="statusAMAlt">En attente</span></div>
+          <div class="emarg-row"><span class="emarg-label">Formatrice</span><span class="emarg-status status-attente" id="statusAMForm">En attente</span></div>
+          <div id="verouAM" style="display:none;background:var(--or-pale);border:1px solid var(--or-clair);border-radius:10px;padding:12px;margin-top:8px;text-align:center;font-size:12px;color:#744210;">
+            ⏰ La signature de l'après-midi sera disponible à partir de <strong>12h00</strong>
+          </div>
+          <div class="sign-zone" id="zoneAMAlt">
+            <div class="sign-label">Votre signature</div>
+            <canvas class="sign-canvas" id="canvasAMAlt"></canvas>
+            <div class="sign-actions">
+              <button class="btn-sign btn-effacer" data-canvas="canvasAMAlt">Effacer</button>
+              <button class="btn-sign btn-valider" data-slot="am_alt">✅ Valider</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENTS -->
+  <div class="section" id="documents">
+    <div class="card">
+      <div class="card-title">📧 Mon adresse e-mail</div>
+      <div id="ligneAdresse" style="font-size:13px;color:#4a5568;">—</div>
+      <button id="btnModifierAdresse" style="width:100%;margin-top:10px;padding:11px;background:var(--bleu-clair);color:var(--bleu-fonce);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">✏️ Modifier mon adresse</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📁 Mes documents</div>
+      <div id="listeDocumentsFC"><div style="text-align:center;padding:20px;color:#718096;">Chargement...</div></div>
+    </div>
+    <div style="background:var(--bleu-clair);border-radius:12px;padding:12px;margin-top:4px;">
+      <div style="font-size:11px;color:#718096;text-align:center;line-height:1.6;">
+        📌 Les documents s'ouvrent dans votre navigateur.<br>
+        Vous pouvez les télécharger depuis Google Drive.
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACTS -->
+  <div class="section" id="contacts">
+    <div class="card">
+      <div class="card-title">👥 L'équipe JTCF</div>
+      <div class="contact-card"><div class="contact-avatar">TJ</div><div style="flex:1"><div class="contact-name">Tibère Julien</div><div class="contact-role">Gérant</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692242157">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692242157" target="_blank">💬 WhatsApp</a></div></div></div>
+      <div class="contact-card"><div class="contact-avatar">AB</div><div style="flex:1"><div class="contact-name">Alexandre Blard</div><div class="contact-role">Conseiller en Formation / Assistant de Direction</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692334788">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692334788" target="_blank">💬 WhatsApp</a></div></div></div>
+      <div class="contact-card"><div class="contact-avatar">MG</div><div style="flex:1"><div class="contact-name">Marine Grondin</div><div class="contact-role">Conseillère en Insertion Professionnelle / Assistante Ressources Humaines</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692027421">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692027421" target="_blank">💬 WhatsApp</a></div></div></div>
+      <div class="contact-card"><div class="contact-avatar">EF</div><div style="flex:1"><div class="contact-name">Emilie Fontaine</div><div class="contact-role">Formatrice</div><div class="contact-btns"><a class="btn-contact btn-tel" href="tel:0692813812">📞 Appeler</a><a class="btn-contact btn-wa" href="https://wa.me/262692813812" target="_blank">💬 WhatsApp</a></div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🚨 Absences</div>
+      <div class="info-row"><span class="info-label">Signaler avant</span><span class="info-value">8h00</span></div>
+      <div class="info-row"><span class="info-label">Contacter</span><span class="info-value">Alexandre Blard</span></div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">contact@tbrgroup.fr</span></div>
+    </div>
+  </div>
+
+  <!-- RÈGLEMENT -->
+  <div class="section" id="reglement">
+    <div class="card">
+      <div class="card-title">📋 Règlement intérieur</div>
+      <div style="font-size:11px;color:#718096;margin-bottom:12px;">JT Conseil Formation · Session 2026 · Conforme au Code du Travail art. L6352-3 et suivants</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🏫 Hygiène & Sécurité</div>
+      <div class="rule-item"><span class="rule-num">1.</span>Respectez les consignes incendie affichées. Repérez les extincteurs et issues de secours dès le premier jour.</div>
+      <div class="rule-item"><span class="rule-num">2.</span>Alcool, drogues et stupéfiants sont strictement interdits dans les locaux. Tout manquement entraîne une exclusion immédiate.</div>
+      <div class="rule-item"><span class="rule-num">3.</span>Il est interdit de fumer ou vapoter à l'intérieur. Un espace extérieur est prévu pendant les pauses.</div>
+      <div class="rule-item"><span class="rule-num">4.</span>Tout accident (formation ou trajet) doit être signalé immédiatement à la direction.</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🕐 Assiduité & Ponctualité</div>
+      <div class="rule-item"><span class="rule-num">5.</span>Les horaires de formation sont obligatoires. Tout retard ou absence doit être signalé avant le début de la séance.</div>
+      <div class="rule-item"><span class="rule-num">6.</span>Les absences non justifiées peuvent entraîner une retenue sur rémunération (stagiaires PASS FORMATION / France Travail).</div>
+      <div class="rule-item"><span class="rule-num">7.</span>La feuille d'émargement (matin et après-midi) est un document officiel transmis aux financeurs. Toute falsification est une fraude grave.</div>
+      <div class="rule-item"><span class="rule-num">8.</span>Un trop grand nombre d'absences peut interdire la présentation à la certification finale.</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">🤝 Comportement & Tenue</div>
+      <div class="rule-item"><span class="rule-num">9.</span>Un comportement respectueux est exigé envers tous : stagiaires, formateurs et personnel.</div>
+      <div class="rule-item"><span class="rule-num">10.</span>Tout comportement harcelant, discriminatoire ou irrespectueux entraînera une exclusion immédiate.</div>
+      <div class="rule-item"><span class="rule-num">11.</span>Téléphone en mode silencieux pendant les séances.</div>
+      <div class="rule-item"><span class="rule-num">12.</span>Aucun enregistrement audio, vidéo ou photo sans accord explicite.</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">💻 Charte numérique & HADOPI</div>
+      <div class="rule-item"><span class="rule-num">13.</span>Les équipements informatiques et la connexion Internet sont réservés exclusivement aux activités pédagogiques.</div>
+      <div class="rule-item"><span class="rule-num">14.</span>Il est interdit de télécharger, reproduire ou diffuser des œuvres protégées. C'est une infraction pénale.</div>
+      <div class="rule-item"><span class="rule-num">15.</span>Les logiciels de peer-to-peer, les sites pornographiques, violents ou illicites sont bloqués et strictement interdits.</div>
+      <div class="rule-item"><span class="rule-num">16.</span>Les connexions au réseau JTCF sont journalisées et conservées 12 mois conformément à la loi.</div>
+      <div class="rule-item"><span class="rule-num">17.</span>Aucune installation de logiciel non autorisé. Tout dommage volontaire au matériel engage la responsabilité civile.</div>
+      <div style="font-size:12px;font-weight:700;color:var(--or);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">⚠️ Sanctions</div>
+      <div class="rule-item"><span class="rule-num">18.</span>Tout manquement peut entraîner : rappel à l'ordre oral, avertissement écrit, exclusion temporaire ou définitive.</div>
+      <div class="rule-item"><span class="rule-num">19.</span>Aucune sanction sans entretien préalable. La sanction intervient entre 1 et 15 jours après l'entretien.</div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
+  authDomain: "jtcf-alternance.firebaseapp.com",
+  databaseURL: "https://jtcf-alternance-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "jtcf-alternance",
+  storageBucket: "jtcf-alternance.firebasestorage.app",
+  messagingSenderId: "961150611919",
+  appId: "1:961150611919:web:ae8be337575ab1295f62ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+await signInAnonymously(auth).catch(()=>{});
+
+const userId = sessionStorage.getItem('jtcf_stg_user');
+if (!userId) { window.location.href = 'index.html'; }
+
+let user = null;
+let joursFormation = [];
+let jourIdx = 0;
+let semainePlanIdx = 0;
+
+// ── Jours de formation FC — lus depuis Firebase ──────────────
+const jourMapFC = { 'Lundi':1, 'Mardi':2, 'Mercredi':3, 'Jeudi':4, 'Vendredi':5 };
+
+function parseDateFC(str) {
+  if (!str || str === '—' || str === '-') return null;
+  const p = str.split('/');
+  if (p.length === 3) return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+  return null;
+}
+
+// Règle commune à toute l'application — définie dans regles.js.
+// ASCA (Comptabilité) : centre lun/mer/jeu/ven — mardi en autonomie
+// AD / CV            : centre lun/mar/mer/jeu — vendredi en autonomie
+function estASCA_livret(u){ return JTCF.estASCA(u); }
+let jourAutonomie = 0;   // aucun jour en autonomie pour un stagiaire
+
+function getJoursFC(joursAutorise, debutStr, finStr) {
+  const jours = [];
+  const debut = parseDateFC(debutStr) || new Date(2026, 6, 13);
+  const fin   = parseDateFC(finStr)   || new Date(2027, 5, 30);
+  const joursNum = (Array.isArray(joursAutorise) && joursAutorise.length > 0)
+    ? joursAutorise.map(j => jourMapFC[j]).filter(Boolean)
+    : [1, 2, 3, 4];
+  // Le jour en autonomie fait partie du parcours : 6h comptées, sans signature
+  const tous = joursNum.slice();
+  if (tous.indexOf(jourAutonomie) < 0) tous.push(jourAutonomie);
+  let d = new Date(debut);
+  while (d <= fin) {
+    if (tous.includes(d.getDay())) jours.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return jours;
+}
+function estJourAutonomie(d){ return d && d.getDay() === jourAutonomie; }
+
+function formatDate(d) {
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  return jours[d.getDay()] + ' ' + d.getDate() + ' ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function getKey(d) {
+  return userId + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+}
+
+// ── Déterminer le type d'un jour ───────────────────────────
+// Plannings par groupe
+const PLANNINGS_FC = {
+  CV: {
+    stages: [
+      {debut:'2026-10-05', fin:'2026-10-30'},
+      {debut:'2026-11-23', fin:'2026-12-18'},
+    ],
+    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
+  },
+  AD: {
+    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
+    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
+  },
+  ACA: {
+    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
+    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
+  },
+  ACOM: {
+    stages: [
+      {debut:'2026-10-05', fin:'2026-10-30'},
+      {debut:'2027-01-18', fin:'2027-02-12'},
+    ],
+    vacances: [{debut:'2026-12-21', fin:'2027-01-08'}],
+  }
+};
+
+function getGroupeFC() {
+  return null;   // un stagiaire ne suit aucun parcours de groupe
+}
+function getGroupeFC_inutilise() {
+  if (!user) return null;
+  var f = (user.formation) || '';
+  // Detection precise : avec 16 intitules, un simple mot-cle ne suffit plus.
+  if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
+  if (f.indexOf('Direction') >= 0) return 'AD';
+  if (f.indexOf('Assistant') >= 0 && f.indexOf('Commercial') >= 0) return 'ACOM';
+  if (f.indexOf('ACOM') >= 0) return 'ACOM';
+  if (f.indexOf('Conseiller') >= 0 && f.indexOf('Vente') >= 0) return 'CV';
+  if (f.indexOf('CV') >= 0) return 'CV';
+  return null;   // parcours sans planning defini
+}
+
+function getTypeJour(d) {
+  const y = d.getFullYear(), m = d.getMonth(), j = d.getDate();
+  const mm = String(m+1).padStart(2,'0'), jj = String(j).padStart(2,'0');
+  const iso = y + '-' + mm + '-' + jj;
+
+  // Jours fériés Réunion
+  const feries = ['2026-07-14','2026-08-15','2026-11-01','2026-11-11',
+                  '2026-12-25','2027-01-01','2027-04-05','2027-05-01',
+                  '2027-05-08','2027-05-13','2027-05-24'];
+  if (feries.includes(iso)) return 'ferie';
+
+  const groupe = getGroupeFC();
+  const planning = PLANNINGS_FC[groupe];
+  if (!planning) return 'formation';   // stagiaire : aucune période de groupe
+
+  // Vacances
+  for (const v of planning.vacances) {
+    if (iso >= v.debut && iso <= v.fin) return 'vacances';
+  }
+
+  // Stages
+  for (const s of planning.stages) {
+    if (iso >= s.debut && iso <= s.fin) return 'stage';
+  }
+
+  return 'formation';
+}
+
+// ── Étape clé pour une date ────────────────────────────────
+function getEtapeJour(iso) {
+  const groupe = getGroupeFC();
+  const etapesCV = {
+    '2026-09-16': { label: 'Évaluation 1', icone: '📝' },
+    '2027-02-23': { label: 'Bilan Final', icone: '🏁' },
+    '2027-03-02': { label: 'Examen', icone: '🎓' },
+    '2027-02-16': { label: 'Évaluation 2', icone: '📝' },
+  };
+  const etapesAD = {
+    '2026-11-09': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2026-11-10': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2027-02-02': { label: 'Évaluation 2', icone: '📝' },
+    '2027-02-09': { label: 'Bilan Final', icone: '🏁' },
+    '2027-02-16': { label: 'Examen', icone: '🎓' },
+  };
+  const etapesACA = {
+    '2026-11-09': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2026-11-10': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2026-11-11': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2026-11-12': { label: 'DP Dossier Pro.', icone: '📁' },
+    '2027-02-02': { label: 'Évaluation 3', icone: '📝' },
+    '2027-02-09': { label: 'Bilan Final', icone: '🏁' },
+    '2027-02-16': { label: 'Examen', icone: '🎓' },
+  };
+  const map = groupe === 'ACA' ? etapesACA : groupe === 'AD' ? etapesAD : etapesCV;
+  return map[iso] || null;
+}
+
+async function chargerUser() {
+  const snap = await get(ref(db, 'stagiaires/' + userId));
+  if (!snap.exists()) { window.location.href = 'index.html'; return; }
+  user = snap.val();
+
+  document.getElementById('headerNom').textContent = '👋 Bonjour, ' + user.nom;
+  document.getElementById('headerFormation').textContent = user.formation;
+  document.getElementById('infoNom').textContent = user.nom;
+  document.getElementById('infoFormation').textContent = user.formation;
+  document.getElementById('infoDebut').textContent = user.debut || '—';
+  document.getElementById('infoFin').textContent = user.fin || '—';
+  document.getElementById('infoEtablissement').textContent = user.etablissement || '—';
+  document.getElementById('infoTuteur').textContent = user.tuteur || '—';
+  document.getElementById('infoHeures').textContent = user.heures || JTCF.HORAIRES_STAGE;
+
+  // Adresse Google : demandée une fois, puis enregistrée toute seule.
+  JTCF_ADRESSE.verifier({
+    nom: user.nom,
+    adresse: user.email,
+    enregistrer: async function(mail){
+      await set(ref(db, 'stagiaires/' + userId + '/email'), mail);
+      await set(ref(db, 'stagiaires/' + userId + '/emailMaj'), new Date().toISOString());
+      user.email = mail;
+      majLigneAdresse();
+    }
+  });
+
+  // Jours de stage : tous les jours ouvrés de la période, fériés et
+  // fermetures exclus. La règle vit dans regles.js.
+  jourAutonomie = 0;
+  joursFormation = JTCF.seancesDeStage(user);
+
+  const elJours = document.getElementById('msgJoursFormation');
+  if (elJours) elJours.textContent = 'du lundi au vendredi';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  jourIdx = 0;
+  for (let i = 0; i < joursFormation.length; i++) {
+    const j = new Date(joursFormation[i]); j.setHours(0,0,0,0);
+    if (j <= today) { jourIdx = i; } else { break; }
+  }
+
+  const zoneAlerte = document.getElementById('alertProchaine');
+  if (!joursFormation.length) {
+    zoneAlerte.innerHTML = '📋 Vos dates de stage ne sont pas encore enregistrées. '
+      + 'Rapprochez-vous du secrétariat.';
+  } else {
+    zoneAlerte.innerHTML = '📢 Prochaine journée de stage : <strong>'
+      + formatDate(joursFormation[jourIdx]) + '</strong>';
+  }
+
+  // Trouver la semaine courante pour le planning
+  const semaines = getSemaines();
+  semainePlanIdx = 0;
+  for (let i = 0; i < semaines.length; i++) {
+    const s = semaines[i];
+    const dernierJour = new Date(s[s.length-1]); dernierJour.setHours(23,59,59);
+    if (dernierJour >= today) { semainePlanIdx = i; break; }
+  }
+
+  updatePlanning();
+  updateEmargement();
+  afficherEtapesCles();
+  afficherExplicationPlanning();
+  chargerDocumentsFC();
+}
+
+// ── Planning semaine ───────────────────────────────────────
+function getSemaines() {
+  const semaines = [];
+  if (joursFormation.length === 0) return semaines;
+  let i = 0;
+  while (i < joursFormation.length) {
+    const semaine = [];
+    const lundi = new Date(joursFormation[i]);
+    while (i < joursFormation.length) {
+      const diff = (joursFormation[i] - lundi) / (1000*60*60*24);
+      if (diff < 7) { semaine.push(joursFormation[i]); i++; } else break;
+    }
+    semaines.push(semaine);
+  }
+  return semaines;
+}
+
+function updatePlanning() {
+  const semaines = getSemaines();
+  if (semaines.length === 0) return;
+  if (semainePlanIdx >= semaines.length) semainePlanIdx = semaines.length - 1;
+
+  const semaine = semaines[semainePlanIdx];
+  const moisNoms = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  const debut = semaine[0]; const fin = semaine[semaine.length-1];
+  document.getElementById('semaineTitrePlan').textContent =
+    'Sem. du ' + debut.getDate() + ' ' + moisNoms[debut.getMonth()] +
+    ' au ' + fin.getDate() + ' ' + moisNoms[fin.getMonth()];
+
+  document.getElementById('btnSemPrev').disabled = semainePlanIdx === 0;
+  document.getElementById('btnSemNext').disabled = semainePlanIdx === semaines.length - 1;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const jours = document.getElementById('planningJours');
+  jours.innerHTML = '';
+
+  semaine.forEach(function(d) {
+    const dd = new Date(d); dd.setHours(0,0,0,0);
+    const isToday = dd.getTime() === today.getTime();
+    const iso = d.toISOString().split('T')[0];
+    const type = isToday ? 'today' : getTypeJour(d);
+    const etape = getEtapeJour(iso);
+
+    const nomJour = ['','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][d.getDay()];
+
+    let info = '';
+    let badge = '';
+    let badgeCls = '';
+
+    switch(type) {
+      case 'today':
+        info = "Aujourd'hui · 8h00 – 16h00";
+        badge = "Aujourd'hui";
+        badgeCls = 'badge-today';
+        break;
+      case 'stage':
+        info = 'Stage en entreprise';
+        badge = '🏢 Stage';
+        badgeCls = 'badge-stage';
+        break;
+      case 'vacances':
+        info = 'Vacances du centre';
+        badge = '🔴 Vacances';
+        badgeCls = 'badge-vacances';
+        break;
+      case 'ferie':
+        info = 'Jour férié';
+        badge = '📅 Férié';
+        badgeCls = 'badge-ferie';
+        break;
+      default:
+        info = '8h00 – 16h00';
+        badge = 'Formation';
+        badgeCls = 'badge-formation';
+    }
+
+    const row = document.createElement('div');
+    row.className = 'jour-row ' + type;
+    row.innerHTML =
+      '<div class="jour-nom">' + nomJour + ' ' + d.getDate() + '</div>' +
+      '<div class="jour-info">' + info +
+        (etape ? '<br><span class="etape-inline">' + etape.icone + ' ' + etape.label + '</span>' : '') +
+      '</div>' +
+      '<div class="jour-badge ' + badgeCls + '">' + badge + '</div>';
+    jours.appendChild(row);
+  });
+}
+
+// ── Étapes clés synthèse ───────────────────────────────────
+
+// ── Explication du parcours, adaptée au groupe ───────────────
+const INFOS_GROUPE = {
+  CV:  { titre:'TP Conseiller de Vente',
+         stages:[['5 octobre','30 octobre 2026'],['23 novembre','18 décembre 2026']],
+         bilan:'23 février 2027', examen:'2 mars 2027' },
+  AD:  { titre:'TP Assistant de Direction',
+         stages:[['12 octobre','6 novembre 2026']],
+         bilan:'9 février 2027', examen:'16 février 2027' },
+  ACA: { titre:'Assistant Comptabilité et Administration',
+         stages:[['12 octobre','6 novembre 2026']],
+         bilan:'9 février 2027', examen:'16 février 2027' },
+  ACOM:{ titre:'TP Assistant Commercial',
+         stages:[['5 octobre','30 octobre 2026'],['18 janvier','12 février 2027']],
+         bilan:'5 avril 2027', examen:'12 avril 2027' }
+};
+
+function afficherExplicationPlanning() {
+  const box = document.getElementById('explicPlanning');
+  if (!box || !user) return;
+
+  const st = document.getElementById('sousTitreEtapes');
+  if (st) st.textContent = (user.formation || 'Stage') + ' · '
+    + (user.debut || '—') + ' → ' + (user.fin || '—');
+
+  const nb = joursFormation.length;
+  const volume = nb * JTCF.JOUR_STAGE_H;
+
+  function ligne(icone, titre, texte){
+    return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f0f2f5;">'
+      + '<div style="font-size:18px;flex-shrink:0;">' + icone + '</div>'
+      + '<div><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">' + titre + '</div>'
+      + '<div style="font-size:12px;color:#718096;line-height:1.55;">' + texte + '</div></div></div>';
+  }
+
+  box.innerHTML =
+    '<div style="background:var(--or-pale);border-left:3px solid var(--or);border-radius:0 8px 8px 0;'
+    + 'padding:10px 12px;margin-bottom:12px;font-size:12px;color:#744210;line-height:1.6;">'
+    + 'Vous effectuez une période de formation en milieu professionnel chez JT Conseil Formation. '
+    + 'Voici comment elle se déroule.</div>'
+
+    + ligne('🏢', 'Vos journées',
+        'Du lundi au vendredi, de 8h00 à 12h00 puis de 13h00 à 16h00, soit 7 heures par jour '
+        + 'et 35 heures par semaine.')
+
+    + ligne('✍️', 'Votre émargement',
+        'Vous signez matin et après-midi, chaque jour de présence. La signature de l\'après-midi '
+        + 'se débloque à 12h00. Votre tuteur contresigne.')
+
+    + ligne('📅', 'Votre période',
+        (nb
+          ? nb + ' journée' + (nb > 1 ? 's' : '') + ' de stage, soit ' + volume + ' heures au total, '
+            + 'du ' + (user.debut || '—') + ' au ' + (user.fin || '—') + '.'
+          : 'Vos dates ne sont pas encore enregistrées. Rapprochez-vous du secrétariat.'))
+
+    + ligne('🤒', 'En cas d\'absence',
+        'Prévenez votre tuteur au plus tôt, déclarez l\'absence dans l\'onglet Émargement et '
+        + 'déposez votre justificatif. Votre établissement scolaire doit également être informé.')
+
+    + ligne('📄', 'À la fin du stage',
+        'Votre attestation de présence est établie à partir de ces émargements. '
+        + 'Signez chaque jour : c\'est ce qui la rend valable.');
+}
+
+function afficherEtapesCles() {
+  const groupe = getGroupeFC();
+  let etapes = [];
+  if (groupe === 'CV') {
+    etapes = [
+      { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '05/10 → 30/10/2026', label: 'Stage 1 en entreprise', icone: '🏢', type: 'stage' },
+      { date: '23/11 → 18/12/2026', label: 'Stage 2 en entreprise', icone: '🏢', type: 'stage' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '23/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+      { date: '02/03/2027', label: 'Examen', icone: '🎓', type: 'exam' },
+    ];
+  } else if (groupe === 'ACOM') {
+    etapes = [
+      { date: '17/08/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '05/10 → 30/10/2026', label: 'Stage 1 en entreprise', icone: '🏢', type: 'stage' },
+      { date: '25/11/2026', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '21/12/2026 → 08/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '18/01 → 12/02/2027', label: 'Stage 2 en entreprise', icone: '🏢', type: 'stage' },
+      { date: '15 → 17/02/2027', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
+      { date: '24/03/2027', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '05/04/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+      { date: '12/04/2027', label: 'Examen', icone: '🎓', type: 'exam' },
+    ];
+  } else if (groupe === 'AD') {
+    etapes = [
+      { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '12/10 → 06/11/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '09 → 10/11/2026', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '09/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+      { date: '16/02/2027', label: 'Examen', icone: '🎓', type: 'exam' },
+    ];
+  } else {
+    etapes = [
+      { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '12/10 → 06/11/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '09 → 12/11/2026', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '09/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+      { date: '16/02/2027', label: 'Examen', icone: '🎓', type: 'exam' },
+    ];
+  }
+  const couleurs = {
+    debut: '#c6f6d5', stage: '#feebc8', bilan: '#bee3f8',
+    eval: '#e9d8fd', vacances: '#fed7d7', dp: '#c6f6d5',
+    fin: '#fef3c7', exam: '#fef3c7'
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+  const isoMap = {
+    'debut':'2026-07-13','bilan':'2026-10-21','eval1':'2026-11-02',
+    'vacances':'2026-12-01','stage2':'2027-01-11','dp':'2027-02-08',
+    'eval2':'2027-02-18','fin':'2027-03-01','exam':'2027-03-08'
+  };
+
+  const container = document.getElementById('etapesList');
+  container.innerHTML = etapes.map(function(e) {
+    const bg = couleurs[e.type] || '#edf2f7';
+    return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:10px;margin-bottom:6px;background:' + bg + ';">' +
+      '<span style="font-size:18px;flex-shrink:0;">' + e.icone + '</span>' +
+      '<div><div style="font-weight:700;font-size:13px;color:var(--bleu-fonce);">' + e.label + '</div>' +
+      '<div style="font-size:11px;color:#718096;">' + e.date + '</div></div>' +
+      '</div>';
+  }).join('');
+}
+
+// ── Émargement ──────────────────────────────────────────────
+async function updateEmargement() {
+  const d = joursFormation[jourIdx];
+  document.getElementById('emargDate').textContent = formatDate(d);
+  document.getElementById('btnPrev').disabled = jourIdx === 0;
+  document.getElementById('btnNext').disabled = jourIdx === joursFormation.length - 1;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const jourD = new Date(d); jourD.setHours(0,0,0,0);
+  const estAujourdhui = jourD.getTime() === today.getTime();
+
+  const verouJour = document.getElementById('verouJour');
+  const zoneEmarg = document.getElementById('zoneEmarg');
+  const blocAuto  = document.getElementById('blocAutonomie');
+
+  // Journée en autonomie : 6h comptées d'office, rien à signer
+  if (estJourAutonomie(d)) {
+    verouJour.style.display = 'none';
+    zoneEmarg.style.display = 'block';
+    if (blocAuto) blocAuto.style.display = 'block';
+    ['blocMatin','blocAM','motifZone'].forEach(function(id){
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    ['modeToggleWrap','presenceToggleWrap'].forEach(function(id){
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    return;
+  }
+  if (blocAuto) blocAuto.style.display = 'none';
+  ['blocMatin','blocAM'].forEach(function(id){
+    const el = document.getElementById(id); if (el) el.style.display = '';
+  });
+  ['modeToggleWrap','presenceToggleWrap'].forEach(function(id){
+    const el = document.getElementById(id); if (el) el.style.display = '';
+  });
+
+  if (!estAujourdhui) {
+    verouJour.style.display = 'block';
+    zoneEmarg.style.display = 'none';
+    return;
+  }
+  verouJour.style.display = 'none';
+  zoneEmarg.style.display = 'block';
+
+  const key = getKey(d);
+  const snap = await get(ref(db, 'emargementsStage/' + key));
+  const data = snap.exists() ? snap.val() : {};
+  const modeActuel = data.mode || null;
+  const presenceActuelle = data.presence || null;
+
+  document.getElementById('btnPresentiel').className = 'mode-btn' + (modeActuel==='presentiel'?' active-presentiel':'');
+  document.getElementById('btnDistanciel').className = 'mode-btn' + (modeActuel==='distanciel'?' active-distanciel':'');
+  document.getElementById('btnPresent').className = 'presence-btn' + (presenceActuelle==='present'?' active-present':'');
+  document.getElementById('btnAbsent').className = 'presence-btn' + (presenceActuelle==='absent'?' active-absent':'');
+  document.getElementById('motifZone').style.display = presenceActuelle==='absent' ? 'block' : 'none';
+  if (data.motif) document.getElementById('motifSelect').value = data.motif;
+
+  const justifDeja = document.getElementById('justifDeja');
+  const justifPreview = document.getElementById('justifPreview');
+  if (data.justificatif) {
+    justifDeja.style.display = 'flex';
+    justifPreview.src = data.justificatif;
+    justifPreview.style.display = 'block';
+  } else {
+    justifDeja.style.display = 'none';
+    justifPreview.style.display = 'none';
+  }
+
+  const absent = presenceActuelle === 'absent';
+  const maintenant = new Date();
+  const apremDispo = maintenant.getHours() >= 12;
+
+  const verouAM = document.getElementById('verouAM');
+  const zoneAMAlt = document.getElementById('zoneAMAlt');
+  if (!apremDispo && !data.am_alt && !absent) {
+    verouAM.style.display = 'block';
+    if (zoneAMAlt) zoneAMAlt.style.display = 'none';
+  } else {
+    verouAM.style.display = 'none';
+  }
+
+  const slots = [
+    {alt:'matin_alt',form:'matin_form',altEl:'statusMatinAlt',formEl:'statusMatinForm',zone:'zoneMatinAlt',bloc:'blocMatin'},
+    {alt:'am_alt',form:'am_form',altEl:'statusAMAlt',formEl:'statusAMForm',zone:'zoneAMAlt',bloc:'blocAM'}
+  ];
+
+  slots.forEach(function(s) {
+    const altSigne = data[s.alt]; const formSigne = data[s.form];
+    const altEl = document.getElementById(s.altEl);
+    if (absent) { altEl.textContent='❌ Absent(e)'; altEl.className='emarg-status status-attente'; }
+    else { altEl.textContent=altSigne?'✅ Signé':'En attente'; altEl.className='emarg-status '+(altSigne?'status-signe':'status-attente'); }
+    const formEl = document.getElementById(s.formEl);
+    formEl.textContent = formSigne?'✅ Signé':'En attente';
+    formEl.className = 'emarg-status '+(formSigne?'status-signe':'status-attente');
+    const zone = document.getElementById(s.zone);
+    if (zone) zone.style.display = (altSigne||absent) ? 'none' : 'block';
+    document.getElementById(s.bloc).className = 'emarg-bloc'+(absent?' absent-bloc':(altSigne&&formSigne?' signe':''));
+  });
+
+  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id) {
+    const c = document.getElementById(id);
+    if (c) { c.width=c.offsetWidth; c.height=80; c.getContext('2d').clearRect(0,0,c.width,c.height); }
+  });
+  initCanvases();
+}
+
+function initCanvases() {
+  ['canvasMatinAlt','canvasAMAlt'].forEach(function(id) {
+    const canvas = document.getElementById(id); if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth; canvas.height = 80;
+    let drawing = false;
+    function getPos(e) { const r=canvas.getBoundingClientRect(); if(e.touches) return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}; return{x:e.clientX-r.left,y:e.clientY-r.top}; }
+    function start(e) { e.preventDefault(); drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+    function draw(e) { e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#2a3f4e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke(); }
+    function stop() { drawing=false; }
+    canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',draw); canvas.addEventListener('mouseup',stop);
+    canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',draw,{passive:false}); canvas.addEventListener('touchend',stop);
+  });
+}
+
+// Boutons mode
+['btnPresentiel','btnDistanciel'].forEach(function(id) {
+  async function setMode(e) { e.preventDefault(); await set(ref(db,'emargementsStage/'+getKey(joursFormation[jourIdx])+'/mode'),document.getElementById(id).getAttribute('data-mode')); await updateEmargement(); }
+  document.getElementById(id).addEventListener('touchend',setMode,{passive:false}); document.getElementById(id).addEventListener('click',setMode);
+});
+
+// Boutons présence
+['btnPresent','btnAbsent'].forEach(function(id) {
+  async function setPresence(e) { e.preventDefault(); await set(ref(db,'emargementsStage/'+getKey(joursFormation[jourIdx])+'/presence'),document.getElementById(id).getAttribute('data-presence')); await updateEmargement(); }
+  document.getElementById(id).addEventListener('touchend',setPresence,{passive:false}); document.getElementById(id).addEventListener('click',setPresence);
+});
+
+// Motif
+async function validerMotif(e) {
+  e.preventDefault();
+  const motif = document.getElementById('motifSelect').value;
+  if (!motif) { alert('Veuillez choisir un motif.'); return; }
+  await set(ref(db,'emargementsStage/'+getKey(joursFormation[jourIdx])+'/motif'), motif);
+  document.getElementById('btnMotifValider').textContent = '✅ Motif enregistré';
+  setTimeout(function(){ document.getElementById('btnMotifValider').textContent='Enregistrer le motif'; }, 2000);
+}
+document.getElementById('btnMotifValider').addEventListener('touchend',validerMotif,{passive:false});
+document.getElementById('btnMotifValider').addEventListener('click',validerMotif);
+
+// Justificatif
+document.getElementById('justifInput').addEventListener('change', async function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    const img = new Image();
+    img.onload = async function() {
+      const canvas = document.createElement('canvas');
+      const MAX=800; let w=img.width; let h=img.height;
+      if(w>MAX){h=Math.round(h*(MAX/w));w=MAX;} if(h>MAX){w=Math.round(w*(MAX/h));h=MAX;}
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed = canvas.toDataURL('image/jpeg',0.6);
+      await set(ref(db,'emargementsStage/'+getKey(joursFormation[jourIdx])+'/justificatif'), compressed);
+      document.getElementById('justifPreview').src=compressed;
+      document.getElementById('justifPreview').style.display='block';
+      document.getElementById('justifDeja').style.display='flex';
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// Validation signature
+document.querySelectorAll('.btn-valider').forEach(function(btn) {
+  async function valider(e) {
+    e.preventDefault();
+    const slot=btn.getAttribute('data-slot');
+    const canvasMap={'matin_alt':'canvasMatinAlt','am_alt':'canvasAMAlt'};
+    const canvas=document.getElementById(canvasMap[slot]); if(!canvas) return;
+    const imageData=canvas.toDataURL();
+    const blank=document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
+    if(imageData===blank.toDataURL()){alert('Veuillez signer avant de valider.');return;}
+    await set(ref(db,'emargementsStage/'+getKey(joursFormation[jourIdx])+'/'+slot),imageData);
+    await updateEmargement();
+  }
+  btn.addEventListener('touchend',valider,{passive:false}); btn.addEventListener('click',valider);
+});
+
+// Effacer canvas
+document.querySelectorAll('.btn-effacer').forEach(function(btn) {
+  function effacer(e){e.preventDefault();const c=document.getElementById(btn.getAttribute('data-canvas'));if(c){c.getContext('2d').clearRect(0,0,c.width,c.height);}}
+  btn.addEventListener('touchend',effacer,{passive:false}); btn.addEventListener('click',effacer);
+});
+
+// Navigation émargement
+document.getElementById('btnPrev').addEventListener('touchend',function(e){e.preventDefault();if(jourIdx>0){jourIdx--;updateEmargement();}},{passive:false});
+document.getElementById('btnPrev').addEventListener('click',function(){if(jourIdx>0){jourIdx--;updateEmargement();}});
+document.getElementById('btnNext').addEventListener('touchend',function(e){e.preventDefault();if(jourIdx<joursFormation.length-1){jourIdx++;updateEmargement();}},{passive:false});
+document.getElementById('btnNext').addEventListener('click',function(){if(jourIdx<joursFormation.length-1){jourIdx++;updateEmargement();}});
+
+// Navigation planning
+document.getElementById('btnSemPrev').addEventListener('touchend',function(e){e.preventDefault();if(semainePlanIdx>0){semainePlanIdx--;updatePlanning();}},{passive:false});
+document.getElementById('btnSemPrev').addEventListener('click',function(){if(semainePlanIdx>0){semainePlanIdx--;updatePlanning();}});
+document.getElementById('btnSemNext').addEventListener('touchend',function(e){e.preventDefault();semainePlanIdx++;updatePlanning();},{passive:false});
+document.getElementById('btnSemNext').addEventListener('click',function(){semainePlanIdx++;updatePlanning();});
+
+// Documents FC
+// Rappel visible de l'adresse enregistrée, modifiable à tout moment.
+function majLigneAdresse(){
+  const l=document.getElementById('ligneAdresse'); if(!l) return;
+  if(JTCF_ADRESSE.valide(user && user.email)){
+    l.innerHTML='<span style="font-weight:700;color:var(--bleu-fonce);">'+user.email+'</span>'
+      +'<div style="font-size:11.5px;color:#718096;margin-top:4px;">C\'est à cette adresse que votre dossier Drive est partagé.</div>';
+  } else {
+    l.innerHTML='<span style="color:#dd6b20;font-weight:700;">Aucune adresse enregistrée</span>'
+      +'<div style="font-size:11.5px;color:#718096;margin-top:4px;">Sans adresse, le centre ne peut pas vous partager vos documents.</div>';
+  }
+}
+
+(function(){
+  const b=document.getElementById('btnModifierAdresse'); if(!b) return;
+  function go(e){
+    if(e) e.preventDefault();
+    JTCF_ADRESSE.ouvrir({
+      nom: user ? user.nom : '',
+      adresse: user ? user.email : '',
+      modification: true,
+      enregistrer: async function(mail){
+        await set(ref(db,'stagiaires/'+userId+'/email'), mail);
+        await set(ref(db,'stagiaires/'+userId+'/emailMaj'), new Date().toISOString());
+        user.email=mail; majLigneAdresse();
+      }
+    });
+  }
+  b.addEventListener('click',go);
+  b.addEventListener('touchend',go,{passive:false});
+})();
+
+async function chargerDocumentsFC() {
+  majLigneAdresse();
+  const snap = await get(ref(db, 'stagiaires/' + userId + '/documents'));
+  const container = document.getElementById('listeDocumentsFC');
+  if (!container) return;
+  const data = snap.exists() ? snap.val() : {};
+  const lien = data.dossier || '';
+  if (!lien) {
+    container.innerHTML = '<div style="text-align:center;padding:24px 0;"><div style="font-size:36px;margin-bottom:10px;">📭</div><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);margin-bottom:6px;">Aucun document disponible</div><div style="font-size:12px;color:#718096;">Vos documents apparaîtront ici dès qu\'ils seront mis en ligne.</div></div>';
+  } else {
+    container.innerHTML = '<div style="text-align:center;padding:10px 0 16px;"><div style="font-size:36px;margin-bottom:10px;">📂</div><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);margin-bottom:6px;">Votre dossier est disponible</div></div><a href="'+lien+'" target="_blank" style="text-decoration:none;"><div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));border-radius:12px;"><div style="font-size:20px;">📁</div><div style="color:white;font-weight:700;font-size:14px;">Ouvrir mon dossier Drive</div><div style="color:var(--or);font-size:16px;">↗</div></div></a>';
+  }
+}
+
+// Nav onglets
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  function activate(e) {
+    e.preventDefault();
+    var target=btn.getAttribute('data-target');
+    document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+    document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+    document.getElementById(target).classList.add('active');
+    btn.classList.add('active');
+    if(target==='emargement') updateEmargement();
+    if(target==='planning') afficherExplicationPlanning();
+    if(target==='planning') updatePlanning();
+    if(target==='documents') chargerDocumentsFC();
+  }
+  btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
+});
+
+// Déconnexion
+document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_stg_user');window.location.href='index.html';},{passive:false});
+document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_stg_user');window.location.href='index.html';});
+
+chargerUser();
+</script>
+</body>
+</html>
