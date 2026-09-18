@@ -142,6 +142,7 @@
   <script src="regles.js"></script>
   <script src="theme.js"></script>
   <script src="adresse.js"></script>
+  <script src="rdv.js"></script>
 </head>
 <body>
 
@@ -163,6 +164,7 @@
   <a class="nav-btn active" data-target="accueil">🏠 Accueil</a>
   <a class="nav-btn" data-target="planning">📅 Mon stage</a>
   <a class="nav-btn" data-target="emargement">✍️ Émargement</a>
+  <a class="nav-btn" data-target="rendezvous">📅 Rendez-vous</a>
   <a class="nav-btn" data-target="documents">📁 Documents</a>
   <a class="nav-btn" data-target="contacts">📞 Contacts</a>
   <a class="nav-btn" data-target="reglement">📋 Règlement</a>
@@ -344,6 +346,10 @@
   </div>
 
   <!-- CONTACTS -->
+  <div class="section" id="rendezvous">
+    <div id="zoneRdv"><div class="loading">Chargement...</div></div>
+  </div>
+
   <div class="section" id="contacts">
     <div class="card">
       <div class="card-title">👥 L'équipe JTCF</div>
@@ -1124,11 +1130,30 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     if(target==='planning') afficherExplicationPlanning();
     if(target==='planning') updatePlanning();
     if(target==='documents') chargerDocumentsFC();
+    if(target==='rendezvous') ouvrirRendezVous();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
 
 // Déconnexion
+/* ── Prise de rendez-vous ──────────────────────────────────────────────
+   rdv.js ne connaît pas Firebase : on lui prête deux fonctions.
+   ──────────────────────────────────────────────────────────────────── */
+JTCF_RDV.connecter({
+  lire: async function(chemin){
+    const s = await get(ref(db, chemin)).catch(function(){ return null; });
+    return (s && s.exists()) ? s.val() : null;
+  },
+  ecrire: async function(chemin, valeur){ await set(ref(db, chemin), valeur); }
+});
+
+function ouvrirRendezVous(){
+  const zone = document.getElementById('zoneRdv');
+  if (!zone || !user) return;
+  JTCF_RDV.apprenant({ id: userId, nom: user.nom || userId, type: 'stg' }, zone)
+    .catch(function(e){ zone.innerHTML = '<div class="loading">Chargement impossible : ' + e.message + '</div>'; });
+}
+
 document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_stg_user');window.location.href='index.html';},{passive:false});
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_stg_user');window.location.href='index.html';});
 

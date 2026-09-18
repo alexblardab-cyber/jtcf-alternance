@@ -106,6 +106,7 @@
 </style>
   <script src="regles.js"></script>
   <script src="theme.js"></script>
+  <script src="rdv.js"></script>
 </head>
 <body>
 
@@ -127,6 +128,7 @@
   <a class="nav-btn active" data-target="dashboard">📊 Tableau de bord</a>
   <a class="nav-btn" data-target="alternants">👥 Alternants</a>
   <a class="nav-btn" data-target="stagiairesfc">🎓 FC</a>
+  <a class="nav-btn" data-target="rendezvous">📅 Rendez-vous <span id="badgeRdv" style="display:none;background:#e53e3e;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;margin-left:2px;">0</span></a>
   <a class="nav-btn" data-target="stages">🎒 Stages</a>
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📈 Récap heures</a>
@@ -316,6 +318,11 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- RENDEZ-VOUS -->
+  <div class="section" id="rendezvous">
+    <div id="zoneRdvEquipe"><div class="loading">Chargement...</div></div>
   </div>
 
   <!-- STAGIAIRES EN PFMP -->
@@ -605,6 +612,7 @@ async function chargerTout() {
   chargerGroupes();
   remplirMoisSelect();
   ctrlLancer();
+  majBadgeRdv();
 }
 
 function formatDate(d) {
@@ -1278,6 +1286,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn){
     btn.classList.add('active');
     if(target==='recap') chargerRecapAdmin();
     if(target==='exceptions') initExceptions();
+    if(target==='rendezvous') ouvrirRdvEquipe();
   }
   btn.addEventListener('touchend',activate,{passive:false}); btn.addEventListener('click',activate);
 });
@@ -1693,6 +1702,38 @@ async function sauvegarderDocsStage(e){
       .finally(function(){ b.disabled = false; b.textContent = '📄 Attestation de présence (PDF)'; });
   });
 })();
+
+/* ---- Rendez-vous ---------------------------------------------------------
+   Le moteur vit dans rdv.js, partagé avec les livrets. On lui prête
+   simplement de quoi lire et écrire dans Firebase.
+   ------------------------------------------------------------------------ */
+
+JTCF_RDV.connecter({
+  lire: async function(chemin){
+    const sn = await get(ref(db, chemin)).catch(function(){ return null; });
+    return (sn && sn.exists()) ? sn.val() : null;
+  },
+  ecrire: async function(chemin, valeur){ await set(ref(db, chemin), valeur); }
+});
+
+function ouvrirRdvEquipe(){
+  const zone = document.getElementById('zoneRdvEquipe');
+  if (!zone) return;
+  JTCF_RDV.equipe(zone, 'admin')
+    .then(majBadgeRdv)
+    .catch(function(e){ zone.innerHTML = '<div class="loading">Chargement impossible : ' + e.message + '</div>'; });
+}
+
+// Pastille rouge sur l'onglet : le nombre de demandes en attente.
+async function majBadgeRdv(){
+  const b = document.getElementById('badgeRdv');
+  if (!b) return;
+  try {
+    const n = await JTCF_RDV.enAttente('admin');
+    b.textContent = n;
+    b.style.display = n ? 'inline-block' : 'none';
+  } catch(e){ b.style.display = 'none'; }
+}
 
 /* ---- Attestation de présence (PDF) --------------------------------------
    Document remis à l'établissement d'origine du stagiaire. Il récapitule
