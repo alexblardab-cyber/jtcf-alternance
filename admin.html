@@ -107,6 +107,40 @@
   <script src="regles.js"></script>
   <script src="theme.js"></script>
   <script src="rdv.js"></script>
+  <script>
+  /* ── Filet de sécurité ────────────────────────────────────────────────────
+     Si un fichier partagé n'a pas pu être chargé — dépôt incomplet, coupure
+     réseau, cache — la page continue de fonctionner au lieu de se figer.
+     Les fonctions annexes deviennent inertes ; l'émargement, lui, marche.
+     ──────────────────────────────────────────────────────────────────────── */
+  (function(){
+    var rien = function(){};
+    var vide = function(){ return Promise.resolve(); };
+    window.JTCF_NEWS = window.JTCF_NEWS || { verifier: rien, revoir: rien };
+    window.JTCF_ADRESSE = window.JTCF_ADRESSE || {
+      verifier: function(){ return false; }, ouvrir: rien,
+      valide: function(e){ return !!e && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e).trim()); }
+    };
+    window.JTCF_RDV = window.JTCF_RDV || {
+      connecter: rien, apprenant: vide, equipe: vide,
+      enAttente: function(){ return Promise.resolve(0); },
+      codes: function(){ return []; }, libelleParticipants: function(){ return "L'équipe"; }
+    };
+    // regles.js porte les règles de calcul : sans lui, mieux vaut le dire
+    // clairement que d'afficher des heures fausses.
+    if (!window.JTCF) {
+      document.addEventListener('DOMContentLoaded', function(){
+        var b = document.createElement('div');
+        b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;padding:14px;'
+          + 'background:#fffaf0;border-top:3px solid #dd6b20;color:#744210;font-size:13px;'
+          + 'font-family:sans-serif;text-align:center;line-height:1.5;';
+        b.innerHTML = 'Mise à jour en cours. Fermez et rouvrez l\'application dans quelques minutes. '
+          + 'Si le message persiste, prévenez le secrétariat.';
+        document.body.appendChild(b);
+      });
+    }
+  })();
+  </script>
 </head>
 <body>
 
@@ -396,6 +430,15 @@
         <button class="btn-primary" id="btnAttestationStage" style="background:linear-gradient(135deg,#2f855a,#38a169);margin-top:8px;">📄 Attestation de présence (PDF)</button>
         <button class="btn-danger" id="btnSupprimerStage" style="display:none;">🗑️ Supprimer</button>
         <div class="success-msg" id="stgFormSuccess">✅ Stagiaire sauvegardé !</div>
+        <div id="sectionContresign" style="display:none;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;">
+          <div style="font-size:13px;font-weight:700;color:var(--bleu);margin-bottom:4px;">✍️ Présences à contresigner</div>
+          <div style="font-size:11px;color:#718096;margin-bottom:12px;line-height:1.6;">
+            Le stagiaire signe, vous validez. Une journée contresignée fait foi sur l'attestation.
+          </div>
+          <div id="listeContresign"><div class="loading">Chargement...</div></div>
+          <button class="btn-primary" id="btnContresignTout" style="margin-top:10px;background:linear-gradient(135deg,#2f855a,#38a169);">✅ Tout contresigner</button>
+        </div>
+
         <div id="sectionDocsStage" style="display:none;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;">
           <div style="font-size:13px;font-weight:700;color:var(--bleu);margin-bottom:4px;">📁 Dossier Documents</div>
           <div style="font-size:11px;color:#718096;margin-bottom:14px;">Collez le lien du dossier Google Drive de ce stagiaire.</div>
@@ -1603,6 +1646,8 @@ function ouvrirFormStage(st){
   document.getElementById('btnSupprimerStage').style.display = st ? 'block' : 'none';
   document.getElementById('btnAttestationStage').style.display = st ? 'block' : 'none';
   document.getElementById('sectionDocsStage').style.display = st ? 'block' : 'none';
+  document.getElementById('sectionContresign').style.display = st ? 'block' : 'none';
+  if (st) chargerContresign(st);
   document.getElementById('docDossierStage').value = st && st.documents ? (st.documents.dossier||'') : '';
   document.getElementById('stgFormSuccess').classList.remove('visible');
 }
@@ -1735,6 +1780,147 @@ async function majBadgeRdv(){
   } catch(e){ b.style.display = 'none'; }
 }
 
+/* ---- Contresignature des présences --------------------------------------
+   Le stagiaire signe depuis son livret ; le tuteur valide ici. Une journée
+   contresignée porte le nom du tuteur et la date de validation — c'est ce
+   qui donne sa valeur à l'attestation remise à l'établissement.
+   ------------------------------------------------------------------------ */
+
+function cleStage(id, d){
+  return 'emargementsStage/' + id + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+}
+
+async function chargerContresign(st){
+  const zone = document.getElementById('listeContresign');
+  if (!zone) return;
+  zone.innerHTML = '<div class="loading">Chargement...</div>';
+
+  const journees = JTCF.seancesDeStage(st);
+  if (!journees.length){
+    zone.innerHTML = '<div style="font-size:12.5px;color:#dd6b20;">Renseignez d\'abord les dates de stage.</div>';
+    return;
+  }
+
+  const tout = await litChemin('emargementsStage') || {};
+  const auj = new Date(); auj.setHours(23,59,59,0);
+
+  // On ne montre que le passé : contresigner une journée à venir n'a pas de sens.
+  const passees = journees.filter(function(d){ return d <= auj; });
+  if (!passees.length){
+    zone.innerHTML = '<div style="font-size:12.5px;color:#718096;">Le stage n\'a pas encore commencé.</div>';
+    return;
+  }
+
+  let aValider = 0, valides = 0, sansSignature = 0;
+  const lignes = passees.map(function(d){
+    const k = st.id + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+    const v = tout[k] || {};
+    const iso = ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2);
+    const jour = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'][d.getDay()];
+
+    if (v.presence === 'absent'){
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f7fafc;opacity:.6;">'
+        + '<div style="min-width:66px;font-size:12px;font-weight:700;color:#a0aec0;">' + jour + ' ' + iso + '</div>'
+        + '<div style="flex:1;font-size:12px;color:#e53e3e;">Absent — ' + (v.motif || 'sans motif') + '</div></div>';
+    }
+
+    const signe = !!(v.matin_alt || v.am_alt);
+    const contresigne = !!(v.matin_form || v.am_form);
+
+    if (contresigne) valides++;
+    else if (signe) aValider++;
+    else sansSignature++;
+
+    let etat, bouton = '';
+    if (contresigne){
+      etat = '<span style="font-size:11.5px;color:#38a169;font-weight:700;">✓ Contresigné</span>';
+    } else if (signe){
+      etat = '<span style="font-size:11.5px;color:#dd6b20;font-weight:700;">À valider</span>';
+      bouton = '<button class="ctr-jour" data-iso="' + JTCF.isoJour(d) + '" '
+        + 'style="padding:5px 12px;background:#38a169;color:#fff;border:none;border-radius:7px;'
+        + 'font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;">Valider</button>';
+    } else {
+      etat = '<span style="font-size:11.5px;color:#a0aec0;">Non signé</span>';
+    }
+
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f7fafc;">'
+      + '<div style="min-width:66px;font-size:12px;font-weight:700;color:var(--bleu-fonce);">' + jour + ' ' + iso + '</div>'
+      + '<div style="flex:1;">' + etat + '</div>' + bouton + '</div>';
+  }).join('');
+
+  zone.innerHTML =
+    '<div style="display:flex;gap:8px;margin-bottom:10px;font-size:11px;">'
+    + '<span style="padding:3px 9px;border-radius:20px;background:#f0fff4;color:#38a169;font-weight:700;">'
+    + valides + ' contresigné' + (valides>1?'s':'') + '</span>'
+    + '<span style="padding:3px 9px;border-radius:20px;background:#fffaf0;color:#dd6b20;font-weight:700;">'
+    + aValider + ' à valider</span>'
+    + (sansSignature ? '<span style="padding:3px 9px;border-radius:20px;background:#f7fafc;color:#a0aec0;font-weight:700;">'
+        + sansSignature + ' non signé' + (sansSignature>1?'s':'') + '</span>' : '')
+    + '</div>'
+    + '<div style="max-height:260px;overflow-y:auto;">' + lignes + '</div>';
+
+  const btn = document.getElementById('btnContresignTout');
+  if (btn){
+    btn.disabled = !aValider;
+    btn.style.opacity = aValider ? '1' : '.5';
+    btn.textContent = aValider ? ('✅ Contresigner les ' + aValider + ' journées') : '✅ Tout est contresigné';
+  }
+
+  // Un clic, une journée.
+  zone.querySelectorAll('.ctr-jour').forEach(function(b){
+    b.addEventListener('click', async function(){
+      b.disabled = true; b.textContent = '⏳';
+      const p = b.getAttribute('data-iso').split('-');
+      await contresignerJour(st, new Date(+p[0], +p[1]-1, +p[2]));
+      chargerContresign(st);
+    });
+  });
+}
+
+// Marque la journée comme validée par le tuteur, avec sa trace.
+async function contresignerJour(st, d){
+  const marque = 'contresigne|' + (st.tuteur || 'JT Conseil Formation') + '|' + new Date().toISOString();
+  const k = cleStage(st.id, d);
+  const v = await litChemin(k) || {};
+  if (v.matin_alt) await set(ref(db, k + '/matin_form'), marque);
+  if (v.am_alt)    await set(ref(db, k + '/am_form'), marque);
+  videCache();
+}
+
+(function(){
+  const b = document.getElementById('btnContresignTout');
+  if (!b) return;
+  b.addEventListener('click', async function(){
+    const st = (allStages||[]).filter(function(x){ return x.id === editingStage; })[0];
+    if (!st) return;
+
+    const journees = JTCF.seancesDeStage(st);
+    const auj = new Date(); auj.setHours(23,59,59,0);
+    const tout = await litChemin('emargementsStage') || {};
+
+    const aFaire = journees.filter(function(d){
+      if (d > auj) return false;
+      const k = st.id + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
+      const v = tout[k] || {};
+      if (v.presence === 'absent') return false;
+      return (v.matin_alt || v.am_alt) && !(v.matin_form || v.am_form);
+    });
+
+    if (!aFaire.length) return;
+    if (!confirm('Contresigner ' + aFaire.length + ' journée(s) pour ' + st.nom + ' ?\n\n'
+      + 'Vous attestez de sa présence sur ces journées.')) return;
+
+    b.disabled = true; b.textContent = '⏳ Validation...';
+    try {
+      for (let i = 0; i < aFaire.length; i++) await contresignerJour(st, aFaire[i]);
+      chargerContresign(st);
+    } catch(e){
+      alert('Validation impossible : ' + e.message);
+      b.disabled = false;
+    }
+  });
+})();
+
 /* ---- Attestation de présence (PDF) --------------------------------------
    Document remis à l'établissement d'origine du stagiaire. Il récapitule
    les journées effectuées et les absences, et se termine par les deux
@@ -1760,7 +1946,7 @@ async function attestationStage(st){
 
   const H = JTCF.heuresStage(st);
   const lignes = [];
-  let hPres = 0, hAbs = 0, nbAbs = 0;
+  let hPres = 0, hAbs = 0, nbAbs = 0, nbContresignes = 0;
 
   journees.forEach(function(d){
     const cle = st.id + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate();
@@ -1778,11 +1964,15 @@ async function attestationStage(st){
            : h > 0 ? 'Présent (demi-journée)'
            : 'Non signé';
     }
+    const contresigne = !!(v.matin_form || v.am_form);
+    if (contresigne) nbContresignes++;
+
     lignes.push([
       ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear(),
       ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][d.getDay()],
       etat,
-      h ? h.toString().replace('.',',') + ' h' : '—'
+      h ? h.toString().replace('.',',') + ' h' : '—',
+      contresigne ? 'Oui' : '-'
     ]);
   });
 
@@ -1829,6 +2019,7 @@ async function attestationStage(st){
   doc.text('Absences : ' + nbAbs + ' jour(s)', 145, y+2);
   doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor.apply(doc, GRIS);
   doc.text('Volume theorique : ' + String(journees.length * H.jour).replace('.',',') + ' h', 20, y+9);
+  doc.text('Journees contresignees par le tuteur : ' + nbContresignes + ' / ' + journees.length, 80, y+9);
   y += 24;
 
   // Tableau
@@ -1836,7 +2027,8 @@ async function attestationStage(st){
     doc.setFillColor.apply(doc, BLEU); doc.rect(15, y-5, 180, 8, 'F');
     doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8);
     doc.text('DATE', 18, y); doc.text('JOUR', 45, y);
-    doc.text('PRESENCE', 80, y); doc.text('HEURES', 170, y);
+    doc.text('PRESENCE', 80, y); doc.text('HEURES', 152, y);
+    doc.text('VISA', 178, y);
     y += 8;
     doc.setTextColor(0,0,0); doc.setFont('helvetica','normal');
   }
@@ -1852,7 +2044,9 @@ async function attestationStage(st){
     else if (l[2] === 'Non signe' || l[2] === 'Non signé') doc.setTextColor(200,120,40);
     else doc.setTextColor(0,0,0);
     doc.text(l[0], 18, y); doc.text(l[1], 45, y);
-    doc.text(l[2].substring(0,58), 80, y); doc.text(l[3], 170, y);
+    doc.text(l[2].substring(0,48), 80, y); doc.text(l[3], 152, y);
+    if (l[4] === 'Oui'){ doc.setTextColor(40,140,80); doc.text('OK', 180, y); }
+    else { doc.setTextColor(170,170,170); doc.text('-', 182, y); }
     y += 6.5;
   });
 
@@ -1867,6 +2061,10 @@ async function attestationStage(st){
   doc.setFontSize(8); doc.setFont('helvetica','bold');
   doc.text('Le stagiaire', 18, y+5);
   doc.text('Le tuteur - ' + (st.tuteur || 'JT Conseil Formation'), 113, y+5);
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor.apply(doc, GRIS);
+  doc.text('La colonne VISA indique les journees contresignees par le tuteur dans l\'application,', 15, y+36);
+  doc.text('au fur et a mesure du stage.', 15, y+40);
 
   const nomFichier = 'Attestation_stage_' + (st.nom||st.id).replace(/[^A-Za-z0-9]/g,'_') + '.pdf';
   doc.save(nomFichier);
