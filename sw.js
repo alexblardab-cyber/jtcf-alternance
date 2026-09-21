@@ -1,96 +1,85 @@
-// ============================================================
-// JTCF — Service Worker v1.0
-// Notifications push locales — rappels signature émargement
-// ============================================================
+/* ==========================================================================
+   JTCF — Service worker
+   --------------------------------------------------------------------------
+   Deux rôles, et un seul principe : ne JAMAIS servir une version périmée
+   de l'application.
 
-const CACHE_NAME = 'jtcf-sw-v1';
+   1. Rendre l'application installable sur ordinateur et sur Android.
+   2. Afficher une page lisible quand il n'y a pas de réseau.
 
-self.addEventListener('install', function(e) {
+   Stratégie « réseau d'abord » : chaque page est demandée au serveur.
+   Le cache ne sert que de secours hors connexion. C'est volontaire —
+   une mise à jour déposée sur GitHub doit arriver tout de suite.
+   ========================================================================== */
+
+const CACHE = 'jtcf-v3';
+
+// On ne met en cache que l'habillage, jamais les données.
+const BASE = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icone-192.png',
+  './icone-512.png'
+];
+
+self.addEventListener('install', function (e) {
+  // La nouvelle version prend la main sans attendre la fermeture des onglets.
   self.skipWaiting();
-});
-
-self.addEventListener('activate', function(e) {
-  e.waitUntil(clients.claim());
-});
-
-// Réception d'un message depuis l'appli
-self.addEventListener('message', function(e) {
-  if (e.data && e.data.type === 'PROGRAMMER_NOTIFS') {
-    programmerNotifications(e.data.jourCentre, e.data.nom);
-  }
-});
-
-// Notification push reçue depuis le serveur (future extension FCM)
-self.addEventListener('push', function(e) {
-  const data = e.data ? e.data.json() : {};
   e.waitUntil(
-    self.registration.showNotification(data.title || '✍️ JTCF — Émargement', {
-      body: data.body || 'N\'oubliez pas de signer votre feuille d\'émargement !',
-      icon: 'https://alexblardab-cyber.github.io/jtcf-alternance/icon-192.png',
-      badge: 'https://alexblardab-cyber.github.io/jtcf-alternance/icon-192.png',
-      vibrate: [200, 100, 200],
-      tag: 'jtcf-emargement',
-      requireInteraction: true,
-      data: { url: e.data ? data.url : 'https://alexblardab-cyber.github.io/jtcf-alternance/' }
+    caches.open(CACHE).then(function (c) {
+      return c.addAll(BASE).catch(function () { /* un fichier manquant ne bloque pas */ });
     })
   );
 });
 
-// Clic sur notification → ouvrir l'appli
-self.addEventListener('notificationclick', function(e) {
-  e.notification.close();
-  const url = (e.notification.data && e.notification.data.url)
-    || 'https://alexblardab-cyber.github.io/jtcf-alternance/';
-  e.waitUntil(clients.openWindow(url));
+self.addEventListener('activate', function (e) {
+  e.waitUntil(
+    caches.keys().then(function (noms) {
+      return Promise.all(noms.map(function (n) {
+        if (n !== CACHE) return caches.delete(n);   // on efface les anciennes versions
+      }));
+    }).then(function () { return self.clients.claim(); })
+  );
 });
 
-// ── Programmation des rappels locaux ──────────────────────────
-function programmerNotifications(jourCentre, nom) {
-  const jourMap = { Lundi:1, Mardi:2, Mercredi:3, Jeudi:4, Vendredi:5 };
-  const jourNum = jourMap[jourCentre];
-  if (!jourNum) return;
+self.addEventListener('fetch', function (e) {
+  const req = e.request;
 
-  const maintenant = new Date();
-  const jourActuel = maintenant.getDay();
+  // On ne touche ni à Firebase, ni aux scripts externes, ni aux écritures.
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
 
-  // Si c'est bien le jour de centre
-  if (jourActuel !== jourNum) return;
-
-  // Rappel matin — 8h30
-  const matin = new Date(maintenant);
-  matin.setHours(8, 30, 0, 0);
-  const delaiMatin = matin - maintenant;
-
-  // Rappel après-midi — 13h30
-  const aprem = new Date(maintenant);
-  aprem.setHours(13, 30, 0, 0);
-  const delaiAprem = aprem - maintenant;
-
-  if (delaiMatin > 0) {
-    setTimeout(function() {
-      self.registration.showNotification('✍️ JTCF — Rappel signature matin', {
-        body: nom ? `${nom}, pensez à signer votre émargement du matin !` : 'Pensez à signer votre émargement du matin !',
-        icon: 'https://alexblardab-cyber.github.io/jtcf-alternance/icon-192.png',
-        badge: 'https://alexblardab-cyber.github.io/jtcf-alternance/icon-192.png',
-        vibrate: [200, 100, 200],
-        tag: 'jtcf-matin',
-        requireInteraction: true,
-        data: { url: 'https://alexblardab-cyber.github.io/jtcf-alternance/livret.html' }
-      });
-    }, delaiMatin);
-  }
-
-  if (delaiAprem > 0) {
-    setTimeout(function() {
-      self.registration.showNotification('✍️ JTCF — Rappel signature après-midi', {
-        body: nom ? `${nom}, pensez à signer votre émargement de l'après-midi !` : 'Pensez à signer votre émargement de l\'après-midi !',
-        icon: 'https://alexblardab-cyber.github.io/jtcf-alternance/icon-192.png',
-        badge: 'https://alexblardab-cyber.github.io/jtcf-alternance/icon-192.png',
-        vibrate: [200, 100, 200],
-        tag: 'jtcf-aprem',
-        requireInteraction: true,
-        data: { url: 'https://alexblardab-cyber.github.io/jtcf-alternance/livret.html' }
-      });
-    }, delaiAprem);
-  }
-}
+  e.respondWith(
+    fetch(req)
+      .then(function (rep) {
+        // Copie de secours pour le mode hors connexion.
+        if (rep && rep.status === 200) {
+          const copie = rep.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copie); });
+        }
+        return rep;
+      })
+      .catch(function () {
+        return caches.match(req).then(function (c) {
+          if (c) return c;
+          return new Response(
+            '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">'
+            + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            + '<title>Hors connexion</title></head>'
+            + '<body style="font-family:Segoe UI,sans-serif;background:#2a3f4e;color:#fff;'
+            + 'display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;">'
+            + '<div style="text-align:center;max-width:320px;">'
+            + '<div style="font-size:40px;">📡</div>'
+            + '<div style="font-size:18px;font-weight:800;color:#C9A227;margin-top:10px;">Pas de connexion</div>'
+            + '<div style="font-size:13px;line-height:1.6;margin-top:10px;opacity:.85;">'
+            + 'Votre émargement a besoin d\'Internet pour être enregistré. '
+            + 'Reconnectez-vous au wifi du centre, puis réessayez.</div>'
+            + '</div></body></html>',
+            { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+          );
+        });
+      })
+  );
+});

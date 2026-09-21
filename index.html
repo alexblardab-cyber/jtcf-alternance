@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>JTCF – Connexion</title>
+
+<!-- ── Application installable ──────────────────────────────────────────────
+     Ces quatre lignes sont ce qui permet à Windows et à Android de proposer
+     l'installation. Sans elles, l'application reste un simple site web.
+     ─────────────────────────────────────────────────────────────────────── -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2a3f4e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="JTCF">
+<link rel="apple-touch-icon" href="icone-192.png">
+<link rel="icon" href="icone-192.png">
+
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(160deg, #2a3f4e, #3d5a6e); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -26,6 +38,8 @@
   .error-msg.visible { display: block; }
   .footer-note { margin-top: 24px; font-size: 11px; color: var(--gris); line-height: 1.6; }
   .footer-note strong { color: var(--bleu); }
+  .btn-install { display: none; width: 100%; margin-top: 14px; padding: 12px; background: var(--or-pale); color: #744210; border: 2px solid var(--or); border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .aide-install { display: none; margin-top: 14px; background: var(--or-pale); border-left: 3px solid var(--or); border-radius: 0 8px 8px 0; padding: 11px 13px; font-size: 11.5px; color: #744210; line-height: 1.6; text-align: left; }
 </style>
 </head>
 <body>
@@ -49,8 +63,13 @@
   </div>
   <button class="btn" id="btnConnect">ACCÉDER À MON ESPACE</button>
   <div class="error-msg" id="errorMsg">❌ Identifiant ou code incorrect.</div>
+
+  <button class="btn-install" id="btnInstall">⬇️ Installer l'application</button>
+  <div class="aide-install" id="aideInstall"></div>
+
   <div class="footer-note">Identifiant oublié ?<br>Contactez-nous : <a href="mailto:contact@tbrgroup.fr" style="color:#3d5a6e;font-weight:700;">contact@tbrgroup.fr</a></div>
 </div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -106,7 +125,7 @@ async function connexion(e) {
   btn.textContent = 'CONNEXION...';
 
   try {
-    // Les cinq espaces sont interrogés en parallèle : une seule attente.
+    // Les six espaces sont interrogés en parallèle : une seule attente.
     const trouves = await Promise.all(
       ESPACES.map(function (e2) {
         return get(ref(db, e2.noeud + '/' + id))
@@ -140,6 +159,7 @@ document.getElementById('btnConnect').addEventListener('touchend', connexion, {p
 document.getElementById('btnConnect').addEventListener('click', connexion);
 document.addEventListener('keydown', function(e) { if (e.key === 'Enter') connexion(); });
 </script>
+
 <script>
 function toggleCode() {
   const input = document.getElementById('code');
@@ -147,6 +167,59 @@ function toggleCode() {
   if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
   else { input.type = 'password'; btn.textContent = '👁️'; }
 }
+
+/* ── Installation sur ordinateur et sur téléphone ─────────────────────────
+   Chrome et Edge proposent l'installation d'eux-mêmes ; on récupère leur
+   proposition pour l'offrir par un vrai bouton. Safari sur iPhone ne le
+   permet pas : on explique alors la manipulation en toutes lettres.
+   ─────────────────────────────────────────────────────────────────────── */
+(function () {
+  var proposition = null;
+  var btn = document.getElementById('btnInstall');
+  var aide = document.getElementById('aideInstall');
+
+  // Déjà installée ? On ne propose rien.
+  var installee = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    proposition = e;
+    if (!installee) btn.style.display = 'block';
+  });
+
+  btn.addEventListener('click', async function () {
+    if (!proposition) return;
+    btn.disabled = true;
+    proposition.prompt();
+    try { await proposition.userChoice; } catch (e) { }
+    proposition = null;
+    btn.style.display = 'none';
+  });
+
+  window.addEventListener('appinstalled', function () {
+    btn.style.display = 'none';
+    aide.style.display = 'none';
+  });
+
+  // iPhone et iPad : pas de proposition automatique, on guide.
+  var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (iOS && !installee) {
+    aide.innerHTML = '<strong>Installer sur votre iPhone</strong><br>'
+      + 'Touchez le bouton <strong>Partager</strong> en bas de Safari, '
+      + 'puis <strong>Sur l\'écran d\'accueil</strong>.';
+    aide.style.display = 'block';
+  }
+
+  // Le service worker rend l'installation possible et gère le hors connexion.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {
+        // Une inscription qui échoue ne doit jamais empêcher la connexion.
+      });
+    });
+  }
+})();
 </script>
 </body>
 </html>
