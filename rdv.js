@@ -9,6 +9,10 @@
    2. DEMANDES — si rien ne convient, l'apprenant décrit son besoin et ses
       disponibilités. L'équipe confirme en proposant un moment.
 
+   3. CONVOCATIONS — le sens inverse : l'équipe propose une date à un
+      apprenant précis. Il accepte, ou il indique qu'il ne peut pas venir
+      en expliquant pourquoi. Rien n'est imposé sans son accord.
+
    Un rendez-vous peut réunir PLUSIEURS personnes : un entretien à deux, ou
    toute l'équipe pédagogique. Le champ « par » reste une simple chaîne —
    « EF » ou « AB,MG,EF » — ce qui garde lisibles les créneaux déjà créés.
@@ -16,9 +20,10 @@
    Le calendrier est PARTAGÉ : chacun bascule entre son propre planning et
    celui de toute l'équipe.
 
-   Deux nœuds Firebase :
+   Trois nœuds Firebase :
       creneaux/     → les disponibilités publiées
-      rdvDemandes/  → les demandes libres
+      rdvDemandes/  → les demandes venant des apprenants
+      convocations/ → les propositions venant de l'équipe
 
    Ce fichier ne connaît pas Firebase : la page qui l'utilise lui prête deux
    fonctions de lecture/écriture. Il sert donc aussi bien au livret de
@@ -55,6 +60,23 @@
 
   var api = null;      // { lire(chemin), ecrire(chemin, valeur) }
   var moi = null;      // { id, nom, type }
+  var annuaire = [];   // [{ id, nom, type }] — les personnes que l'on peut convoquer
+
+  // rdv.js va chercher la liste lui-même : aucune page n'a à la lui fournir.
+  async function chargerAnnuaire() {
+    if (annuaire.length) return annuaire;
+    var lots = await Promise.all([
+      api.lire('alternants'), api.lire('stagiairesFC'), api.lire('stagiaires')
+    ]);
+    var types = ['alt', 'fc', 'stg'];
+    annuaire = [];
+    lots.forEach(function (o, i) {
+      Object.keys(o || {}).forEach(function (k) {
+        annuaire.push({ id: k, nom: (o[k] && o[k].nom) || k, type: types[i] });
+      });
+    });
+    return annuaire;
+  }
 
   function id(prefixe) {
     return prefixe + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -135,7 +157,17 @@
 
     var creneaux = objetVersListe(await api.lire('creneaux'));
     var demandes = objetVersListe(await api.lire('rdvDemandes'));
+    var convocs  = objetVersListe(await api.lire('convocations'));
     var auj = isoAujourdhui();
+
+    // Une convocation en attente de réponse passe avant tout le reste.
+    var maConvoc = convocs.filter(function (c) {
+      return c.pour === moi.id && c.etat === 'propose' && c.date >= auj;
+    }).sort(trierCreneaux)[0];
+
+    var convocAcceptee = convocs.filter(function (c) {
+      return c.pour === moi.id && c.etat === 'accepte' && c.date >= auj;
+    }).sort(trierCreneaux)[0];
 
     var monCreneau = creneaux.filter(function (c) {
       return c.pris && c.pris.id === moi.id && c.date >= auj;
@@ -146,11 +178,14 @@
     }).sort(function (a, b) { return (b.le || '').localeCompare(a.le || ''); })[0];
 
     var html = '';
+    if (maConvoc) html += carteConvocation(maConvoc);
+    if (convocAcceptee) html += carteConvocAcceptee(convocAcceptee);
+
     if (monCreneau) html += carteMonRdv(monCreneau);
     else if (maDemande) html += carteMaDemande(maDemande);
-    else html += blocExplication();
+    else if (!maConvoc && !convocAcceptee) html += blocExplication();
 
-    if (!monCreneau) {
+    if (!monCreneau && !maConvoc) {
       var libres = creneaux.filter(function (c) { return !c.pris && c.date >= auj; }).sort(trierCreneaux);
       html += blocCreneaux(libres);
       if (!maDemande) html += blocDemande(libres.length);
@@ -158,6 +193,47 @@
 
     boite.innerHTML = html;
     brancherApprenant(boite);
+  }
+
+  // L'équipe propose une date : l'apprenant répond. Rien n'est imposé.
+  function carteConvocation(c) {
+    return '<div class="card" style="border-left:4px solid #dd6b20;">'
+      + '<div class="card-title">📣 Proposition de rendez-vous</div>'
+      + '<div style="font-size:12.5px;color:#4a5568;line-height:1.6;margin-bottom:10px;">'
+      + ech(libelleParticipants(c.par)) + ' souhaite vous rencontrer. '
+      + 'Dites-nous si cette date vous convient.</div>'
+      + '<div style="font-size:17px;font-weight:800;color:var(--bleu-fonce);">'
+      + joli(c.date) + ' à ' + ech(c.heure) + '</div>'
+      + '<div style="font-size:12px;color:#718096;margin-top:6px;">📍 ' + ech(c.lieu || LIEU_DEFAUT) + '</div>'
+      + '<div style="font-size:12px;color:#718096;margin-top:4px;">💬 ' + ech(c.motif || 'Point sur votre parcours') + '</div>'
+      + (c.message ? '<div style="margin-top:10px;padding:10px 12px;background:var(--or-pale);'
+          + 'border-left:3px solid var(--or);border-radius:0 8px 8px 0;font-size:12.5px;color:#744210;'
+          + 'line-height:1.6;">' + ech(c.message) + '</div>' : '')
+      + '<button class="btn-convoc-oui" data-c="' + c._id + '" '
+      + 'style="width:100%;margin-top:14px;padding:13px;background:#38a169;color:#fff;border:none;'
+      + 'border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;">'
+      + '✅ Je serai présent(e)</button>'
+      + '<button class="btn-convoc-non" data-c="' + c._id + '" '
+      + 'style="width:100%;margin-top:8px;padding:11px;background:#fff;color:#4a5568;'
+      + 'border:2px solid #e2e8f0;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;'
+      + 'font-family:inherit;">Je ne peux pas ce jour-là</button>'
+      + '</div>';
+  }
+
+  function carteConvocAcceptee(c) {
+    return '<div class="card" style="border-left:4px solid #38a169;">'
+      + '<div class="card-title">✅ Votre rendez-vous</div>'
+      + '<div style="font-size:17px;font-weight:800;color:var(--bleu-fonce);">'
+      + joli(c.date) + ' à ' + ech(c.heure) + '</div>'
+      + '<div style="font-size:13px;color:#4a5568;margin-top:6px;">avec <strong>'
+      + ech(libelleParticipants(c.par)) + '</strong></div>'
+      + '<div style="font-size:12px;color:#718096;margin-top:8px;">📍 ' + ech(c.lieu || LIEU_DEFAUT) + '</div>'
+      + '<div style="font-size:12px;color:#718096;margin-top:4px;">💬 ' + ech(c.motif || '—') + '</div>'
+      + '<button class="btn-convoc-annuler" data-c="' + c._id + '" '
+      + 'style="width:100%;margin-top:14px;padding:11px;background:#fff5f5;color:#e53e3e;'
+      + 'border:1px solid #fed7d7;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;'
+      + 'font-family:inherit;">Prévenir que je ne pourrai pas venir</button>'
+      + '</div>';
   }
 
   function carteMonRdv(c) {
@@ -306,6 +382,13 @@
     if (a2) a2.addEventListener('click', function () { annulerDemande(a2.getAttribute('data-demande'), boite); });
     var env = boite.querySelector('#rdvEnvoyer');
     if (env) env.addEventListener('click', function () { envoyerDemande(boite, env); });
+
+    boite.querySelectorAll('.btn-convoc-oui').forEach(function (b) {
+      b.addEventListener('click', function () { repondreConvocation(b.getAttribute('data-c'), true, boite); });
+    });
+    boite.querySelectorAll('.btn-convoc-non, .btn-convoc-annuler').forEach(function (b) {
+      b.addEventListener('click', function () { repondreConvocation(b.getAttribute('data-c'), false, boite); });
+    });
     var rev = boite.querySelector('#rdvRevoir');
     if (rev && global.JTCF_NEWS) rev.addEventListener('click', function () { global.JTCF_NEWS.revoir(); });
   }
@@ -326,6 +409,25 @@
     });
     alert('✅ Rendez-vous confirmé\n\n' + joli(c.date) + ' à ' + c.heure
       + '\navec ' + libelleParticipants(c.par));
+    rendreApprenant(boite);
+  }
+
+  async function repondreConvocation(cid, accepte, boite) {
+    if (accepte) {
+      await api.ecrire('convocations/' + cid + '/etat', 'accepte');
+      await api.ecrire('convocations/' + cid + '/repondu', new Date().toISOString());
+      await api.ecrire('convocations/' + cid + '/notifieReponse', false);
+      alert('✅ C\'est noté, nous vous attendons.');
+    } else {
+      var raison = prompt('Vous ne pouvez pas venir à cette date.\n\n'
+        + 'Dites-nous pourquoi, et quand vous seriez disponible :', '');
+      if (raison === null) return;
+      await api.ecrire('convocations/' + cid + '/etat', 'refuse');
+      await api.ecrire('convocations/' + cid + '/reponse', (raison || '').trim());
+      await api.ecrire('convocations/' + cid + '/repondu', new Date().toISOString());
+      await api.ecrire('convocations/' + cid + '/notifieReponse', false);
+      alert('C\'est noté. Nous revenons vers vous avec une autre proposition.');
+    }
     rendreApprenant(boite);
   }
 
@@ -512,6 +614,8 @@
 
     var creneaux = objetVersListe(await api.lire('creneaux'));
     var demandes = objetVersListe(await api.lire('rdvDemandes'));
+    var convocs  = objetVersListe(await api.lire('convocations'));
+    await chargerAnnuaire();
     var auj = isoAujourdhui();
 
     // Le calendrier est partagé : chacun bascule entre son planning et celui
@@ -590,6 +694,120 @@
             + '</div>';
         });
       }
+      h += '</div>';
+    }
+
+    // Convocations : ce que j'ai proposé, et où ça en est
+    var mesConvocs = convocs.filter(function (c) {
+      return retenu(c) && c.date >= auj && c.etat !== 'annule';
+    }).sort(trierCreneaux);
+    var refusees = convocs.filter(function (c) {
+      return retenu(c) && c.etat === 'refuse';
+    }).sort(function (a, b) { return (b.repondu || '').localeCompare(a.repondu || ''); });
+
+    if (refusees.length) {
+      h += '<div class="card"><div class="card-title">\u21a9\ufe0f Propositions d\u00e9clin\u00e9es'
+        + '<span style="float:right;font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;'
+        + 'background:#fffaf0;color:#dd6b20;">' + refusees.length + '</span></div>';
+      refusees.forEach(function (c) {
+        h += '<div style="padding:11px 12px;margin-bottom:8px;background:#fffaf0;'
+          + 'border-left:3px solid #dd6b20;border-radius:8px;">'
+          + '<div style="font-size:13px;font-weight:800;color:var(--bleu-fonce);">' + ech(c.nom) + '</div>'
+          + '<div style="font-size:11.5px;color:#718096;margin-top:2px;">'
+          + 'Propos\u00e9 le ' + joli(c.date) + ' \u00e0 ' + ech(c.heure) + '</div>'
+          + (c.reponse ? '<div style="font-size:12.5px;color:#4a5568;margin-top:5px;line-height:1.55;">'
+              + '\ud83d\udcac ' + ech(c.reponse) + '</div>' : '')
+          + '<button class="convoc-classer" data-c="' + c._id + '" style="margin-top:9px;padding:7px 13px;'
+          + 'background:#edf2f7;color:#4a5568;border:none;border-radius:8px;font-size:12px;'
+          + 'font-weight:700;cursor:pointer;font-family:inherit;">Classer</button>'
+          + '</div>';
+      });
+      h += '</div>';
+    }
+
+    // Convoquer un apprenant
+    var options = '<option value="">\u2014 Choisir une personne \u2014</option>';
+    if (annuaire.length) {
+      var parType = { alt: [], fc: [], stg: [] };
+      annuaire.forEach(function (p) { (parType[p.type] || parType.alt).push(p); });
+      var titres = { alt: 'Alternants', fc: 'Formation continue', stg: 'Stagiaires' };
+      ['alt', 'fc', 'stg'].forEach(function (t) {
+        if (!parType[t].length) return;
+        options += '<optgroup label="' + titres[t] + '">';
+        parType[t].sort(function (a, b) { return (a.nom || '').localeCompare(b.nom || ''); })
+          .forEach(function (p) {
+            options += '<option value="' + ech(p.id) + '|' + ech(p.type) + '|' + ech(p.nom) + '">'
+              + ech(p.nom) + '</option>';
+          });
+        options += '</optgroup>';
+      });
+    }
+
+    var casesC = '';
+    Object.keys(CONSEILLERS).forEach(function (k) {
+      var coche = (role === k) || (role === 'admin' && k === 'AB');
+      casesC += '<label style="display:inline-flex;align-items:center;gap:7px;padding:7px 11px;'
+        + 'margin:0 6px 6px 0;border:2px solid #edf2f7;border-radius:20px;cursor:pointer;font-size:12px;'
+        + 'font-weight:700;color:#2d3748;">'
+        + '<input type="checkbox" class="cv-qui" value="' + k + '"' + (coche ? ' checked' : '')
+        + ' style="width:15px;height:15px;" />' + ech(CONSEILLERS[k].nom.split(' ')[0]) + '</label>';
+    });
+
+    var motifsC = '<option value="">\u2014 Choisir \u2014</option>';
+    MOTIFS.forEach(function (m) { motifsC += '<option value="' + ech(m) + '">' + ech(m) + '</option>'; });
+
+    h += '<div class="card"><div class="card-title">\ud83d\udce3 Convoquer un apprenant</div>'
+      + '<div style="font-size:12px;color:#718096;line-height:1.6;margin-bottom:12px;">'
+      + 'Vous proposez une date. La personne la voit dans son livret et r\u00e9pond : '
+      + 'elle accepte, ou elle explique pourquoi elle ne peut pas venir.</div>';
+
+    if (!annuaire.length) {
+      h += '<div style="font-size:12.5px;color:#dd6b20;">Aucun apprenant enregistr\u00e9 '
+        + 'pour le moment.</div></div>';
+    } else {
+      h += '<div class="form-field"><label class="form-label">Qui convoquer ?</label>'
+        + '<select class="form-select" id="cvQui">' + options + '</select></div>'
+        + '<div class="form-field"><label class="form-label">De la part de</label>'
+        + '<div>' + casesC + '</div></div>'
+        + '<div style="display:flex;gap:10px;">'
+        + '<div class="form-field" style="flex:1.4;"><label class="form-label">Date</label>'
+        + '<input class="form-input" type="date" id="cvDate" style="text-transform:none;" /></div>'
+        + '<div class="form-field" style="flex:1;"><label class="form-label">Heure</label>'
+        + '<input class="form-input" type="time" id="cvHeure" value="14:00" style="text-transform:none;" /></div>'
+        + '</div>'
+        + '<div class="form-field"><label class="form-label">Motif</label>'
+        + '<select class="form-select" id="cvMotif">' + motifsC + '</select></div>'
+        + '<div class="form-field"><label class="form-label">Message (facultatif)</label>'
+        + '<textarea class="form-input" id="cvMessage" rows="3" style="text-transform:none;resize:vertical;'
+        + 'font-family:inherit;" placeholder="Ce que vous souhaitez aborder"></textarea></div>'
+        + '<div class="form-field"><label class="form-label">Lieu</label>'
+        + '<input class="form-input" id="cvLieu" value="' + ech(LIEU_DEFAUT) + '" style="text-transform:none;" /></div>'
+        + '<button id="cvEnvoyer" class="btn-primary" style="width:100%;padding:12px;border:none;'
+        + 'border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;'
+        + 'background:linear-gradient(135deg,var(--bleu-fonce),var(--bleu));color:#fff;">'
+        + 'Envoyer la proposition</button></div>';
+    }
+
+    // Suivi des propositions envoyées
+    if (vueEquipe === 'liste' && mesConvocs.length) {
+      h += '<div class="card"><div class="card-title">\ud83d\udce4 Propositions envoy\u00e9es</div>';
+      mesConvocs.forEach(function (c) {
+        var et = c.etat === 'accepte' ? ['\u2705 Accept\u00e9e', '#38a169']
+               : (c.etat === 'refuse' ? ['\u21a9\ufe0f D\u00e9clin\u00e9e', '#dd6b20']
+               : ['\u23f3 En attente', '#a0aec0']);
+        h += '<div style="display:flex;gap:11px;padding:10px 0;border-bottom:1px solid #f0f2f5;">'
+          + '<div style="min-width:52px;"><div style="font-size:14px;font-weight:800;color:' + couleurDe(c.par) + ';">'
+          + ech(c.heure) + '</div><div style="font-size:10px;color:#a0aec0;">'
+          + ech(c.date.slice(8) + '/' + c.date.slice(5, 7)) + '</div></div>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">' + ech(c.nom) + '</div>'
+          + '<div style="font-size:11px;color:' + et[1] + ';font-weight:700;">' + et[0]
+          + (c.motif ? ' \u00b7 ' + ech(c.motif) : '') + '</div>'
+          + '</div>'
+          + '<button class="convoc-retirer" data-c="' + c._id + '" title="Retirer" '
+          + 'style="background:none;border:none;color:#e53e3e;font-size:15px;cursor:pointer;">\u2715</button>'
+          + '</div>';
+      });
       h += '</div>';
     }
 
@@ -716,6 +934,63 @@
       });
     });
 
+    boite.querySelectorAll('.convoc-classer').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await api.ecrire('convocations/' + b.getAttribute('data-c') + '/etat', 'annule');
+        recharger();
+      });
+    });
+
+    boite.querySelectorAll('.convoc-retirer').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        if (!confirm('Retirer cette proposition ?')) return;
+        await api.ecrire('convocations/' + b.getAttribute('data-c'), null);
+        recharger();
+      });
+    });
+
+    var cv = boite.querySelector('#cvEnvoyer');
+    if (cv) cv.addEventListener('click', async function () {
+      var choix = boite.querySelector('#cvQui').value;
+      if (!choix) { alert('Choisissez la personne à convoquer.'); return; }
+
+      var qui = [];
+      boite.querySelectorAll('.cv-qui').forEach(function (c) { if (c.checked) qui.push(c.value); });
+      if (!qui.length) { alert('Indiquez de la part de qui.'); return; }
+
+      var date = boite.querySelector('#cvDate').value;
+      var heure = boite.querySelector('#cvHeure').value;
+      var motif = boite.querySelector('#cvMotif').value;
+      if (!date || !heure) { alert('Indiquez la date et l\'heure.'); return; }
+      if (!motif) { alert('Indiquez le motif — la personne doit savoir pourquoi.'); return; }
+
+      var p = choix.split('|');
+      var par = qui.join(',');
+
+      if (!confirm('Proposer à ' + p[2] + '\n'
+        + joli(date) + ' à ' + heure + '\n'
+        + 'de la part de ' + libelleParticipants(par) + ' ?')) return;
+
+      cv.disabled = true; cv.textContent = '⏳ Envoi...';
+      try {
+        await api.ecrire('convocations/' + id('v'), {
+          pour: p[0], type: p[1], nom: p[2],
+          par: par, date: date, heure: heure,
+          motif: motif,
+          message: boite.querySelector('#cvMessage').value.trim(),
+          lieu: boite.querySelector('#cvLieu').value.trim() || LIEU_DEFAUT,
+          etat: 'propose', reponse: '', repondu: '',
+          le: new Date().toISOString(), notifie: false, notifieReponse: true
+        });
+        alert('✅ Proposition envoyée\n\n' + p[2] + ' la verra dans son livret et vous répondra.');
+        recharger();
+      } catch (e) {
+        alert('Envoi impossible : ' + e.message);
+      } finally {
+        cv.disabled = false; cv.textContent = 'Envoyer la proposition';
+      }
+    });
+
     var pub = boite.querySelector('#crPublier');
     if (pub) pub.addEventListener('click', async function () {
       var qui = [];
@@ -764,13 +1039,24 @@
   /* ---- Compteur pour la pastille de l'onglet ------------------------------ */
 
   async function nombreEnAttente(role) {
-    var demandes = objetVersListe(await api.lire('rdvDemandes'));
-    return demandes.filter(function (d) {
+    var lots = await Promise.all([api.lire('rdvDemandes'), api.lire('convocations')]);
+    var demandes = objetVersListe(lots[0]);
+    var convocs = objetVersListe(lots[1]);
+
+    var n = demandes.filter(function (d) {
       if (d.etat !== 'demande') return false;
       if (role === 'admin') return true;
       if (d.avec === '?') return true;
       return participe(d.avec, role);
     }).length;
+
+    // Une proposition déclinée demande aussi une action de notre part.
+    n += convocs.filter(function (c) {
+      if (c.etat !== 'refuse') return false;
+      return role === 'admin' || participe(c.par, role);
+    }).length;
+
+    return n;
   }
 
   /* ---- Publication -------------------------------------------------------- */
