@@ -144,6 +144,40 @@
   <script src="adresse.js"></script>
   <script src="rdv.js"></script>
   <script src="nouveautes.js"></script>
+  <script>
+  /* ── Filet de sécurité ────────────────────────────────────────────────────
+     Si un fichier partagé n'a pas pu être chargé — dépôt incomplet, coupure
+     réseau, cache — la page continue de fonctionner au lieu de se figer.
+     Les fonctions annexes deviennent inertes ; l'émargement, lui, marche.
+     ──────────────────────────────────────────────────────────────────────── */
+  (function(){
+    var rien = function(){};
+    var vide = function(){ return Promise.resolve(); };
+    window.JTCF_NEWS = window.JTCF_NEWS || { verifier: rien, revoir: rien };
+    window.JTCF_ADRESSE = window.JTCF_ADRESSE || {
+      verifier: function(){ return false; }, ouvrir: rien,
+      valide: function(e){ return !!e && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e).trim()); }
+    };
+    window.JTCF_RDV = window.JTCF_RDV || {
+      connecter: rien, apprenant: vide, equipe: vide,
+      enAttente: function(){ return Promise.resolve(0); },
+      codes: function(){ return []; }, libelleParticipants: function(){ return "L'équipe"; }
+    };
+    // regles.js porte les règles de calcul : sans lui, mieux vaut le dire
+    // clairement que d'afficher des heures fausses.
+    if (!window.JTCF) {
+      document.addEventListener('DOMContentLoaded', function(){
+        var b = document.createElement('div');
+        b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;padding:14px;'
+          + 'background:#fffaf0;border-top:3px solid #dd6b20;color:#744210;font-size:13px;'
+          + 'font-family:sans-serif;text-align:center;line-height:1.5;';
+        b.innerHTML = 'Mise à jour en cours. Fermez et rouvrez l\'application dans quelques minutes. '
+          + 'Si le message persiste, prévenez le secrétariat.';
+        document.body.appendChild(b);
+      });
+    }
+  })();
+  </script>
 </head>
 <body>
 
@@ -486,11 +520,11 @@ const PLANNINGS_FC = {
     vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
   },
   AD: {
-    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
+    stages: [{debut:'2026-10-05', fin:'2026-10-30'}],
     vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
   },
   ACA: {
-    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
+    stages: [{debut:'2026-10-05', fin:'2026-10-30'}],
     vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
   },
   ACOM: {
@@ -830,7 +864,7 @@ function afficherEtapesCles() {
   } else if (groupe === 'AD') {
     etapes = [
       { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
-      { date: '12/10 → 06/11/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '05/10 → 30/10/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
       { date: '09 → 10/11/2026', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
       { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
       { date: '09/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
@@ -839,7 +873,7 @@ function afficherEtapesCles() {
   } else {
     etapes = [
       { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
-      { date: '12/10 → 06/11/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '05/10 → 30/10/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
       { date: '09 → 12/11/2026', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
       { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
       { date: '09/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
