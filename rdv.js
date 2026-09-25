@@ -60,6 +60,12 @@
   ];
 
   var LIEU_DEFAUT = 'Bureau JTCF — 20a rue du Général Lambert';
+
+  /* Alexandre et Marine reçoivent dans LE MÊME bureau : un rendez-vous pris
+     par l'un rend l'heure indisponible pour l'autre. Emilie a sa salle, elle
+     n'est pas concernée. Pour ajouter quelqu'un au bureau partagé, il suffit
+     d'ajouter son code ici.                                                  */
+  var BUREAU_PARTAGE = ['AB', 'MG'];
   var MOIS_VISIBLES = 12;        // on n'affiche pas au-delà d'un an
 
   /* ---- Utilitaires -------------------------------------------------------- */
@@ -187,17 +193,32 @@
         var fermeHeure = fermetures.some(function (f) {
           return f.date === isoJour && f.heure === h && (f.par === p.par || f.par === '*');
         });
-        var pris = occupes[cle(p.par, isoJour, h)];
+        var pris = occupantDe(occupes, p.par, isoJour, h);
         out.push({
           par: p.par, date: isoJour, heure: h, duree: p.duree || 30,
           lieu: p.lieu || LIEU_DEFAUT,
           etat: fermeHeure ? 'ferme'
               : (pris ? (pris.etat === 'demande' ? 'demande' : 'confirme') : 'libre'),
+          // Le bureau est-il occupé par un collègue plutôt que par soi-même ?
+          parCollegue: !!(pris && pris.par !== p.par),
           dossier: pris || null
         });
       });
     });
     return out.sort(function (a, b) { return a.heure.localeCompare(b.heure) || a.par.localeCompare(b.par); });
+  }
+
+  /* Qui occupe cette heure-là ? Pour le bureau partagé, on regarde aussi les
+     collègues : deux personnes ne peuvent pas recevoir en même temps.        */
+  function occupantDe(occupes, par, date, heure) {
+    var direct = occupes[cle(par, date, heure)];
+    if (direct) return direct;
+    if (BUREAU_PARTAGE.indexOf(par) < 0) return null;
+    for (var i = 0; i < BUREAU_PARTAGE.length; i++) {
+      var o = occupes[cle(BUREAU_PARTAGE[i], date, heure)];
+      if (o) return o;
+    }
+    return null;
   }
 
   // Les créneaux déjà engagés, rangés par clé pour un accès immédiat.
@@ -212,14 +233,15 @@
   async function chargerTout() {
     var lots = await Promise.all([
       api.lire('permanences'), api.lire('fermetures'), api.lire('creneaux'),
-      api.lire('rdvDemandes'), api.lire('convocations')
+      api.lire('rdvDemandes'), api.lire('convocations'), api.lire('passages')
     ]);
     return {
       permanences: objetVersListe(lots[0]),
       fermetures: objetVersListe(lots[1]),
       creneaux: objetVersListe(lots[2]),
       demandes: objetVersListe(lots[3]),
-      convocations: objetVersListe(lots[4])
+      convocations: objetVersListe(lots[4]),
+      passages: objetVersListe(lots[5])
     };
   }
 
@@ -610,18 +632,23 @@
   /* --- Ma semaine --- */
   function vueSemaine(d, role, auj) {
     var occupes = indexOccupes(d.creneaux);
-    var h = '<button id="rdvExterne" style="width:100%;padding:12px;border:1px dashed #cbd5e0;'
-      + 'border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:700;'
-      + 'cursor:pointer;color:#2a3f4e;margin-bottom:14px;">'
-      + '＋ Noter un rendez-vous (personne hors application)</button>';
+    var bouton = 'flex:1;padding:11px;border:1px dashed #cbd5e0;border-radius:10px;background:#fff;'
+      + 'font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;color:#2a3f4e;';
+    var h = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">'
+      + '<button id="rdvExterne" style="' + bouton + '">＋ Rendez-vous (hors appli)</button>'
+      + '<button id="rdvPassage" style="' + bouton + '">＋ Passage annoncé</button>'
+      + '</div>';
     var debut = new Date();
     for (var i = 0; i < 14; i++) {
       var j = new Date(debut); j.setDate(j.getDate() + i);
       var ij = iso(j);
       if (j.getDay() === 0 || j.getDay() === 6) continue;
 
+      // On partage le bureau : on voit aussi ce que le collègue y a prévu.
       var confirmes = d.creneaux.filter(function (c) {
-        return c.date === ij && c.etat === 'confirme' && (role === 'admin' || c.par === role);
+        if (c.date !== ij || c.etat !== 'confirme') return false;
+        if (role === 'admin' || c.par === role) return true;
+        return BUREAU_PARTAGE.indexOf(role) >= 0 && BUREAU_PARTAGE.indexOf(c.par) >= 0;
       }).sort(function (a, b) { return a.heure.localeCompare(b.heure); });
 
       var convocs = d.convocations.filter(function (c) {
@@ -631,11 +658,30 @@
       var tous = creneauxDuJour(ij, d.permanences, d.fermetures, occupes, role === 'admin' ? null : role);
       var nbLibres = tous.filter(function (c) { return c.etat === 'libre'; }).length;
 
-      if (!confirmes.length && !convocs.length && !tous.length) continue;
+      var passages = (d.passages || []).filter(function (x) { return x.date === ij; })
+        .sort(function (a, b) { return (a.heure || '').localeCompare(b.heure || ''); });
+
+      if (!confirmes.length && !convocs.length && !tous.length && !passages.length) continue;
 
       h += '<div style="margin-bottom:12px;">'
         + '<div style="font-size:12px;font-weight:800;letter-spacing:1px;opacity:.6;margin-bottom:5px;">'
         + (ij === auj ? '★ AUJOURD\'HUI — ' : '') + joli(ij).toUpperCase() + '</div>';
+
+      passages.forEach(function (x) {
+        h += '<div style="background:#fffaf0;border:1px solid #fbd38d;border-radius:10px;'
+          + 'padding:10px 13px;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">'
+          + '<div><strong style="font-size:13.5px;">'
+          + (x.quand === 'apres' ? 'À partir de ' + ech(x.heure) : 'Dans la journée')
+          + ' · ' + ech(x.nom) + '</strong>'
+          + '<div style="font-size:12px;opacity:.75;margin-top:2px;">'
+          + 'Pour ' + ech(conseiller(x.par).nom.split(' ')[0])
+          + (x.motif ? ' · ' + ech(x.motif) : '')
+          + (x.tel ? ' · 📞 ' + ech(x.tel) : '') + '</div>'
+          + '<div style="font-size:11px;opacity:.55;margin-top:3px;">Sans horaire ferme — le bureau n\'est pas bloqué</div>'
+          + '</div>'
+          + '<button class="btn-passage-suppr" data-x="' + x._id + '" style="border:none;background:none;font-size:17px;cursor:pointer;color:#a0aec0;">✕</button>'
+          + '</div>';
+      });
 
       if (!confirmes.length && !convocs.length) {
         h += '<div style="font-size:13px;opacity:.5;padding:8px 12px;background:#f7fafc;border-radius:9px;">'
@@ -645,20 +691,24 @@
 
       confirmes.forEach(function (c) {
         var dem = c.demandeur || {};
-        h += '<div style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid ' + conseiller(c.par).couleur + ';'
+        var auCollegue = role !== 'admin' && c.par !== role;
+        h += '<div style="background:' + (auCollegue ? '#f7fafc' : '#fff') + ';border:1px solid #e2e8f0;border-left:4px solid ' + conseiller(c.par).couleur + ';'
           + 'border-radius:0 10px 10px 0;padding:11px 13px;margin-bottom:6px;">'
           + '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;">'
           + '<strong>' + ech(c.heure) + ' · ' + ech(dem.nom || dem.id)
           + (dem.type === 'ext' ? ' <span style="font-size:10px;font-weight:800;letter-spacing:1px;'
               + 'background:#edf2f7;color:#4a5568;border-radius:5px;padding:2px 6px;">HORS APPLI</span>' : '')
           + '</strong>'
-          + '<span style="font-size:11px;opacity:.6;">' + ech(conseiller(c.par).nom.split(' ')[0]) + '</span></div>'
+          + '<span style="font-size:11px;opacity:.6;">'
+          + (auCollegue ? 'bureau occupé · ' : '') + ech(conseiller(c.par).nom.split(' ')[0]) + '</span></div>'
           + (dem.motif ? '<div style="font-size:12.5px;opacity:.8;margin-top:3px;">' + ech(dem.motif) + '</div>' : '')
           + (dem.tel ? '<div style="font-size:12.5px;opacity:.7;margin-top:2px;">📞 ' + ech(dem.tel) + '</div>' : '')
-          + '<div style="display:flex;gap:7px;margin-top:8px;">'
-          + '<button class="btn-reporter" data-c="' + c._id + '" style="padding:6px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font-size:12px;font-family:inherit;cursor:pointer;">Reporter</button>'
-          + '<button class="btn-annuler-eq" data-c="' + c._id + '" style="padding:6px 12px;border:1px solid #fed7d7;border-radius:8px;background:#fff;color:#c53030;font-size:12px;font-family:inherit;cursor:pointer;">Annuler</button>'
-          + '</div></div>';
+          + (auCollegue ? ''
+              : '<div style="display:flex;gap:7px;margin-top:8px;">'
+              + '<button class="btn-reporter" data-c="' + c._id + '" style="padding:6px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font-size:12px;font-family:inherit;cursor:pointer;">Reporter</button>'
+              + '<button class="btn-annuler-eq" data-c="' + c._id + '" style="padding:6px 12px;border:1px solid #fed7d7;border-radius:8px;background:#fff;color:#c53030;font-size:12px;font-family:inherit;cursor:pointer;">Annuler</button>'
+              + '</div>')
+          + '</div>';
       });
 
       convocs.forEach(function (c) {
@@ -881,6 +931,15 @@
 
     var ext = boite.querySelector('#rdvExterne');
     if (ext) ext.addEventListener('click', function () { noterRendezVous(boite, role); });
+
+    var pas = boite.querySelector('#rdvPassage');
+    if (pas) pas.addEventListener('click', function () { annoncerPassage(boite, role); });
+    boite.querySelectorAll('.btn-passage-suppr').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await api.ecrire('passages/' + b.getAttribute('data-x'), null);
+        rendreEquipe(boite, role);
+      });
+    });
   }
 
   /* Un rendez-vous avec quelqu'un qui n'est pas dans l'application :
@@ -937,6 +996,52 @@
 
     alert('✅ Rendez-vous noté\n\n' + nom.trim() + '\n' + joli(ij) + ' à ' + heure.trim()
       + '\n\nLe créneau est bloqué : plus personne ne peut le réserver.');
+    rendreEquipe(boite, role);
+  }
+
+  /* Quelqu'un passe « dans la journée » ou « à partir de 14h ».
+     On ne bloque rien — l'horaire n'est pas ferme — mais l'information est
+     visible par toute l'équipe, ce qui est l'essentiel quand on partage un
+     bureau.                                                                  */
+  async function annoncerPassage(boite, role) {
+    var qui = role === 'admin'
+      ? (prompt('Qui doit la recevoir ?\n\nAB = Alexandre\nMG = Marine\nEF = Emilie', 'AB') || '').trim().toUpperCase()
+      : role;
+    if (!qui || !CONSEILLERS[qui]) { if (qui !== '') alert('Code inconnu.'); return; }
+
+    var nom = prompt('Nom de la personne :', '');
+    if (nom === null) return;
+    if (!nom.trim()) { alert('Il faut un nom.'); return; }
+
+    var dt = prompt('Quel jour ? (jj/mm/aaaa — laissez vide pour aujourd\'hui)', '');
+    if (dt === null) return;
+    var ij;
+    if (!dt.trim()) { ij = isoAujourdhui(); }
+    else {
+      var p = dt.trim().split('/');
+      if (p.length !== 3) { alert('Date incomprise. Format attendu : 12/10/2026'); return; }
+      ij = p[2] + '-' + ('0' + p[1]).slice(-2) + '-' + ('0' + p[0]).slice(-2);
+    }
+
+    var h = prompt('À partir de quelle heure ? (hh:mm)\n\n'
+      + 'Laissez vide si la personne passe dans la journée, sans heure.', '');
+    if (h === null) return;
+    var heure = h.trim();
+    if (heure && !/^\d{2}:\d{2}$/.test(heure)) { alert('Heure incomprise. Format attendu : 14:00'); return; }
+
+    var motif = prompt('Motif (facultatif) :', '') || '';
+    var tel = prompt('Téléphone (facultatif) :', '') || '';
+
+    await api.ecrire('passages/' + id('x'), {
+      par: qui, date: ij,
+      quand: heure ? 'apres' : 'jour', heure: heure,
+      nom: nom.trim(), motif: motif.trim(), tel: tel.trim(),
+      note: role, le: new Date().toISOString()
+    });
+
+    alert('✅ Passage annoncé\n\n' + nom.trim() + '\n' + joli(ij) + ' — '
+      + (heure ? 'à partir de ' + heure : 'dans la journée')
+      + '\n\nToute l\'équipe le voit dans « Ma semaine ».');
     rendreEquipe(boite, role);
   }
 
