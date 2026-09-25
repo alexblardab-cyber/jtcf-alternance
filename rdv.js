@@ -460,29 +460,39 @@
       return rendreApprenant(boite);
     }
 
-    var motif = prompt('Rendez-vous avec ' + conseiller(par).nom + '\n'
-      + joli(date) + ' à ' + heure + '\n\n'
-      + 'En quelques mots, le motif de votre demande :', '');
-    if (motif === null) return;
+    formulaire('Rendez-vous avec ' + conseiller(par).nom + '\n' + joli(date) + ' à ' + heure, [
+      { id:'motif', label:'Motif de votre demande', type:'select', valeur:MOTIFS[0],
+        options:MOTIFS.map(function (m) { return [m, m]; }) },
+      { id:'precision', label:'Précisez en quelques mots (facultatif)', type:'textarea',
+        aide:'Ce que vous souhaitez aborder' }
+    ], async function (v) {
+      var encore = await api.lire('creneaux/' + k);
+      if (encore && (encore.etat === 'demande' || encore.etat === 'confirme')) {
+        throw new Error('ce créneau vient d\'être pris');
+      }
 
-    // On retrouve la durée et le lieu dans la permanence correspondante.
-    var perms = objetVersListe(await api.lire('permanences'));
-    var jour = dateDe(date).getDay();
-    var p = perms.filter(function (x) { return x.par === par && x.jour === jour && x.actif !== false; })[0] || {};
+      var perms = objetVersListe(await api.lire('permanences'));
+      var jour = dateDe(date).getDay();
+      var p = perms.filter(function (x) { return x.par === par && x.jour === jour && x.actif !== false; })[0] || {};
 
-    await api.ecrire('creneaux/' + k, {
-      par: par, date: date, heure: heure,
-      duree: p.duree || 30, lieu: p.lieu || LIEU_DEFAUT,
-      etat: 'demande',
-      demandeur: { id: moi.id, nom: moi.nom, type: moi.type, motif: (motif || '').trim(), le: new Date().toISOString() },
-      reponse: '', repondu: '', traitePar: '',
-      notifie: false, notifieReponse: true
+      await api.ecrire('creneaux/' + k, {
+        par: par, date: date, heure: heure,
+        duree: p.duree || 30, lieu: p.lieu || LIEU_DEFAUT,
+        etat: 'demande',
+        demandeur: {
+          id: moi.id, nom: moi.nom, type: moi.type,
+          motif: v.motif + (v.precision ? ' — ' + v.precision : ''),
+          le: new Date().toISOString()
+        },
+        reponse: '', repondu: '', traitePar: '',
+        notifie: false, notifieReponse: true
+      });
+
+      alert('✅ Demande envoyée\n\n' + joli(date) + ' à ' + heure
+        + '\navec ' + conseiller(par).nom
+        + '\n\nVous recevrez la confirmation dès qu\'elle sera validée.');
+      rendreApprenant(boite);
     });
-
-    alert('✅ Demande envoyée\n\n' + joli(date) + ' à ' + heure
-      + '\navec ' + conseiller(par).nom
-      + '\n\nVous recevrez la confirmation dès qu\'elle sera validée.');
-    rendreApprenant(boite);
   }
 
   async function annulerMonCreneau(k, boite) {
@@ -517,20 +527,25 @@
   }
 
   async function demandeLibre(boite) {
-    var motif = prompt('Quel est le motif de votre demande ?\n\n' + MOTIFS.join('\n'), '');
-    if (motif === null) return;
-    var dispo = prompt('Quand seriez-vous disponible ?\n(jours et horaires qui vous arrangent)', '');
-    if (dispo === null) return;
-    var message = prompt('Un mot à ajouter ? (facultatif)', '') || '';
-
-    await api.ecrire('rdvDemandes/' + id('d'), {
-      qui: moi.id, nom: moi.nom, type: moi.type,
-      avec: '?', motif: (motif || '').trim(), dispo: (dispo || '').trim(), message: message.trim(),
-      etat: 'demande', reponse: '', quand: '',
-      le: new Date().toISOString(), notifie: false
+    formulaire('Proposer un autre moment', [
+      { id:'motif', label:'Motif de votre demande', type:'select', valeur:MOTIFS[0],
+        options:MOTIFS.map(function (m) { return [m, m]; }) },
+      { id:'avec', label:'Avec qui', type:'select', valeur:'?',
+        options:[['?', 'Peu importe']].concat(
+          Object.keys(CONSEILLERS).map(function (c) { return [c, CONSEILLERS[c].nom]; })) },
+      { id:'dispo', label:'Vos disponibilités', type:'text', requis:true,
+        aide:'Ex : les lundis après-midi, ou après 16h' },
+      { id:'message', label:'Un mot à ajouter (facultatif)', type:'textarea' }
+    ], async function (v) {
+      await api.ecrire('rdvDemandes/' + id('d'), {
+        qui: moi.id, nom: moi.nom, type: moi.type,
+        avec: v.avec, motif: v.motif, dispo: v.dispo, message: v.message,
+        etat: 'demande', reponse: '', quand: '',
+        le: new Date().toISOString(), notifie: false
+      });
+      alert('✅ Votre demande est envoyée. Nous revenons vers vous rapidement.');
+      rendreApprenant(boite);
     });
-    alert('✅ Votre demande est envoyée. Nous revenons vers vous rapidement.');
-    rendreApprenant(boite);
   }
 
   /* ══ CÔTÉ ÉQUIPE ══════════════════════════════════════════════════════════ */
@@ -637,7 +652,9 @@
     var h = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">'
       + '<button id="rdvExterne" style="' + bouton + '">＋ Rendez-vous (hors appli)</button>'
       + '<button id="rdvPassage" style="' + bouton + '">＋ Passage annoncé</button>'
-      + '</div>';
+      + '<button id="rdvCollegue" style="' + bouton + '">＋ RDV pour un collègue</button>'
+      + '</div>'
+      + '<div id="zoneCollegue"></div>';
     var debut = new Date();
     for (var i = 0; i < 14; i++) {
       var j = new Date(debut); j.setDate(j.getDate() + i);
@@ -864,14 +881,20 @@
     });
 
     boite.querySelectorAll('.btn-dem-ok').forEach(function (b) {
-      b.addEventListener('click', async function () {
-        var quand = prompt('Quelle date et quelle heure proposez-vous ?', '');
-        if (quand === null) return;
+      b.addEventListener('click', function () {
         var did = b.getAttribute('data-d');
-        await api.ecrire('rdvDemandes/' + did + '/etat', 'confirme');
-        await api.ecrire('rdvDemandes/' + did + '/quand', quand.trim());
-        await api.ecrire('rdvDemandes/' + did + '/reponse', 'Rendez-vous proposé : ' + quand.trim());
-        rendreEquipe(boite, role);
+        formulaire('Proposer une date', [
+          { id:'date', label:'Date', type:'date', requis:true, valeur:isoAujourdhui(), min:isoAujourdhui() },
+          { id:'heure', label:'Heure', type:'select', requis:true, valeur:'14:00', options:optionsHeures() },
+          { id:'mot', label:'Un mot à ajouter (facultatif)', type:'textarea' }
+        ], async function (v) {
+          var quand = joli(v.date) + ' à ' + v.heure;
+          await api.ecrire('rdvDemandes/' + did + '/etat', 'confirme');
+          await api.ecrire('rdvDemandes/' + did + '/quand', quand);
+          await api.ecrire('rdvDemandes/' + did + '/reponse',
+            'Rendez-vous proposé : ' + quand + (v.mot ? ' — ' + v.mot : ''));
+          rendreEquipe(boite, role);
+        });
       });
     });
 
@@ -934,6 +957,9 @@
 
     var pas = boite.querySelector('#rdvPassage');
     if (pas) pas.addEventListener('click', function () { annoncerPassage(boite, role); });
+
+    var col = boite.querySelector('#rdvCollegue');
+    if (col) col.addEventListener('click', function () { pourUnCollegue(boite, role); });
     boite.querySelectorAll('.btn-passage-suppr').forEach(function (b) {
       b.addEventListener('click', async function () {
         await api.ecrire('passages/' + b.getAttribute('data-x'), null);
@@ -948,55 +974,271 @@
      dans « Ma semaine » et dans l'agenda du matin. Aucun courriel ne part :
      cette personne n'a pas de compte.                                       */
   async function noterRendezVous(boite, role) {
-    var qui = role === 'admin'
-      ? (prompt('Pour qui ?\n\nAB = Alexandre\nMG = Marine\nEF = Emilie', 'AB') || '').trim().toUpperCase()
-      : role;
-    if (!qui || !CONSEILLERS[qui]) { if (qui !== '') alert('Code inconnu.'); return; }
+    formulaire('Noter un rendez-vous', [
+      { id:'par', label:'Pour qui', type:'select', options:optionsConseillers(role),
+        valeur:(role !== 'admin' ? role : 'AB') },
+      { id:'nom', label:'Nom de la personne recue', type:'text', requis:true, aide:'Madame Payet' },
+      { id:'date', label:'Date', type:'date', requis:true, valeur:isoAujourdhui(), min:isoAujourdhui() },
+      { id:'heure', label:'Heure', type:'select', requis:true, valeur:'14:00', options:optionsHeures() },
+      { id:'duree', label:'Duree', type:'select', valeur:'30',
+        options:[['15','15 minutes'],['30','30 minutes'],['45','45 minutes'],
+                 ['60','1 heure'],['90','1 h 30'],['120','2 heures']] },
+      { id:'motif', label:'Motif', type:'text', valeur:'Information / premier contact' },
+      { id:'tel', label:'Telephone (facultatif)', type:'tel', aide:'06 92 ...' }
+    ], async function (v) {
+      var k = cle(v.par, v.date, v.heure);
+      var deja = await api.lire('creneaux/' + k);
+      if (deja && (deja.etat === 'demande' || deja.etat === 'confirme')) {
+        var occ = (deja.demandeur && deja.demandeur.nom) || 'quelqu\'un';
+        throw new Error('ce creneau est deja pris par ' + occ);
+      }
+      await api.ecrire('creneaux/' + k, {
+        par: v.par, date: v.date, heure: v.heure, duree: parseInt(v.duree, 10) || 30,
+        lieu: LIEU_DEFAUT, etat: 'confirme',
+        demandeur: {
+          id: 'ext_' + Date.now().toString(36), nom: v.nom, type: 'ext',
+          motif: v.motif, tel: v.tel, le: new Date().toISOString()
+        },
+        reponse: '', repondu: new Date().toISOString(), traitePar: role,
+        notifie: true, notifieReponse: true
+      });
+      rendreEquipe(boite, role);
+    });
+  }
 
-    var nom = prompt('Nom de la personne reçue :', '');
-    if (nom === null) return;
-    if (!nom.trim()) { alert('Il faut un nom.'); return; }
 
-    var dt = prompt('Date (jj/mm/aaaa) :', '');
-    if (dt === null) return;
-    var p = dt.trim().split('/');
-    if (p.length !== 3) { alert('Date incomprise. Format attendu : 12/10/2026'); return; }
-    var ij = p[2] + '-' + ('0' + p[1]).slice(-2) + '-' + ('0' + p[0]).slice(-2);
+  /* == UN VRAI FORMULAIRE, PLUTOT QUE DES FENETRES GRISES ==================
+     Les dates tapees a la main sont la premiere source d'erreur : 12/10/26,
+     2026-10-12, 12 octobre... Ici, un calendrier et des listes deroulantes.  */
 
-    var heure = prompt('Heure (hh:mm) :', '14:00');
-    if (heure === null) return;
-    if (!/^\d{2}:\d{2}$/.test(heure.trim())) { alert('Heure incomprise. Format attendu : 14:30'); return; }
+  function heuresPossibles(debut, fin, pas) {
+    var out = [], d = minutes(debut || '07:00'), f = minutes(fin || '19:00');
+    for (var t = d; t <= f; t += (pas || 15)) out.push(heureDe(t));
+    return out;
+  }
 
-    var duree = parseInt(prompt('Durée en minutes :', '30'), 10);
-    if (!duree || duree < 5) { alert('Durée incomprise.'); return; }
+  function optionsHeures() {
+    return heuresPossibles('07:00', '19:00', 15).map(function (h) { return [h, h]; });
+  }
 
-    var motif = prompt('Motif :', 'Information / premier contact');
-    if (motif === null) return;
-    var tel = prompt('Téléphone (facultatif) :', '') || '';
+  function champHTML(c) {
+    var base = 'width:100%;padding:10px 12px;border:1px solid #cbd5e0;border-radius:9px;'
+             + 'font-family:inherit;font-size:14px;color:#2a3f4e;background:#fff;box-sizing:border-box;';
+    var h = '<div style="margin-bottom:11px;" data-champ="' + c.id + '">'
+          + '<label style="display:block;font-size:11px;font-weight:800;letter-spacing:.5px;'
+          + 'text-transform:uppercase;opacity:.6;margin-bottom:4px;">' + ech(c.label) + '</label>';
 
-    var k = cle(qui, ij, heure.trim());
-    var deja = await api.lire('creneaux/' + k);
-    if (deja && (deja.etat === 'demande' || deja.etat === 'confirme')) {
-      var occ = (deja.demandeur && deja.demandeur.nom) || 'quelqu\'un';
-      alert('Ce créneau est déjà pris par ' + occ + '.');
+    if (c.type === 'select') {
+      h += '<select id="f_' + c.id + '" style="' + base + '">'
+        + (c.options || []).map(function (o) {
+            return '<option value="' + ech(o[0]) + '"'
+                 + (String(o[0]) === String(c.valeur) ? ' selected' : '') + '>' + ech(o[1]) + '</option>';
+          }).join('')
+        + '</select>';
+    } else if (c.type === 'textarea') {
+      h += '<textarea id="f_' + c.id + '" rows="2" placeholder="' + ech(c.aide || '') + '" style="' + base
+        + 'resize:vertical;">' + ech(c.valeur || '') + '</textarea>';
+    } else {
+      h += '<input id="f_' + c.id + '" type="' + (c.type || 'text') + '" '
+        + 'value="' + ech(c.valeur || '') + '" placeholder="' + ech(c.aide || '') + '" '
+        + (c.type === 'date' && c.min ? 'min="' + c.min + '" ' : '')
+        + 'style="' + base + '">';
+    }
+    return h + '</div>';
+  }
+
+  /* Ouvre le formulaire et appelle onOk(valeurs) si l'utilisateur valide. */
+  function formulaire(titre, champs, onOk) {
+    var fond = document.createElement('div');
+    fond.style.cssText = 'position:fixed;inset:0;background:rgba(20,28,36,.55);z-index:9000;'
+      + 'display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto;';
+
+    var carte = document.createElement('div');
+    carte.style.cssText = 'background:#fff;border-radius:16px;padding:20px;width:100%;max-width:420px;'
+      + 'box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:inherit;color:#2a3f4e;';
+
+    carte.innerHTML =
+      '<div style="font-size:17px;font-weight:800;margin-bottom:14px;line-height:1.35;">' + ech(titre) + '</div>'
+      + champs.map(champHTML).join('')
+      + '<div style="display:flex;gap:9px;margin-top:16px;">'
+      + '<button id="fAnnuler" style="flex:1;padding:12px;border:1px solid #e2e8f0;border-radius:10px;'
+      + 'background:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;color:#718096;">Annuler</button>'
+      + '<button id="fValider" style="flex:2;padding:12px;border:none;border-radius:10px;'
+      + 'background:#2a3f4e;color:#fff;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;">Valider</button>'
+      + '</div>'
+      + '<div id="fErreur" style="display:none;margin-top:10px;background:#fff5f5;border:1px solid #fed7d7;'
+      + 'color:#c53030;border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:600;"></div>';
+
+    fond.appendChild(carte);
+    document.body.appendChild(fond);
+
+    function fermer() { if (fond.parentNode) document.body.removeChild(fond); }
+    fond.addEventListener('click', function (e) { if (e.target === fond) fermer(); });
+    carte.querySelector('#fAnnuler').addEventListener('click', fermer);
+
+    // Les champs qui n'ont de sens que si un autre a une certaine valeur.
+    function ajuster() {
+      champs.forEach(function (c) {
+        if (!c.sauf) return;
+        var pilote = carte.querySelector('#f_' + c.sauf.champ);
+        var zone = carte.querySelector('[data-champ="' + c.id + '"]');
+        if (pilote && zone) zone.style.display = (pilote.value === c.sauf.vaut) ? '' : 'none';
+      });
+    }
+    champs.forEach(function (c) {
+      if (!c.sauf) return;
+      var pilote = carte.querySelector('#f_' + c.sauf.champ);
+      if (pilote) pilote.addEventListener('change', ajuster);
+    });
+    ajuster();
+
+    var premier = carte.querySelector('input, select');
+    if (premier) premier.focus();
+
+    carte.querySelector('#fValider').addEventListener('click', async function () {
+      var bouton = this;
+      var v = {};
+      champs.forEach(function (c) {
+        var el = carte.querySelector('#f_' + c.id);
+        v[c.id] = el ? String(el.value || '').trim() : '';
+      });
+
+      var vide = champs.filter(function (c) {
+        if (!c.requis) return false;
+        var zone = carte.querySelector('[data-champ="' + c.id + '"]');
+        if (zone && zone.style.display === 'none') return false;
+        return !v[c.id];
+      });
+      if (vide.length) {
+        var e = carte.querySelector('#fErreur');
+        e.textContent = 'A completer : ' + vide.map(function (c) { return c.label.toLowerCase(); }).join(', ');
+        e.style.display = 'block';
+        return;
+      }
+
+      bouton.disabled = true; bouton.textContent = 'Enregistrement...';
+      try { await onOk(v); fermer(); }
+      catch (err) {
+        bouton.disabled = false; bouton.textContent = 'Valider';
+        var e2 = carte.querySelector('#fErreur');
+        e2.textContent = 'Impossible : ' + (err && err.message ? err.message : 'erreur inattendue');
+        e2.style.display = 'block';
+      }
+    });
+  }
+
+  // Les conseillers proposes, celui qui est connecte en tete.
+  function optionsConseillers(role, avecEquipe) {
+    var l = Object.keys(CONSEILLERS).map(function (c) { return [c, CONSEILLERS[c].nom]; });
+    if (role !== 'admin') l.sort(function (a, b) { return (b[0] === role) - (a[0] === role); });
+    if (avecEquipe) l.unshift(['*', 'Toute l\'equipe']);
+    return l;
+  }
+
+  /* LA PORTE D'ENTRÉE
+     Quelqu'un se présente au centre, le CIP concerné n'est pas là.
+     Emilie (ou n'importe qui de l'équipe) voit les créneaux libres des autres
+     et en réserve un. Cela part comme une DEMANDE : le créneau est bloqué,
+     le collègue reçoit un courriel, et c'est lui qui confirme.              */
+  async function pourUnCollegue(boite, role) {
+    var zone = boite.querySelector('#zoneCollegue');
+    if (!zone) return;
+    zone.innerHTML = '<div style="opacity:.6;font-size:13px;padding:10px;">Recherche des créneaux libres…</div>';
+
+    var d = await chargerTout();
+    var occupes = indexOccupes(d.creneaux);
+    var libres = [];
+    var jour = new Date();
+
+    // On regarde trois semaines : au-delà, on prend rendez-vous autrement.
+    for (var i = 0; i < 21 && libres.length < 18; i++) {
+      var ij = iso(jour);
+      creneauxDuJour(ij, d.permanences, d.fermetures, occupes).forEach(function (c) {
+        if (c.etat !== 'libre') return;
+        if (c.par === role) return;          // pour un COLLÈGUE, pas pour soi
+        libres.push(c);
+      });
+      jour.setDate(jour.getDate() + 1);
+    }
+
+    if (!libres.length) {
+      zone.innerHTML = '<div style="background:#fffaf0;border:1px solid #fbd38d;border-radius:10px;'
+        + 'padding:12px 15px;font-size:13px;line-height:1.6;">'
+        + 'Aucun créneau libre chez vos collègues dans les trois prochaines semaines.<br>'
+        + 'Notez plutôt un <strong>passage annoncé</strong>, ou appelez-les.'
+        + '</div>';
       return;
     }
 
-    await api.ecrire('creneaux/' + k, {
-      par: qui, date: ij, heure: heure.trim(), duree: duree, lieu: LIEU_DEFAUT,
-      etat: 'confirme',
-      demandeur: {
-        id: 'ext_' + Date.now().toString(36), nom: nom.trim(), type: 'ext',
-        motif: (motif || '').trim(), tel: tel.trim(), le: new Date().toISOString()
-      },
-      reponse: '', repondu: new Date().toISOString(), traitePar: role,
-      // Personne à prévenir par courriel : la personne n'a pas de compte.
-      notifie: true, notifieReponse: true
+    var h = '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:14px;">'
+      + '<div style="font-size:12px;font-weight:800;letter-spacing:1px;opacity:.6;margin-bottom:4px;">'
+      + 'CRÉNEAUX LIBRES DE VOS COLLÈGUES</div>'
+      + '<div style="font-size:12.5px;opacity:.75;line-height:1.6;margin-bottom:10px;">'
+      + 'Choisissez une heure. Votre collègue recevra la demande et confirmera — '
+      + 'en attendant, le créneau est bloqué.</div>'
+      + '<div style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;">';
+
+    var dernierJour = '';
+    libres.forEach(function (c) {
+      if (c.date !== dernierJour) {
+        dernierJour = c.date;
+        h += '<div style="font-size:11px;font-weight:800;letter-spacing:1px;opacity:.5;margin-top:6px;">'
+          + joli(c.date).toUpperCase() + '</div>';
+      }
+      h += '<button class="btn-libre" data-p="' + c.par + '" data-d="' + c.date + '" data-h="' + c.heure + '"'
+        + ' style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 13px;'
+        + 'border:1px solid ' + conseiller(c.par).couleur + ';border-radius:9px;background:#fff;'
+        + 'font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;'
+        + 'color:' + conseiller(c.par).couleur + ';">'
+        + '<span>' + c.heure + '</span>'
+        + '<span style="font-weight:600;opacity:.8;">' + ech(conseiller(c.par).nom) + '</span></button>';
     });
 
-    alert('✅ Rendez-vous noté\n\n' + nom.trim() + '\n' + joli(ij) + ' à ' + heure.trim()
-      + '\n\nLe créneau est bloqué : plus personne ne peut le réserver.');
-    rendreEquipe(boite, role);
+    h += '</div><button id="fermerLibres" style="margin-top:10px;padding:8px 14px;border:1px solid #e2e8f0;'
+      + 'border-radius:8px;background:#fff;font-size:12px;font-family:inherit;cursor:pointer;color:#718096;">'
+      + 'Fermer</button></div>';
+
+    zone.innerHTML = h;
+
+    zone.querySelector('#fermerLibres').addEventListener('click', function () { zone.innerHTML = ''; });
+    zone.querySelectorAll('.btn-libre').forEach(function (b) {
+      b.addEventListener('click', function () {
+        reserverPourCollegue(b.getAttribute('data-p'), b.getAttribute('data-d'),
+                             b.getAttribute('data-h'), boite, role);
+      });
+    });
+  }
+
+  async function reserverPourCollegue(par, date, heure, boite, role) {
+    formulaire('Rendez-vous avec ' + conseiller(par).nom + ' - ' + joli(date) + ' a ' + heure, [
+      { id:'nom', label:'Nom de la personne recue', type:'text', requis:true },
+      { id:'motif', label:'Motif de la visite', type:'text', requis:true },
+      { id:'tel', label:'Telephone (facultatif)', type:'tel' }
+    ], async function (v) {
+      var k = cle(par, date, heure);
+      var deja = await api.lire('creneaux/' + k);
+      if (deja && (deja.etat === 'demande' || deja.etat === 'confirme')) {
+        throw new Error('ce creneau vient d\'etre pris');
+      }
+
+      var perms = objetVersListe(await api.lire('permanences'));
+      var j = dateDe(date).getDay();
+      var p = perms.filter(function (x) { return x.par === par && x.jour === j && x.actif !== false; })[0] || {};
+
+      await api.ecrire('creneaux/' + k, {
+        par: par, date: date, heure: heure,
+        duree: p.duree || 30, lieu: p.lieu || LIEU_DEFAUT,
+        etat: 'demande',
+        demandeur: {
+          id: 'ext_' + Date.now().toString(36), nom: v.nom, type: 'ext',
+          motif: 'Note par ' + conseiller(role).nom.split(' ')[0] + ' - ' + v.motif,
+          tel: v.tel, le: new Date().toISOString()
+        },
+        reponse: '', repondu: '', traitePar: '',
+        notifie: false, notifieReponse: true
+      });
+      rendreEquipe(boite, role);
+    });
   }
 
   /* Quelqu'un passe « dans la journée » ou « à partir de 14h ».
@@ -1004,165 +1246,132 @@
      visible par toute l'équipe, ce qui est l'essentiel quand on partage un
      bureau.                                                                  */
   async function annoncerPassage(boite, role) {
-    var qui = role === 'admin'
-      ? (prompt('Qui doit la recevoir ?\n\nAB = Alexandre\nMG = Marine\nEF = Emilie', 'AB') || '').trim().toUpperCase()
-      : role;
-    if (!qui || !CONSEILLERS[qui]) { if (qui !== '') alert('Code inconnu.'); return; }
-
-    var nom = prompt('Nom de la personne :', '');
-    if (nom === null) return;
-    if (!nom.trim()) { alert('Il faut un nom.'); return; }
-
-    var dt = prompt('Quel jour ? (jj/mm/aaaa — laissez vide pour aujourd\'hui)', '');
-    if (dt === null) return;
-    var ij;
-    if (!dt.trim()) { ij = isoAujourdhui(); }
-    else {
-      var p = dt.trim().split('/');
-      if (p.length !== 3) { alert('Date incomprise. Format attendu : 12/10/2026'); return; }
-      ij = p[2] + '-' + ('0' + p[1]).slice(-2) + '-' + ('0' + p[0]).slice(-2);
-    }
-
-    var h = prompt('À partir de quelle heure ? (hh:mm)\n\n'
-      + 'Laissez vide si la personne passe dans la journée, sans heure.', '');
-    if (h === null) return;
-    var heure = h.trim();
-    if (heure && !/^\d{2}:\d{2}$/.test(heure)) { alert('Heure incomprise. Format attendu : 14:00'); return; }
-
-    var motif = prompt('Motif (facultatif) :', '') || '';
-    var tel = prompt('Téléphone (facultatif) :', '') || '';
-
-    await api.ecrire('passages/' + id('x'), {
-      par: qui, date: ij,
-      quand: heure ? 'apres' : 'jour', heure: heure,
-      nom: nom.trim(), motif: motif.trim(), tel: tel.trim(),
-      note: role, le: new Date().toISOString()
+    formulaire('Annoncer un passage', [
+      { id:'par', label:'Qui doit la recevoir', type:'select', options:optionsConseillers(role),
+        valeur:(role !== 'admin' ? role : 'AB') },
+      { id:'nom', label:'Nom de la personne', type:'text', requis:true, aide:'Madame Cillon' },
+      { id:'date', label:'Jour', type:'date', requis:true, valeur:isoAujourdhui(), min:isoAujourdhui() },
+      { id:'quand', label:'Quand', type:'select', valeur:'jour',
+        options:[['jour','Dans la journee, sans heure'],['apres','A partir d\'une heure precise']] },
+      { id:'heure', label:'A partir de', type:'select', valeur:'14:00',
+        sauf:{ champ:'quand', vaut:'apres' }, options:optionsHeures() },
+      { id:'motif', label:'Motif (facultatif)', type:'text' },
+      { id:'tel', label:'Telephone (facultatif)', type:'tel' }
+    ], async function (v) {
+      await api.ecrire('passages/' + id('x'), {
+        par: v.par, date: v.date,
+        quand: v.quand, heure: v.quand === 'apres' ? v.heure : '',
+        nom: v.nom, motif: v.motif, tel: v.tel,
+        note: role, le: new Date().toISOString()
+      });
+      rendreEquipe(boite, role);
     });
-
-    alert('✅ Passage annoncé\n\n' + nom.trim() + '\n' + joli(ij) + ' — '
-      + (heure ? 'à partir de ' + heure : 'dans la journée')
-      + '\n\nToute l\'équipe le voit dans « Ma semaine ».');
-    rendreEquipe(boite, role);
   }
 
   async function reporter(k, boite, role) {
     var c = await api.lire('creneaux/' + k);
     if (!c) return;
-    var nd = prompt('Nouvelle date (jj/mm/aaaa) :', '');
-    if (nd === null) return;
-    var nh = prompt('Nouvelle heure (hh:mm) :', c.heure);
-    if (nh === null) return;
+    var dem = c.demandeur || {};
 
-    var p = nd.trim().split('/');
-    if (p.length !== 3) { alert('Date incomprise. Format attendu : 12/10/2026'); return; }
-    var nouvelIso = p[2] + '-' + ('0' + p[1]).slice(-2) + '-' + ('0' + p[0]).slice(-2);
-    var nk = cle(c.par, nouvelIso, nh.trim());
-
-    var deja = await api.lire('creneaux/' + nk);
-    if (deja && (deja.etat === 'demande' || deja.etat === 'confirme')) {
-      alert('Ce nouveau créneau est déjà occupé.'); return;
-    }
-
-    c.date = nouvelIso; c.heure = nh.trim();
-    c.etat = 'confirme'; c.repondu = new Date().toISOString();
-    c.notifieReponse = false; c.reporte = true;
-    await api.ecrire('creneaux/' + nk, c);
-    await api.ecrire('creneaux/' + k, null);
-    alert('✅ Rendez-vous reporté au ' + joli(nouvelIso) + ' à ' + c.heure + '.');
-    rendreEquipe(boite, role);
+    formulaire('Reporter le rendez-vous de ' + (dem.nom || ''), [
+      { id:'date', label:'Nouvelle date', type:'date', requis:true, valeur:c.date, min:isoAujourdhui() },
+      { id:'heure', label:'Nouvelle heure', type:'select', requis:true, valeur:c.heure, options:optionsHeures() }
+    ], async function (v) {
+      var nk = cle(c.par, v.date, v.heure);
+      if (nk !== k) {
+        var deja = await api.lire('creneaux/' + nk);
+        if (deja && (deja.etat === 'demande' || deja.etat === 'confirme')) {
+          throw new Error('ce nouveau creneau est deja occupe');
+        }
+      }
+      c.date = v.date; c.heure = v.heure;
+      c.etat = 'confirme'; c.repondu = new Date().toISOString();
+      c.notifieReponse = false; c.reporte = true;
+      await api.ecrire('creneaux/' + nk, c);
+      if (nk !== k) await api.ecrire('creneaux/' + k, null);
+      rendreEquipe(boite, role);
+    });
   }
 
   async function ajouterPermanence(boite, role) {
-    var qui = role === 'admin'
-      ? (prompt('Pour qui ?\n\nAB = Alexandre\nMG = Marine\nEF = Emilie', 'AB') || '').trim().toUpperCase()
-      : role;
-    if (!qui || !CONSEILLERS[qui]) { if (qui !== '') alert('Code inconnu.'); return; }
+    formulaire('Ajouter une permanence', [
+      { id:'par', label:'Pour qui', type:'select', options:optionsConseillers(role),
+        valeur:(role !== 'admin' ? role : 'AB') },
+      { id:'jour', label:'Jour de la semaine', type:'select', valeur:'2',
+        options:[['1','Tous les lundis'],['2','Tous les mardis'],['3','Tous les mercredis'],
+                 ['4','Tous les jeudis'],['5','Tous les vendredis']] },
+      { id:'debut', label:'De', type:'select', valeur:'14:00', options:optionsHeures() },
+      { id:'fin', label:'A', type:'select', valeur:'16:00', options:optionsHeures() },
+      { id:'duree', label:'Duree d\'un rendez-vous', type:'select', valeur:'30',
+        options:[['15','15 minutes'],['20','20 minutes'],['30','30 minutes'],
+                 ['45','45 minutes'],['60','1 heure']] },
+      { id:'lieu', label:'Lieu', type:'text', valeur:LIEU_DEFAUT }
+    ], async function (v) {
+      if (minutes(v.fin) <= minutes(v.debut)) throw new Error('l\'heure de fin doit suivre celle de debut');
+      var duree = parseInt(v.duree, 10);
+      var nb = Math.floor((minutes(v.fin) - minutes(v.debut)) / duree);
+      if (!nb) throw new Error('la plage est trop courte pour un creneau de ' + duree + ' minutes');
 
-    var j = prompt('Quel jour ?\n\n1 = lundi\n2 = mardi\n3 = mercredi\n4 = jeudi\n5 = vendredi', '2');
-    if (j === null) return;
-    j = parseInt(j, 10);
-    if (!(j >= 1 && j <= 5)) { alert('Jour incompris.'); return; }
-
-    var deb = prompt('Heure de début (hh:mm) :', '14:00'); if (deb === null) return;
-    var fin = prompt('Heure de fin (hh:mm) :', '16:00');   if (fin === null) return;
-    if (minutes(fin) <= minutes(deb)) { alert('L\'heure de fin doit suivre celle de début.'); return; }
-
-    var duree = parseInt(prompt('Durée d\'un rendez-vous, en minutes :', '30'), 10);
-    if (!duree || duree < 5) { alert('Durée incomprise.'); return; }
-
-    var lieu = prompt('Lieu :', LIEU_DEFAUT); if (lieu === null) return;
-
-    var nb = Math.floor((minutes(fin) - minutes(deb)) / duree);
-    if (!nb) { alert('La plage est trop courte pour un créneau de ' + duree + ' minutes.'); return; }
-
-    if (!confirm('Permanence de ' + CONSEILLERS[qui].nom + '\n'
-      + 'tous les ' + JOURS[j].toLowerCase() + 's, ' + deb + ' → ' + fin + '\n'
-      + nb + ' créneau(x) de ' + duree + ' minutes\n\n'
-      + 'Elle se répétera chaque semaine, toute l\'année.')) return;
-
-    await api.ecrire('permanences/' + id('p'), {
-      par: qui, jour: j, debut: deb.trim(), fin: fin.trim(), duree: duree,
-      lieu: (lieu || LIEU_DEFAUT).trim(), actif: true,
-      depuis: isoAujourdhui(), jusqua: '', le: new Date().toISOString()
+      await api.ecrire('permanences/' + id('p'), {
+        par: v.par, jour: parseInt(v.jour, 10), debut: v.debut, fin: v.fin, duree: duree,
+        lieu: v.lieu || LIEU_DEFAUT, actif: true,
+        depuis: isoAujourdhui(), jusqua: '', le: new Date().toISOString()
+      });
+      rendreEquipe(boite, role);
     });
-    rendreEquipe(boite, role);
   }
 
   async function ajouterFermeture(boite, role) {
-    var qui = role === 'admin'
-      ? (prompt('Pour qui ?\n\nAB, MG, EF — ou * pour toute l\'équipe', '*') || '').trim().toUpperCase()
-      : role;
-    if (!qui) return;
-    if (qui !== '*' && !CONSEILLERS[qui]) { alert('Code inconnu.'); return; }
-
-    var dt = prompt('Quelle date fermer ? (jj/mm/aaaa)', '');
-    if (dt === null) return;
-    var p = dt.trim().split('/');
-    if (p.length !== 3) { alert('Date incomprise. Format attendu : 12/10/2026'); return; }
-    var ij = p[2] + '-' + ('0' + p[1]).slice(-2) + '-' + ('0' + p[0]).slice(-2);
-
-    var heure = prompt('Toute la journée ? Laissez vide.\n\nSinon, l\'heure du seul créneau à fermer (hh:mm) :', '');
-    if (heure === null) return;
-
-    var motif = prompt('Motif (facultatif) :', '') || '';
-
-    await api.ecrire('fermetures/' + id('f'), {
-      par: qui, date: ij, heure: heure.trim(), motif: motif.trim(), le: new Date().toISOString()
+    formulaire('Fermer une date', [
+      { id:'par', label:'Pour qui', type:'select', options:optionsConseillers(role, true),
+        valeur:(role !== 'admin' ? role : '*') },
+      { id:'date', label:'Date a fermer', type:'date', requis:true, valeur:isoAujourdhui(), min:isoAujourdhui() },
+      { id:'portee', label:'Etendue', type:'select', valeur:'jour',
+        options:[['jour','Toute la journee'],['heure','Un seul creneau']] },
+      { id:'heure', label:'Creneau concerne', type:'select', valeur:'14:00',
+        sauf:{ champ:'portee', vaut:'heure' }, options:optionsHeures() },
+      { id:'motif', label:'Motif (facultatif)', type:'text', aide:'Deplacement, reunion...' }
+    ], async function (v) {
+      await api.ecrire('fermetures/' + id('f'), {
+        par: v.par, date: v.date,
+        heure: v.portee === 'heure' ? v.heure : '',
+        motif: v.motif, le: new Date().toISOString()
+      });
+      rendreEquipe(boite, role);
     });
-    rendreEquipe(boite, role);
   }
 
   async function nouvelleConvocation(boite, role) {
     await chargerAnnuaire();
-    var liste = annuaire.map(function (a, i) { return (i + 1) + '. ' + a.nom + ' (' + a.id + ')'; }).join('\n');
-    var choix = prompt('Qui convoquer ?\n\nTapez son identifiant (ex : AB01)\n\n' + liste, '');
-    if (choix === null) return;
-    var cible = annuaire.filter(function (a) { return a.id.toUpperCase() === choix.trim().toUpperCase(); })[0];
-    if (!cible) { alert('Identifiant inconnu.'); return; }
-
-    var par = role === 'admin'
-      ? (prompt('De la part de qui ?\n\nAB, MG, EF — séparez par des virgules pour plusieurs', 'AB') || '').trim().toUpperCase()
-      : role;
-    if (!par) return;
-
-    var dt = prompt('Date proposée (jj/mm/aaaa) :', ''); if (dt === null) return;
-    var p = dt.trim().split('/');
-    if (p.length !== 3) { alert('Date incomprise.'); return; }
-    var ij = p[2] + '-' + ('0' + p[1]).slice(-2) + '-' + ('0' + p[0]).slice(-2);
-
-    var heure = prompt('Heure (hh:mm) :', '14:00'); if (heure === null) return;
-    var motif = prompt('Motif :', MOTIFS[0]); if (motif === null) return;
-    var message = prompt('Un mot à ajouter ? (facultatif)', '') || '';
-
-    await api.ecrire('convocations/' + id('v'), {
-      pour: cible.id, type: cible.type, nom: cible.nom,
-      par: par, date: ij, heure: heure.trim(),
-      motif: motif.trim(), message: message.trim(), lieu: LIEU_DEFAUT,
-      etat: 'propose', reponse: '', repondu: '',
-      le: new Date().toISOString(), notifie: false, notifieReponse: true
+    var qui = annuaire.map(function (a) {
+      var t = a.type === 'fc' ? 'formation continue' : (a.type === 'stg' ? 'stage' : 'alternance');
+      return [a.id, a.nom + ' - ' + t];
     });
-    alert('✅ Proposition envoyée à ' + cible.nom + '.');
-    rendreEquipe(boite, role);
+    if (!qui.length) { alert('Aucun apprenant enregistre.'); return; }
+
+    formulaire('Proposer un rendez-vous', [
+      { id:'pour', label:'A qui', type:'select', options:qui, requis:true },
+      { id:'par', label:'De la part de', type:'select', options:optionsConseillers(role),
+        valeur:(role !== 'admin' ? role : 'AB') },
+      { id:'date', label:'Date proposee', type:'date', requis:true, valeur:isoAujourdhui(), min:isoAujourdhui() },
+      { id:'heure', label:'Heure', type:'select', requis:true, valeur:'14:00', options:optionsHeures() },
+      { id:'motif', label:'Motif', type:'select', valeur:MOTIFS[0],
+        options:MOTIFS.map(function (m) { return [m, m]; }) },
+      { id:'message', label:'Un mot a ajouter (facultatif)', type:'textarea',
+        aide:'Ce que vous voulez lui dire avant le rendez-vous' }
+    ], async function (v) {
+      var cible = annuaire.filter(function (a) { return a.id === v.pour; })[0];
+      if (!cible) throw new Error('personne introuvable');
+
+      await api.ecrire('convocations/' + id('v'), {
+        pour: cible.id, type: cible.type, nom: cible.nom,
+        par: v.par, date: v.date, heure: v.heure,
+        motif: v.motif, message: v.message, lieu: LIEU_DEFAUT,
+        etat: 'propose', reponse: '', repondu: '',
+        le: new Date().toISOString(), notifie: false, notifieReponse: true
+      });
+      rendreEquipe(boite, role);
+    });
   }
 
   /* ---- Pastille de l'onglet ----------------------------------------------- */
