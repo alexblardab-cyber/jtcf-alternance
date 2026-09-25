@@ -610,7 +610,10 @@
   /* --- Ma semaine --- */
   function vueSemaine(d, role, auj) {
     var occupes = indexOccupes(d.creneaux);
-    var h = '';
+    var h = '<button id="rdvExterne" style="width:100%;padding:12px;border:1px dashed #cbd5e0;'
+      + 'border-radius:10px;background:#fff;font-family:inherit;font-size:13px;font-weight:700;'
+      + 'cursor:pointer;color:#2a3f4e;margin-bottom:14px;">'
+      + '＋ Noter un rendez-vous (personne hors application)</button>';
     var debut = new Date();
     for (var i = 0; i < 14; i++) {
       var j = new Date(debut); j.setDate(j.getDate() + i);
@@ -645,9 +648,13 @@
         h += '<div style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid ' + conseiller(c.par).couleur + ';'
           + 'border-radius:0 10px 10px 0;padding:11px 13px;margin-bottom:6px;">'
           + '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;">'
-          + '<strong>' + ech(c.heure) + ' · ' + ech(dem.nom || dem.id) + '</strong>'
+          + '<strong>' + ech(c.heure) + ' · ' + ech(dem.nom || dem.id)
+          + (dem.type === 'ext' ? ' <span style="font-size:10px;font-weight:800;letter-spacing:1px;'
+              + 'background:#edf2f7;color:#4a5568;border-radius:5px;padding:2px 6px;">HORS APPLI</span>' : '')
+          + '</strong>'
           + '<span style="font-size:11px;opacity:.6;">' + ech(conseiller(c.par).nom.split(' ')[0]) + '</span></div>'
           + (dem.motif ? '<div style="font-size:12.5px;opacity:.8;margin-top:3px;">' + ech(dem.motif) + '</div>' : '')
+          + (dem.tel ? '<div style="font-size:12.5px;opacity:.7;margin-top:2px;">📞 ' + ech(dem.tel) + '</div>' : '')
           + '<div style="display:flex;gap:7px;margin-top:8px;">'
           + '<button class="btn-reporter" data-c="' + c._id + '" style="padding:6px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font-size:12px;font-family:inherit;cursor:pointer;">Reporter</button>'
           + '<button class="btn-annuler-eq" data-c="' + c._id + '" style="padding:6px 12px;border:1px solid #fed7d7;border-radius:8px;background:#fff;color:#c53030;font-size:12px;font-family:inherit;cursor:pointer;">Annuler</button>'
@@ -871,6 +878,66 @@
 
     var cn = boite.querySelector('#convocNouvelle');
     if (cn) cn.addEventListener('click', function () { nouvelleConvocation(boite, role); });
+
+    var ext = boite.querySelector('#rdvExterne');
+    if (ext) ext.addEventListener('click', function () { noterRendezVous(boite, role); });
+  }
+
+  /* Un rendez-vous avec quelqu'un qui n'est pas dans l'application :
+     candidat reçu en information, partenaire, ancien apprenant, famille.
+     On l'enregistre comme les autres — il bloque donc le créneau, apparaît
+     dans « Ma semaine » et dans l'agenda du matin. Aucun courriel ne part :
+     cette personne n'a pas de compte.                                       */
+  async function noterRendezVous(boite, role) {
+    var qui = role === 'admin'
+      ? (prompt('Pour qui ?\n\nAB = Alexandre\nMG = Marine\nEF = Emilie', 'AB') || '').trim().toUpperCase()
+      : role;
+    if (!qui || !CONSEILLERS[qui]) { if (qui !== '') alert('Code inconnu.'); return; }
+
+    var nom = prompt('Nom de la personne reçue :', '');
+    if (nom === null) return;
+    if (!nom.trim()) { alert('Il faut un nom.'); return; }
+
+    var dt = prompt('Date (jj/mm/aaaa) :', '');
+    if (dt === null) return;
+    var p = dt.trim().split('/');
+    if (p.length !== 3) { alert('Date incomprise. Format attendu : 12/10/2026'); return; }
+    var ij = p[2] + '-' + ('0' + p[1]).slice(-2) + '-' + ('0' + p[0]).slice(-2);
+
+    var heure = prompt('Heure (hh:mm) :', '14:00');
+    if (heure === null) return;
+    if (!/^\d{2}:\d{2}$/.test(heure.trim())) { alert('Heure incomprise. Format attendu : 14:30'); return; }
+
+    var duree = parseInt(prompt('Durée en minutes :', '30'), 10);
+    if (!duree || duree < 5) { alert('Durée incomprise.'); return; }
+
+    var motif = prompt('Motif :', 'Information / premier contact');
+    if (motif === null) return;
+    var tel = prompt('Téléphone (facultatif) :', '') || '';
+
+    var k = cle(qui, ij, heure.trim());
+    var deja = await api.lire('creneaux/' + k);
+    if (deja && (deja.etat === 'demande' || deja.etat === 'confirme')) {
+      var occ = (deja.demandeur && deja.demandeur.nom) || 'quelqu\'un';
+      alert('Ce créneau est déjà pris par ' + occ + '.');
+      return;
+    }
+
+    await api.ecrire('creneaux/' + k, {
+      par: qui, date: ij, heure: heure.trim(), duree: duree, lieu: LIEU_DEFAUT,
+      etat: 'confirme',
+      demandeur: {
+        id: 'ext_' + Date.now().toString(36), nom: nom.trim(), type: 'ext',
+        motif: (motif || '').trim(), tel: tel.trim(), le: new Date().toISOString()
+      },
+      reponse: '', repondu: new Date().toISOString(), traitePar: role,
+      // Personne à prévenir par courriel : la personne n'a pas de compte.
+      notifie: true, notifieReponse: true
+    });
+
+    alert('✅ Rendez-vous noté\n\n' + nom.trim() + '\n' + joli(ij) + ' à ' + heure.trim()
+      + '\n\nLe créneau est bloqué : plus personne ne peut le réserver.');
+    rendreEquipe(boite, role);
   }
 
   async function reporter(k, boite, role) {
