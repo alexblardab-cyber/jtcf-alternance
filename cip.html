@@ -77,6 +77,7 @@
   <script src="regles.js"></script>
   <script src="theme.js"></script>
   <script src="rdv.js"></script>
+   <script src="antennes.js"></script>
 </head>
 <body>
 
@@ -175,15 +176,33 @@ const db = getDatabase(app);
 const userId = sessionStorage.getItem('jtcf_cip_user');
 if (!userId) { window.location.href = 'index.html'; }
 
-// Le code (AB, MG) est celui de rdv.js : c'est lui qui filtre les rendez-vous.
-const PROFILS = {
-  CIP01: { nom: 'Alexandre Blard', code: 'AB', role: 'Conseiller en Formation / Assistant de Direction' },
-  CIP02: { nom: 'Marine Grondin',  code: 'MG', role: 'Conseillère en Insertion Professionnelle / ARH' }
+// Le profil vient de Firebase : ajouter un conseiller ne demande plus de
+// toucher au code. Le champ « code » (AB, MG, GG) filtre les rendez-vous,
+// le champ « secteur » filtre les apprenants. Aucun repli sur un collègue :
+// sans code, on ne voit les rendez-vous de personne — jamais ceux d'un autre.
+const profil = {
+  nom: userId,
+  code: null,
+  role: 'Conseiller en Insertion Professionnelle',
+  secteur: 'sud'
 };
-const profil = PROFILS[userId] || { nom: userId, code: 'AB', role: 'Conseiller en Insertion Professionnelle' };
 
-document.getElementById('headerNom').textContent = profil.nom;
-document.getElementById('headerRole').textContent = profil.role;
+async function chargerProfil(){
+  const p = await litChemin('cips/' + userId) || {};
+  profil.nom     = p.nom  || userId;
+  profil.code    = p.code || null;
+  profil.role    = p.role || profil.role;
+  profil.secteur = p.secteur || 'sud';
+
+  document.getElementById('headerNom').textContent  = profil.nom;
+  document.getElementById('headerRole').textContent = profil.role;
+
+  const a = window.JTCF_ANTENNES && JTCF_ANTENNES.get(profil.secteur);
+  const sousTitre = document.querySelector('.logo-sub');
+  if (a && sousTitre) sousTitre.textContent = a.ville + ' · Espace CIP';
+}
+
+function duSecteur(p){ return (p.secteur || 'sud') === profil.secteur; };
 
 /* ── Lecture accélérée, même principe que les autres espaces ─────────── */
 const CACHE_MS = 20000;
@@ -217,9 +236,9 @@ async function chargerTout(){
     litChemin('alternants'), litChemin('stagiairesFC'),
     litChemin('stagiaires'), litChemin('creneaux')
   ]);
-  alternants = enListe(lots[0], 'alt');
-  fcs        = enListe(lots[1], 'fc');
-  stages     = enListe(lots[2], 'stg');
+    alternants = enListe(lots[0], 'alt').filter(duSecteur);
+  fcs        = enListe(lots[1], 'fc').filter(duSecteur);
+  stages     = enListe(lots[2], 'stg').filter(duSecteur);;
   const c    = lots[3] || {};
   creneaux   = Object.keys(c).map(function(k){ const v = c[k]; v._id = k; return v; });
 
@@ -545,7 +564,7 @@ document.getElementById('btnLogout').addEventListener('click', function(){
   window.location.href = 'index.html';
 });
 
-chargerTout();
+ chargerProfil().then(chargerTout);
 </script>
 </body>
 </html>
