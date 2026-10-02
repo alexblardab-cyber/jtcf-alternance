@@ -655,7 +655,7 @@ async function chargerTout() {
   }
   const stgSnap = await get(ref(db, 'stagiaires')).catch(function(){ return null; });
   allStages = [];
-  if (stgSnap && stgSnap.exists()) { stgSnap.forEach(function(c){ const a=c.val(); a.id=c.key; allStages.push(a); }); }
+   if (stgSnap && stgSnap.exists()) { stgSnap.forEach(function(c){ const a=c.val(); a.id=c.key; if (duSecteur(a)) allStages.push(a); }); }
   window.allStages = allStages;
 
   chargerDashboard();
