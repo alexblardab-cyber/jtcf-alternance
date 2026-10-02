@@ -73,15 +73,19 @@
       vacances: [['2026-12-21', '2027-01-10']]
     },
     AD: {
-      stages: [['2026-10-05', '2026-10-30']],
+      stages: [['2026-10-12', '2026-11-06']],
       vacances: [['2026-12-21', '2027-01-10']]
     },
     ACA: {
-      stages: [['2026-10-05', '2026-10-30']],
+      stages: [['2026-10-12', '2026-11-06']],
+      vacances: [['2026-12-21', '2027-01-10']]
+    },
+    SAMA: {
+      stages: [['2026-11-23', '2026-12-18']],
       vacances: [['2026-12-21', '2027-01-10']]
     },
     ACOM: {
-      stages: [['2026-10-05', '2026-10-30'], ['2027-01-18', '2027-02-12']],
+      stages: [['2026-11-09', '2026-12-11'], ['2027-01-18', '2027-02-12']],
       vacances: [['2026-12-21', '2027-01-08']]
     }
   };
@@ -98,6 +102,7 @@
   function groupeFC(fc) {
     var f = (fc && fc.formation) || '';
     if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
+  if (f.indexOf('Medic') >= 0 || f.indexOf('dico') >= 0 || f.indexOf('SAMA') >= 0) return 'SAMA';
     if (f.indexOf('Direction') >= 0) return 'AD';
     if (f.indexOf('Assistant') >= 0 && f.indexOf('Commercial') >= 0) return 'ACOM';
     if (f.indexOf('ACOM') >= 0) return 'ACOM';
