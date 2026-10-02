@@ -625,11 +625,22 @@ function bornesFC(fc){ return JTCF.bornesFC(fc); }
 function seancesFC_admin(fc){ return JTCF.seancesDeFC(fc); }
 
 async function chargerTout() {
+  // Chaque administrateur ne voit que son territoire. Un apprenant sans
+  // secteur est réputé du Sud : c'est là qu'était tout l'existant.
+  const prof = (await get(ref(db, 'admins/' + userId))).val() || {};
+  const monSecteur = prof.secteur || 'sud';
+  const duSecteur = function (p) { return (p.secteur || 'sud') === monSecteur; };
+
+  const villes = { sud: 'Saint-Joseph', nord: 'Saint-Denis' };
+  const sousTitre = document.querySelector('.logo-sub');
+  if (sousTitre) sousTitre.textContent = (villes[monSecteur] || '') + ' · Administration';
+
   const snap = await get(ref(db, 'alternants'));
   allAlternants = [];
-  if (snap.exists()) { snap.forEach(function(c){ const a=c.val(); a.id=c.key; allAlternants.push(a); }); }
+  if (snap.exists()) { snap.forEach(function(c){ const a=c.val(); a.id=c.key; if (duSecteur(a)) allAlternants.push(a); }); }
   const fcSnap = await get(ref(db, 'stagiairesFC'));
   allFC = [];
+  if (fcSnap.exists()) { fcSnap.forEach(function(c){ const a=c.val(); a.id=c.key; if (duSecteur(a)) allFC.push(a); }); }
   if (fcSnap.exists()) { fcSnap.forEach(function(c){ const a=c.val(); a.id=c.key; allFC.push(a); }); }
   // Migration ASCA : s'assurer que Vendredi est dans leurs jours
   for (const fc of allFC) {
