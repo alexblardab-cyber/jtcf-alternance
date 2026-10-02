@@ -641,7 +641,6 @@ async function chargerTout() {
   const fcSnap = await get(ref(db, 'stagiairesFC'));
   allFC = [];
   if (fcSnap.exists()) { fcSnap.forEach(function(c){ const a=c.val(); a.id=c.key; if (duSecteur(a)) allFC.push(a); }); }
-  if (fcSnap.exists()) { fcSnap.forEach(function(c){ const a=c.val(); a.id=c.key; allFC.push(a); }); }
   // Migration ASCA : s'assurer que Vendredi est dans leurs jours
   for (const fc of allFC) {
     if (fc.formation && fc.formation.includes('Comptabilité')) {
