@@ -254,6 +254,7 @@
           </select>
         </div>
         <div class="form-field"><label class="form-label">✉️ Adresse Google (pour le partage Drive)</label><input class="form-input" id="formEmail" type="email" placeholder="prenom.nom@gmail.com" style="text-transform:none;" /></div>
+        <div class="form-field"><label class="form-label">📍 Antenne</label><select class="form-select" id="formSecteur"><option value="sud">Sud — Saint-Joseph</option><option value="nord">Nord–Est–Ouest — Saint-Denis</option></select></div>
         <div class="form-field"><label class="form-label">Entreprise</label><input class="form-input" id="formEntreprise" placeholder="Nom de l'entreprise" /></div>
         <div class="form-field"><label class="form-label">Maître d'apprentissage</label><input class="form-input" id="formMaitre" placeholder="Prénom Nom" /></div>
         <div class="form-field"><label class="form-label">Jour en centre</label>
@@ -295,6 +296,7 @@
         <div class="form-field"><label class="form-label">Identifiant</label><input class="form-input" id="fcFormId" placeholder="Ex: ML02" maxlength="10" /></div>
         <div class="form-field"><label class="form-label">Nom complet</label><input class="form-input" id="fcFormNom" placeholder="Prénom Nom" /></div>
         <div class="form-field"><label class="form-label">✉️ Adresse Google (pour le partage Drive)</label><input class="form-input" id="fcFormEmail" type="email" placeholder="prenom.nom@gmail.com" style="text-transform:none;" /></div>
+        <div class="form-field"><label class="form-label">📍 Antenne</label><select class="form-select" id="fcFormSecteur"><option value="sud">Sud — Saint-Joseph</option><option value="nord">Nord–Est–Ouest — Saint-Denis</option></select></div>
         <div class="form-field"><label class="form-label">Formation</label>
           <select class="form-select" id="fcFormFormation">
             <optgroup label="Administration">
@@ -374,6 +376,7 @@
         <div class="form-field"><label class="form-label">Identifiant</label><input class="form-input" id="stgFormId" placeholder="Ex: STG01" maxlength="10" /></div>
         <div class="form-field"><label class="form-label">Nom complet</label><input class="form-input" id="stgFormNom" placeholder="Prénom Nom" /></div>
         <div class="form-field"><label class="form-label">✉️ Adresse e-mail</label><input class="form-input" id="stgFormEmail" type="email" placeholder="prenom.nom@exemple.com" style="text-transform:none;" /></div>
+        <div class="form-field"><label class="form-label">📍 Antenne</label><select class="form-select" id="stgFormSecteur"><option value="sud">Sud — Saint-Joseph</option><option value="nord">Nord–Est–Ouest — Saint-Denis</option></select></div>
         <div class="form-field"><label class="form-label">Diplôme préparé</label>
           <select class="form-select" id="stgFormFormation">
             <optgroup label="Baccalauréat professionnel">
@@ -621,6 +624,7 @@ await new Promise((resolve) => {
 });
 
 let allAlternants = [], allFC = [], allStages = [], editingId = null, editingFC = null, editingStage = null, filterMode = 'mois';
+let monSecteur = 'sud';   // territoire de l'administrateur connecté, lu dans chargerTout()
 /* ── Règles métier ─────────────────────────────────────────────────────────
    Volumes horaires, jours de centre, jour en autonomie, stages, vacances,
    fériés et dates de parcours sont définis une seule fois, dans regles.js.
@@ -644,7 +648,7 @@ async function chargerTout() {
   // Chaque administrateur ne voit que son territoire. Un apprenant sans
   // secteur est réputé du Sud : c'est là qu'était tout l'existant.
   const prof = (await get(ref(db, 'admins/' + userId))).val() || {};
-  const monSecteur = prof.secteur || 'sud';
+  monSecteur = prof.secteur || 'sud';
   const duSecteur = function (p) { return (p.secteur || 'sud') === monSecteur; };
 
   const villes = { sud: 'Saint-Joseph', nord: 'Saint-Denis' };
@@ -847,6 +851,7 @@ function ouvrirFormAjout(){
   document.getElementById('formId').disabled=false;
   document.getElementById('formHeures').value='8h00 – 16h00';
   document.getElementById('formEmail').value='';
+  document.getElementById('formSecteur').value=monSecteur;
   document.getElementById('btnSupprimer').style.display='none';
   document.getElementById('formSuccess').classList.remove('visible');
   document.getElementById('sectionDocs').style.display='none';
@@ -865,6 +870,7 @@ function ouvrirFormModif(alt){
   document.getElementById('formJour').value=alt.jourCentre;
   document.getElementById('formHeures').value=alt.heures||'8h00 – 16h00';
   document.getElementById('formEmail').value=alt.email||'';
+  document.getElementById('formSecteur').value=alt.secteur||'sud';
   document.getElementById('formDebut').value=alt.debut||'';
   document.getElementById('formFin').value=alt.fin||'';
   document.getElementById('btnSupprimer').style.display='block';
@@ -883,6 +889,7 @@ async function sauvegarder(e){
   const data={
     nom:document.getElementById('formNom').value.trim(),
     email:document.getElementById('formEmail').value.trim(),
+    secteur:document.getElementById('formSecteur').value,
     formation:document.getElementById('formFormation').value,
     entreprise:document.getElementById('formEntreprise').value.trim(),
     maitre:document.getElementById('formMaitre').value.trim(),
@@ -1662,6 +1669,7 @@ function ouvrirFormFC(fc){
   const sectionDocsFC=document.getElementById('sectionDocsFC');
   sectionDocsFC.style.display=fc?'block':'none';
   document.getElementById('fcFormEmail').value=(fc&&fc.email)||'';
+  document.getElementById('fcFormSecteur').value=fc?(fc.secteur||'sud'):monSecteur;
   if(fc) document.getElementById('docDossierFC').value=(fc.documents&&fc.documents.dossier)?fc.documents.dossier:'';
 }
 
@@ -1678,6 +1686,7 @@ async function sauvegarderFC(e){
   await update(ref(db,'stagiairesFC/'+id),{   // update : ne supprime pas documents/
     nom:document.getElementById('fcFormNom').value.trim(),
     email:document.getElementById('fcFormEmail').value.trim(),
+    secteur:document.getElementById('fcFormSecteur').value,
     formation:document.getElementById('fcFormFormation').value,
     debut:document.getElementById('fcFormDebut').value.trim(),
     fin:document.getElementById('fcFormFin').value.trim(),
@@ -1785,6 +1794,7 @@ function ouvrirFormStage(st){
   document.getElementById('stgFormId').disabled = !!st;
   document.getElementById('stgFormNom').value = st ? (st.nom||'') : '';
   document.getElementById('stgFormEmail').value = st ? (st.email||'') : '';
+  document.getElementById('stgFormSecteur').value = st ? (st.secteur||'sud') : monSecteur;
   document.getElementById('stgFormFormation').value = st && st.formation ? st.formation
     : document.getElementById('stgFormFormation').options[0].value;
   document.getElementById('stgFormEtab').value = st ? (st.etablissement||'') : '';
@@ -1839,6 +1849,7 @@ async function sauvegarderStage(e){
   await update(ref(db,'stagiaires/'+id), {   // update : ne supprime pas documents/
     nom: document.getElementById('stgFormNom').value.trim(),
     email: document.getElementById('stgFormEmail').value.trim(),
+    secteur: document.getElementById('stgFormSecteur').value,
     formation: document.getElementById('stgFormFormation').value,
     etablissement: document.getElementById('stgFormEtab').value.trim(),
     tuteur: document.getElementById('stgFormTuteur').value.trim(),
