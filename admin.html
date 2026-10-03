@@ -582,8 +582,13 @@ const userId = sessionStorage.getItem('jtcf_admin_user');
 if (!userId) { window.location.href = 'index.html'; }
 
 await new Promise((resolve) => {
+  let overlayAffiche = false;
   onAuthStateChanged(auth, (user) => {
-    if (user) { resolve(); return; }
+    // Une session anonyme (créée d'office par les autres pages) ne suffit pas :
+    // il faut un vrai compte e-mail.
+    if (user && !user.isAnonymous) { resolve(); return; }
+    if (overlayAffiche) return;
+    overlayAffiche = true;
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:#1a2530;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:sans-serif;';
     overlay.innerHTML = `<div style="background:white;border-radius:14px;padding:28px;max-width:340px;width:90%;">
