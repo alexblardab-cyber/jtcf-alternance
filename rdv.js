@@ -620,9 +620,21 @@
 
     libres.forEach(function (x) {
       h += '<div style="background:#ebf8ff;border:1px solid #90cdf4;border-radius:12px;padding:14px;margin-bottom:10px;">'
-        + '<div style="font-size:11px;font-weight:800;letter-spacing:1px;color:#2c5282;">💬 DEMANDE LIBRE</div>'
+        + '<div style="font-size:11px;font-weight:800;letter-spacing:1px;color:#2c5282;">'
+        + (x.type === 'public' ? '🌐 DEMANDE DEPUIS LE SITE' : '💬 DEMANDE LIBRE') + '</div>'
         + '<div style="font-weight:800;margin:5px 0 2px;">' + ech(x.nom || x.qui) + '</div>'
         + '<div style="font-size:13px;">' + ech(x.motif || '') + '</div>'
+        // Une demande venue de la vitrine n'a pas de compte : la réponse passe
+        // par le téléphone ou le courriel, qu'on affiche donc en clair.
+        + (x.type === 'public'
+            ? '<div style="font-size:13px;margin-top:4px;">'
+              + (x.tel ? '📞 <a href="tel:' + ech(String(x.tel).replace(/\s/g, '')) + '">' + ech(x.tel) + '</a>' : '')
+              + (x.email ? ' · ✉️ <a href="mailto:' + ech(x.email) + '">' + ech(x.email) + '</a>' : '')
+              + '</div>'
+              + '<div style="font-size:12px;margin-top:4px;opacity:.8;">'
+              + [x.commune, x.situation, x.age].filter(Boolean).map(ech).join(' · ')
+              + '</div>'
+            : '')
         + (x.dispo ? '<div style="font-size:13px;margin-top:4px;">Disponibilités : ' + ech(x.dispo) + '</div>' : '')
         + (x.message ? '<div style="font-size:13px;margin-top:4px;font-style:italic;">« ' + ech(x.message) + ' »</div>' : '')
         + '<div style="display:flex;gap:8px;margin-top:11px;">'
