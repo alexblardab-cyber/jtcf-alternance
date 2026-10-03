@@ -595,11 +595,22 @@ await new Promise((resolve) => {
       <h2 style="color:#1a2530;margin:0 0 6px;">🔐 Connexion admin</h2>
       <p style="font-size:13px;color:#718096;margin:0 0 16px;">Accès sécurisé requis.</p>
       <input id="fbEmail" type="email" placeholder="email" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
-      <input id="fbPass" type="password" placeholder="mot de passe" style="width:100%;padding:10px;margin-bottom:10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
+      <div style="position:relative;margin-bottom:10px;">
+        <input id="fbPass" type="password" placeholder="mot de passe" style="width:100%;padding:10px 44px 10px 10px;border:2px solid #e2e8f0;border-radius:8px;box-sizing:border-box;">
+        <button id="fbVoirPass" type="button" title="Afficher le mot de passe" aria-label="Afficher le mot de passe" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">👁️</button>
+      </div>
       <button id="fbLoginBtn" style="width:100%;padding:12px;background:var(--or);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Se connecter</button>
       <div id="fbLoginErr" style="color:#e53e3e;font-size:12px;margin-top:8px;"></div>
     </div>`;
     document.body.appendChild(overlay);
+    overlay.querySelector('#fbVoirPass').addEventListener('click', () => {
+      const champ = overlay.querySelector('#fbPass');
+      const bouton = overlay.querySelector('#fbVoirPass');
+      const visible = champ.type === 'password';
+      champ.type = visible ? 'text' : 'password';
+      bouton.textContent = visible ? '🙈' : '👁️';
+      bouton.title = bouton.ariaLabel = visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe';
+    });
     overlay.querySelector('#fbLoginBtn').addEventListener('click', async () => {
       try {
         await signInWithEmailAndPassword(auth, overlay.querySelector('#fbEmail').value, overlay.querySelector('#fbPass').value);
