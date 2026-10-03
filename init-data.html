@@ -56,6 +56,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
@@ -69,6 +70,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+// Connexion anonyme : la base exige d'être connecté pour lire ou écrire.
+await signInAnonymously(getAuth(app)).catch(()=>{});
 
 const alternants = {
   "AB01": { nom: "Alexandre Blard", formation: "TP Assistant de Direction", entreprise: "JT Conseil Formation", maitre: "Tibère Julien", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "15/06/2026", fin: "10/06/2028", type: "alternant" },

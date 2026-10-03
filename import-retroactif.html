@@ -346,6 +346,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
@@ -357,6 +358,8 @@ firebase.initializeApp({
   appId:"1:961150611919:web:ae8be337575ab1295f62ba"
 });
 const db = firebase.database();
+// Connexion anonyme : la base exige d'être connecté pour lire ou écrire.
+firebase.auth().signInAnonymously().catch(function(){});
 
 const S = {
   BL01:[
