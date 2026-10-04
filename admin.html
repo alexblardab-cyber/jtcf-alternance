@@ -534,7 +534,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBYPFGv5tMYfKkARO4HeQxPQF_55SpbfgE",
@@ -584,12 +584,27 @@ const auth = getAuth(app);
 const userId = sessionStorage.getItem('jtcf_admin_user');
 if (!userId) { window.location.href = 'index.html'; }
 
+/* ── Comptes autorisés ─────────────────────────────────────────────────────
+   N'importe qui peut se créer un compte e-mail dans Firebase : seul un compte
+   de cette liste ouvre l'espace admin. Pour donner l'accès à quelqu'un,
+   créer son compte dans Firebase Authentication PUIS ajouter son adresse ici.
+   ────────────────────────────────────────────────────────────────────────── */
+const COMPTES_ADMIN = [
+  'contact@tbrgroup.fr',          // Alexandre
+  'commercial@tbrgroup.fr',       // Marine
+  'commercial.go@tbrgroup.fr'     // Gabriel
+];
+function compteAutorise(user) {
+  return !!(user && !user.isAnonymous && user.email
+    && COMPTES_ADMIN.indexOf(user.email.trim().toLowerCase()) !== -1);
+}
+
 await new Promise((resolve) => {
   let overlayAffiche = false;
   onAuthStateChanged(auth, (user) => {
     // Une session anonyme (créée d'office par les autres pages) ne suffit pas :
-    // il faut un vrai compte e-mail.
-    if (user && !user.isAnonymous) { resolve(); return; }
+    // il faut un vrai compte e-mail, et qu'il figure dans COMPTES_ADMIN.
+    if (compteAutorise(user)) { resolve(); return; }
     if (overlayAffiche) return;
     overlayAffiche = true;
     const overlay = document.createElement('div');
@@ -615,10 +630,16 @@ await new Promise((resolve) => {
       bouton.title = bouton.ariaLabel = visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe';
     });
     overlay.querySelector('#fbLoginBtn').addEventListener('click', async () => {
+      let cred;
       try {
-        await signInWithEmailAndPassword(auth, overlay.querySelector('#fbEmail').value, overlay.querySelector('#fbPass').value);
-        overlay.remove(); resolve();
-      } catch (err) { overlay.querySelector('#fbLoginErr').textContent = 'Identifiants incorrects.'; }
+        cred = await signInWithEmailAndPassword(auth, overlay.querySelector('#fbEmail').value.trim(), overlay.querySelector('#fbPass').value);
+      } catch (err) { overlay.querySelector('#fbLoginErr').textContent = 'Identifiants incorrects.'; return; }
+      if (!compteAutorise(cred.user)) {
+        await signOut(auth);
+        overlay.querySelector('#fbLoginErr').textContent = "Cette adresse n'a pas accès à l'espace admin.";
+        return;
+      }
+      overlay.remove(); resolve();
     });
   });
 });
