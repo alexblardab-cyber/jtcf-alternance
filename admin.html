@@ -346,6 +346,7 @@
         <div class="form-field"><label class="form-label">Date de début</label><input class="form-input" id="fcFormDebut" placeholder="JJ/MM/AAAA" value="13/07/2026" /></div>
         <div class="form-field"><label class="form-label">Date de fin</label><input class="form-input" id="fcFormFin" placeholder="JJ/MM/AAAA" /></div>
         <button class="btn-primary" id="btnSauvegarderFC">💾 Sauvegarder</button>
+        <button class="btn-primary" id="btnAttestationFC" style="display:none;background:linear-gradient(135deg,#2f855a,#38a169);margin-top:8px;">📄 Attestation d'assiduité (PDF)</button>
         <button class="btn-danger" id="btnSupprimerFC" style="display:none;">🗑️ Supprimer</button>
         <div class="success-msg" id="fcFormSuccess">✅ Stagiaire FC sauvegardé !</div>
         <div id="sectionDocsFC" style="display:none;margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;">
@@ -1703,6 +1704,7 @@ function ouvrirFormFC(fc){
   document.getElementById('fcFormDebut').value=fc?fc.debut:'13/07/2026';
   document.getElementById('fcFormFin').value=fc?fc.fin||'':'';
   document.getElementById('btnSupprimerFC').style.display=fc?'block':'none';
+  document.getElementById('btnAttestationFC').style.display=fc?'block':'none';
   document.getElementById('fcFormSuccess').classList.remove('visible');
   document.getElementById('listeFC').style.display='none';
   document.getElementById('fcFormView').style.display='block';
@@ -1941,6 +1943,15 @@ async function sauvegarderDocsStage(e){
   brancher('btnSauvegarderStage', sauvegarderStage);
   brancher('btnSupprimerStage', supprimerStage);
   brancher('btnSauvegarderDocsStage', sauvegarderDocsStage);
+  brancher('btnAttestationFC', function(){
+    const fc = (allFC||[]).filter(function(x){ return x.id === editingFC; })[0];
+    if (!fc){ alert('Enregistrez d\'abord le stagiaire.'); return; }
+    const b = document.getElementById('btnAttestationFC');
+    b.disabled = true; b.textContent = '⏳ Génération...';
+    attestationAssiduiteFC(fc)
+      .catch(function(e){ alert('Génération impossible : ' + e.message); })
+      .finally(function(){ b.disabled = false; b.textContent = '📄 Attestation d\'assiduité (PDF)'; });
+  });
   brancher('btnAttestationStage', function(){
     const st = (allStages||[]).filter(function(x){ return x.id === editingStage; })[0];
     if (!st){ alert('Enregistrez d\'abord le stagiaire.'); return; }
@@ -2272,6 +2283,118 @@ async function attestationStage(st){
 
   const nomFichier = 'Attestation_stage_' + (st.nom||st.id).replace(/[^A-Za-z0-9]/g,'_') + '.pdf';
   doc.save(nomFichier);
+}
+
+/* ---- Attestation d'assiduité — formation continue (PDF) -----------------
+   Pièce exigée par l'ASP pour le paiement de mi-parcours du PASS FORMATION :
+   heures réalisées à ce jour, rapportées à la durée totale (> 50 % requis),
+   signée par le stagiaire et par l'organisme.
+   La durée totale est CALCULÉE à partir des dates du parcours et des règles
+   de regles.js (6 h par jour, autonomie comprise ; stages en entreprise,
+   vacances et fériés exclus) : ce sont les heures en centre.
+   ------------------------------------------------------------------------ */
+
+async function attestationAssiduiteFC(fc){
+  if (!window.jspdf){
+    await new Promise(function(res, rej){
+      const sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      sc.onload = res; sc.onerror = rej;
+      document.head.appendChild(sc);
+    });
+  }
+
+  const seances = JTCF.seancesDeFC(fc);
+  if (!seances.length){ alert('Vérifiez les dates de début et de fin du parcours.'); return; }
+
+  const snap = await get(ref(db,'emargementsFC')).catch(function(){ return null; });
+  const tout = (snap && snap.exists()) ? snap.val() : {};
+
+  const jA = JTCF.jourAutonomieFC(fc);
+  const auj = new Date(); auj.setHours(0,0,0,0);
+  let total = 0, realise = 0, absence = 0;
+  seances.forEach(function(d){
+    total += JTCF.JOUR_FC_H;
+    if (d > auj) return;
+    const v = tout[fc.id + '_fc_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate()] || {};
+    if (v.presence === 'absent'){ absence += JTCF.JOUR_FC_H; return; }
+    if (d.getDay() === jA){ realise += JTCF.JOUR_FC_H; return; }
+    if (v.matin_alt) realise += JTCF.MATIN_FC;
+    if (v.am_alt)    realise += JTCF.AM_FC;
+  });
+  const pct = Math.round(realise / total * 1000) / 10;
+  const b = JTCF.bornesFC(fc);
+  function jj(d){ return ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear(); }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const BLEU = [42,63,78], OR = [201,162,39], GRIS = [113,128,150];
+
+  doc.setFillColor.apply(doc, BLEU); doc.rect(0,0,210,30,'F');
+  doc.setTextColor.apply(doc, OR); doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text('JT CONSEIL FORMATION', 15, 12);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
+  doc.text('20a rue du Général Lambert, 97480 Saint-Joseph - La Réunion', 15, 18);
+  doc.setFontSize(10); doc.setFont('helvetica','bold');
+  doc.text('ATTESTATION D\'ASSIDUITÉ', 15, 25);
+
+  let y = 45;
+  doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont('helvetica','normal');
+  const corps = doc.splitTextToSize(
+    'Je soussigné(e), représentant(e) de JT Conseil Formation, organisme de formation, atteste que '
+    + (fc.nom || fc.id) + ' suit la formation ci-dessous et y a réalisé, au ' + jj(auj)
+    + ', les heures indiquées.', 180);
+  doc.text(corps, 15, y); y += corps.length * 5 + 6;
+
+  const infos = [
+    ['Stagiaire',             fc.nom || fc.id],
+    ['Intitulé de la session', fc.formation || '-'],
+    ['Dates de la formation', 'du ' + jj(b.debut) + ' au ' + jj(b.fin)],
+    ['Horaires',              '8h15-12h00 / 13h00-15h15 (6 h par jour, autonomie comprise)']
+  ];
+  infos.forEach(function(l){
+    doc.setFont('helvetica','bold'); doc.text(l[0] + ' :', 15, y);
+    doc.setFont('helvetica','normal'); doc.text(doc.splitTextToSize(String(l[1]), 125), 70, y);
+    y += 7;
+  });
+
+  y += 4;
+  doc.setFillColor(245,247,250); doc.rect(15, y, 180, 34, 'F');
+  doc.setDrawColor.apply(doc, OR); doc.setLineWidth(0.4); doc.rect(15, y, 180, 34);
+  doc.setFontSize(10);
+  [['Durée totale de la formation en centre', heuresHM(total)],
+   ['Heures réalisées au ' + jj(auj),         heuresHM(realise)],
+   ['Heures d\'absence',                      heuresHM(absence)],
+   ['Taux de réalisation',                    String(pct).replace('.',',') + ' %']
+  ].forEach(function(l, i){
+    doc.setFont('helvetica', i === 3 ? 'bold' : 'normal'); doc.setTextColor(0,0,0);
+    doc.text(l[0], 20, y + 8 + i*7);
+    doc.text(l[1], 190, y + 8 + i*7, { align:'right' });
+  });
+  y += 42;
+
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  if (pct > 50){ doc.setTextColor(40,140,80); doc.text('Le stagiaire a réalisé plus de 50 % de la durée totale de la formation.', 15, y); }
+  else         { doc.setTextColor(200,50,50); doc.text('Attention : moins de 50 % de la durée totale de la formation réalisée à ce jour.', 15, y); }
+  y += 8;
+  doc.setTextColor.apply(doc, GRIS); doc.setFontSize(7);
+  doc.text(doc.splitTextToSize('Heures calculées à partir des émargements numériques (matin 3h45, après-midi 2h15, journée en autonomie 6h). '
+    + 'Les périodes de stage en entreprise, les vacances et les jours fériés ne sont pas comptés.', 180), 15, y);
+  y += 14;
+
+  doc.setTextColor(0,0,0); doc.setFontSize(9);
+  doc.text('Fait à Saint-Joseph, le ' + jj(new Date()), 15, y);
+  y += 8;
+  doc.setDrawColor(180,180,180); doc.setLineWidth(0.2);
+  doc.rect(15, y, 85, 35); doc.rect(110, y, 85, 35);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8);
+  doc.text('Le stagiaire', 18, y+5);
+  doc.text('L\'organisme de formation', 113, y+5);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor.apply(doc, GRIS);
+  doc.text(fc.nom || fc.id, 18, y+10);
+  doc.text('JT Conseil Formation - cachet et signature', 113, y+10);
+
+  doc.save('Attestation_assiduite_' + (fc.nom||fc.id).replace(/[^A-Za-z0-9]/g,'_') + '.pdf');
 }
 
 /* ==========================================================================
@@ -2948,6 +3071,13 @@ const sigForm = !!imgForm || (!s.isRetro && s.formSigne);
 // Mêmes règles que le reste de l'application : elles viennent de regles.js.
 var MATIN_FC_P = JTCF.MATIN_FC, AM_FC_P = JTCF.AM_FC, AUTO_FC_P = JTCF.JOUR_FC_H;
 
+// 3.75 → « 3h45 » : plus lisible qu'un nombre décimal pour un contrôleur.
+function heuresHM(h){
+  const min = Math.round((h || 0) * 60);
+  const m = min % 60;
+  return Math.floor(min / 60) + 'h' + (m ? ('0' + m).slice(-2) : '');
+}
+
 function estASCA_p(f){ return JTCF.estASCA(f); }
 function jourAutoFC_p(f){ return JTCF.jourAutonomieFC(f); }
 function groupeFC_p(fc){ return JTCF.groupeFC(fc); }
@@ -3048,8 +3178,8 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
     doc.setFillColor.apply(doc,BLEU); doc.rect(107,78,42,14,'F');
     doc.setFillColor.apply(doc,OR);   doc.rect(153,78,42,14,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
-    doc.text(String(hP).replace('.',',')+'h',36,87,{align:'center'});
-    doc.text(String(hA).replace('.',',')+'h',82,87,{align:'center'});
+    doc.text(heuresHM(hP),36,87,{align:'center'});
+    doc.text(heuresHM(hA),82,87,{align:'center'});
     doc.text(String(retenues.length),128,87,{align:'center'});
     doc.setTextColor.apply(doc,BLEU_FONCE); doc.text(String(nAuto),174,87,{align:'center'});
     doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
@@ -3101,8 +3231,8 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
         else if(s.auto || l.alt){ doc.setTextColor.apply(doc,VERT); doc.text('Présent(e)',82,y+6); }
         else { doc.setTextColor.apply(doc,GRIS); doc.text('Non signé',82,y+6); }
         doc.setTextColor.apply(doc,BLEU_FONCE);
-        doc.text(l.hP>0?String(l.hP).replace('.',',')+'h':'—',112,y+6);
-        doc.text(l.hA>0?String(l.hA).replace('.',',')+'h':'—',130,y+6);
+        doc.text(l.hP>0?heuresHM(l.hP):'—',112,y+6);
+        doc.text(l.hA>0?heuresHM(l.hA):'—',130,y+6);
         if(s.auto && !s.absent){
           doc.setTextColor(184,144,31); doc.setFontSize(6);
           doc.text('Travail en autonomie',145,y+6); doc.text('validé par le centre',172,y+6);
