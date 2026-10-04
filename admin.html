@@ -3061,41 +3061,59 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
     let y=99;
     doc.setFillColor.apply(doc,BLEU_FONCE); doc.rect(15,y,180,8,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
-    doc.text('Date',18,y+5); doc.text('Type',52,y+5); doc.text('Présence',82,y+5);
+    doc.text('Date',18,y+5); doc.text('Demi-journée',52,y+5); doc.text('Présence',82,y+5);
     doc.text('H.Prés.',110,y+5); doc.text('H.Abs.',128,y+5);
     doc.text('Sig. Stagiaire',145,y+5); doc.text('Sig. Formatrice',172,y+5);
     y+=8;
 
-    for(const s of detail){
-      if(y>265){ addFooter(pageNum); pageNum++; doc.addPage();
-        addHeader('ÉMARGEMENT · '+fc.nom.toUpperCase()+' (suite)'); addFooter(pageNum); y=38;doc.setFillColor(42,63,78);doc.rect(15,y,180,8,'F');doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont('helvetica','bold');doc.text('Date',18,y+5);doc.text('Type',52,y+5);doc.text('Presence',82,y+5);doc.text('H.Pres.',110,y+5);doc.text('H.Abs.',128,y+5);doc.text('Sig. Stagiaire',145,y+5);doc.text('Sig. Formatrice',172,y+5);y+=8; }
-      const ds=s.date.getDate()+' '+moisFr[s.date.getMonth()]+' '+s.date.getFullYear();
-      const rc=s.absent?[255,245,245]:(s.auto?[253,246,227]:(s.altSigne&&s.formSigne?[240,255,244]:[250,250,252]));
-      doc.setFillColor.apply(doc,rc); doc.rect(15,y,180,10,'F');
-      doc.setTextColor.apply(doc,BLEU_FONCE); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(ds,18,y+6);
-      doc.setFont('helvetica','normal');
-      if(s.auto){ doc.setTextColor(184,144,31); doc.text('Autonomie',52,y+6); }
-      else { doc.setTextColor.apply(doc,GRIS);
-             doc.text(s.mode==='presentiel'?'Présentiel':s.mode==='distanciel'?'Distanciel':'Centre',52,y+6); }
-      if(s.absent){ doc.setTextColor.apply(doc,ROUGE); doc.text(s.motif?('Absent · '+s.motif).substring(0,22):'Absent(e)',82,y+6); }
-      else { doc.setTextColor.apply(doc,VERT); doc.text('Présent(e)',82,y+6); }
-      doc.setTextColor.apply(doc,BLEU_FONCE);
-      doc.text(s.hP>0?String(s.hP).replace('.',',')+'h':'—',112,y+6);
-      doc.text(s.hA>0?String(s.hA).replace('.',',')+'h':'—',130,y+6);
-      if(s.auto && !s.absent){
-        doc.setTextColor(184,144,31); doc.setFontSize(6);
-        doc.text('Travail en autonomie',145,y+6); doc.text('validé par le centre',172,y+6);
-        doc.setFontSize(7);
+    // Une ligne par émargement : la Région (ASP) exige la signature du
+    // stagiaire ET du formateur sur chaque demi-journée, avec ses heures.
+    function signatureOuEtat(img, x, yy, absent){
+      if(!absent && img){
+        try{ dessinerSignature(doc,img,x,yy,null,null); }
+        catch(e){ doc.setTextColor.apply(doc,VERT); doc.text('Signé',x,yy+6); }
       } else {
-        const sa=s.data.matin_alt||s.data.am_alt;
-        if(!s.absent&&sa){ try{ dessinerSignature(doc,sa,145,y,null,null); if(false) doc.addImage(sa,'JPEG',143,y+1,22,8);}catch(e){ doc.setTextColor.apply(doc,VERT); doc.text('Signe',145,y+6);} }
-        else { doc.setTextColor.apply(doc,s.absent?ROUGE:GRIS); doc.text(s.absent?'Absent':'En attente',145,y+6); }
-        const sf=s.data.matin_form||s.data.am_form;
-        if(!s.absent&&sf){ try{ dessinerSignature(doc,sf,172,y,null,null); if(false) doc.addImage(sf,'JPEG',170,y+1,22,8);}catch(e){ doc.setTextColor.apply(doc,VERT); doc.text('Signe',172,y+6);} }
-        else { doc.setTextColor.apply(doc,s.absent?ROUGE:GRIS); doc.text(s.absent?'Absent':'En attente',172,y+6); }
+        doc.setTextColor.apply(doc,absent?ROUGE:GRIS); doc.text(absent?'Absent':'En attente',x,yy+6);
       }
-      doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10);
-      y+=10;
+    }
+    for(const s of detail){
+      const ds=s.date.getDate()+' '+moisFr[s.date.getMonth()]+' '+s.date.getFullYear();
+      const lignes = s.auto
+        ? [{ lib:'Autonomie', hP:s.hP, hA:s.hA }]
+        : [{ lib:'Matin',      alt:s.data.matin_alt, form:s.data.matin_form, h:MATIN_FC_P },
+           { lib:'Après-midi', alt:s.data.am_alt,    form:s.data.am_form,    h:AM_FC_P }];
+      lignes.forEach(function(l, i){
+        if(y>265){ addFooter(pageNum); pageNum++; doc.addPage();
+          addHeader('ÉMARGEMENT · '+fc.nom.toUpperCase()+' (suite)'); addFooter(pageNum); y=38;doc.setFillColor(42,63,78);doc.rect(15,y,180,8,'F');doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont('helvetica','bold');doc.text('Date',18,y+5);doc.text('Demi-journée',52,y+5);doc.text('Présence',82,y+5);doc.text('H.Prés.',110,y+5);doc.text('H.Abs.',128,y+5);doc.text('Sig. Stagiaire',145,y+5);doc.text('Sig. Formatrice',172,y+5);y+=8; }
+        if(!s.auto){
+          l.hP = (!s.absent && l.alt) ? l.h : 0;
+          l.hA = s.absent ? l.h : 0;
+        }
+        const rc=s.absent?[255,245,245]:(s.auto?[253,246,227]:(l.alt&&l.form?[240,255,244]:[250,250,252]));
+        doc.setFillColor.apply(doc,rc); doc.rect(15,y,180,10,'F');
+        doc.setTextColor.apply(doc,BLEU_FONCE); doc.setFontSize(7);
+        doc.setFont('helvetica', i===0?'bold':'normal'); doc.text(ds,18,y+6);
+        doc.setFont('helvetica','normal');
+        if(s.auto){ doc.setTextColor(184,144,31); doc.text('Autonomie',52,y+6); }
+        else { doc.setTextColor.apply(doc,GRIS);
+               doc.text(l.lib+(s.mode==='distanciel'?' · Distanciel':''),52,y+6); }
+        if(s.absent){ doc.setTextColor.apply(doc,ROUGE); doc.text(s.motif?('Absent · '+s.motif).substring(0,22):'Absent(e)',82,y+6); }
+        else if(s.auto || l.alt){ doc.setTextColor.apply(doc,VERT); doc.text('Présent(e)',82,y+6); }
+        else { doc.setTextColor.apply(doc,GRIS); doc.text('Non signé',82,y+6); }
+        doc.setTextColor.apply(doc,BLEU_FONCE);
+        doc.text(l.hP>0?String(l.hP).replace('.',',')+'h':'—',112,y+6);
+        doc.text(l.hA>0?String(l.hA).replace('.',',')+'h':'—',130,y+6);
+        if(s.auto && !s.absent){
+          doc.setTextColor(184,144,31); doc.setFontSize(6);
+          doc.text('Travail en autonomie',145,y+6); doc.text('validé par le centre',172,y+6);
+          doc.setFontSize(7);
+        } else {
+          signatureOuEtat(l.alt,145,y,s.absent);
+          signatureOuEtat(l.form,172,y,s.absent);
+        }
+        doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10);
+        y+=10;
+      });
     }
 
     y+=4;
