@@ -345,6 +345,7 @@
         </div>
         <div class="form-field"><label class="form-label">Date de début</label><input class="form-input" id="fcFormDebut" placeholder="JJ/MM/AAAA" value="13/07/2026" /></div>
         <div class="form-field"><label class="form-label">Date de fin</label><input class="form-input" id="fcFormFin" placeholder="JJ/MM/AAAA" /></div>
+        <div class="form-field"><label class="form-label">⏱️ Durée PASS (heures, d'après le dossier)</label><input class="form-input" id="fcFormDureePass" type="number" min="0" step="0.5" placeholder="Ex : 550" /></div>
         <button class="btn-primary" id="btnSauvegarderFC">💾 Sauvegarder</button>
         <button class="btn-primary" id="btnAttestationFC" style="display:none;background:linear-gradient(135deg,#2f855a,#38a169);margin-top:8px;">📄 Attestation d'assiduité (PDF)</button>
         <button class="btn-danger" id="btnSupprimerFC" style="display:none;">🗑️ Supprimer</button>
@@ -1703,6 +1704,7 @@ function ouvrirFormFC(fc){
   document.getElementById('fcFormFormation').value=fc?fc.formation:'';
   document.getElementById('fcFormDebut').value=fc?fc.debut:'13/07/2026';
   document.getElementById('fcFormFin').value=fc?fc.fin||'':'';
+  document.getElementById('fcFormDureePass').value=(fc&&fc.dureePass)||'';
   document.getElementById('btnSupprimerFC').style.display=fc?'block':'none';
   document.getElementById('btnAttestationFC').style.display=fc?'block':'none';
   document.getElementById('fcFormSuccess').classList.remove('visible');
@@ -1733,6 +1735,7 @@ async function sauvegarderFC(e){
     formation:document.getElementById('fcFormFormation').value,
     debut:document.getElementById('fcFormDebut').value.trim(),
     fin:document.getElementById('fcFormFin').value.trim(),
+    dureePass: parseFloat(document.getElementById('fcFormDureePass').value) || null,
     jours: joursSelonFormation(document.getElementById('fcFormFormation').value),
     heures:'8h00 – 16h00', type:'fc'
   });
@@ -2289,12 +2292,18 @@ async function attestationStage(st){
    Pièce exigée par l'ASP pour le paiement de mi-parcours du PASS FORMATION :
    heures réalisées à ce jour, rapportées à la durée totale (> 50 % requis),
    signée par le stagiaire et par l'organisme.
-   La durée totale est CALCULÉE à partir des dates du parcours et des règles
-   de regles.js (6 h par jour, autonomie comprise ; stages en entreprise,
-   vacances et fériés exclus) : ce sont les heures en centre.
+   La durée totale est celle du dossier PASS (champ dureePass de la fiche) :
+   un calcul à partir des dates ne retombe pas sur le chiffre officiel.
+   Les heures réalisées ne comptent que les demi-journées EN CENTRE signées
+   (l'autonomie n'entre pas dans la durée PASS).
    ------------------------------------------------------------------------ */
 
 async function attestationAssiduiteFC(fc){
+  const total = parseFloat(fc.dureePass) || 0;
+  if (!total){
+    alert('Renseignez d\'abord la « Durée PASS (heures) » de ce stagiaire, d\'après son dossier, puis sauvegardez la fiche.');
+    return;
+  }
   if (!window.jspdf){
     await new Promise(function(res, rej){
       const sc = document.createElement('script');
@@ -2312,13 +2321,11 @@ async function attestationAssiduiteFC(fc){
 
   const jA = JTCF.jourAutonomieFC(fc);
   const auj = new Date(); auj.setHours(0,0,0,0);
-  let total = 0, realise = 0, absence = 0;
+  let realise = 0, absence = 0;
   seances.forEach(function(d){
-    total += JTCF.JOUR_FC_H;
-    if (d > auj) return;
+    if (d > auj || d.getDay() === jA) return;      // à venir, ou autonomie
     const v = tout[fc.id + '_fc_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate()] || {};
     if (v.presence === 'absent'){ absence += JTCF.JOUR_FC_H; return; }
-    if (d.getDay() === jA){ realise += JTCF.JOUR_FC_H; return; }
     if (v.matin_alt) realise += JTCF.MATIN_FC;
     if (v.am_alt)    realise += JTCF.AM_FC;
   });
@@ -2350,7 +2357,7 @@ async function attestationAssiduiteFC(fc){
     ['Stagiaire',             fc.nom || fc.id],
     ['Intitulé de la session', fc.formation || '-'],
     ['Dates de la formation', 'du ' + jj(b.debut) + ' au ' + jj(b.fin)],
-    ['Horaires',              '8h15-12h00 / 13h00-15h15 (6 h par jour, autonomie comprise)']
+    ['Horaires en centre',    '8h15-12h00 / 13h00-15h15 (6 h par jour)']
   ];
   infos.forEach(function(l){
     doc.setFont('helvetica','bold'); doc.text(l[0] + ' :', 15, y);
@@ -2362,9 +2369,9 @@ async function attestationAssiduiteFC(fc){
   doc.setFillColor(245,247,250); doc.rect(15, y, 180, 34, 'F');
   doc.setDrawColor.apply(doc, OR); doc.setLineWidth(0.4); doc.rect(15, y, 180, 34);
   doc.setFontSize(10);
-  [['Durée totale de la formation en centre', heuresHM(total)],
-   ['Heures réalisées au ' + jj(auj),         heuresHM(realise)],
-   ['Heures d\'absence',                      heuresHM(absence)],
+  [['Durée totale de la formation (dossier PASS)', heuresHM(total)],
+   ['Heures réalisées en centre au ' + jj(auj),   heuresHM(realise)],
+   ['Heures d\'absence',                          heuresHM(absence)],
    ['Taux de réalisation',                    String(pct).replace('.',',') + ' %']
   ].forEach(function(l, i){
     doc.setFont('helvetica', i === 3 ? 'bold' : 'normal'); doc.setTextColor(0,0,0);
@@ -2378,8 +2385,8 @@ async function attestationAssiduiteFC(fc){
   else         { doc.setTextColor(200,50,50); doc.text('Attention : moins de 50 % de la durée totale de la formation réalisée à ce jour.', 15, y); }
   y += 8;
   doc.setTextColor.apply(doc, GRIS); doc.setFontSize(7);
-  doc.text(doc.splitTextToSize('Heures calculées à partir des émargements numériques (matin 3h45, après-midi 2h15, journée en autonomie 6h). '
-    + 'Les périodes de stage en entreprise, les vacances et les jours fériés ne sont pas comptés.', 180), 15, y);
+  doc.text(doc.splitTextToSize('Heures réalisées : demi-journées en centre signées par le stagiaire sur les émargements (matin 3h45, après-midi 2h15). '
+    + 'Les journées en autonomie, les périodes de stage en entreprise, les vacances et les jours fériés ne sont pas comptés.', 180), 15, y);
   y += 14;
 
   doc.setTextColor(0,0,0); doc.setFontSize(9);
