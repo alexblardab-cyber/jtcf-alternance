@@ -154,7 +154,10 @@
       <div class="role">Tibère Julien · Vue globale</div>
       <div class="badge">⚙️ Administrateur</div>
     </div>
-    <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+    <div style="display:flex;gap:6px;flex-shrink:0;">
+      <button class="btn-logout" id="btnVersCip" style="display:none;">📅 Espace CIP</button>
+      <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+    </div>
   </div>
 </div>
 
@@ -643,6 +646,23 @@ await new Promise((resolve) => {
     });
   });
 });
+
+// Passage direct vers l'espace CIP de la personne connectée : on retrouve
+// sa fiche cips/ par son adresse e-mail.
+get(ref(db, 'cips')).then(function (s) {
+  const cips = (s && s.val()) || {};
+  const mail = String((auth.currentUser && auth.currentUser.email) || '').toLowerCase();
+  const id = Object.keys(cips).find(function (k) {
+    return mail && String(cips[k].email || '').toLowerCase() === mail;
+  });
+  if (!id) return;
+  const b = document.getElementById('btnVersCip');
+  b.style.display = '';
+  b.addEventListener('click', function () {
+    sessionStorage.setItem('jtcf_cip_user', id);
+    window.location.href = 'cip.html';
+  });
+}).catch(function () {});
 
 let allAlternants = [], allFC = [], allStages = [], editingId = null, editingFC = null, editingStage = null, filterMode = 'mois';
 let monSecteur = 'sud';   // territoire de l'administrateur connecté, lu dans chargerTout()

@@ -90,7 +90,10 @@
       <div class="name" id="headerNom">Espace CIP</div>
       <div class="role" id="headerRole">Conseiller en Insertion Professionnelle</div>
     </div>
-    <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+    <div style="display:flex;gap:6px;flex-shrink:0;">
+      <button class="btn-logout" id="btnVersAdmin" style="display:none;">⚙️ Admin</button>
+      <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+    </div>
   </div>
 </div>
 
@@ -206,6 +209,24 @@ async function chargerProfil(){
   const a = window.JTCF_ANTENNES && JTCF_ANTENNES.get(profil.secteur);
   const sousTitre = document.querySelector('.logo-sub');
   if (a && sousTitre) sousTitre.textContent = a.ville + ' · Espace CIP';
+
+  // Passage direct vers l'admin pour un conseiller qui a aussi cet accès,
+  // retrouvé par l'adresse e-mail de sa fiche. À tenir en accord avec
+  // COMPTES_ADMIN dans admin.html, qui demande toujours la connexion e-mail :
+  // le bouton ne donne aucun droit en plus.
+  const ACCES_ADMIN = {
+    'contact@tbrgroup.fr':       'ADMIN01',   // Alexandre
+    'commercial.go@tbrgroup.fr': 'ADMIN02'    // Gabriel
+  };
+  const adminId = ACCES_ADMIN[String(p.email || '').trim().toLowerCase()];
+  if (adminId) {
+    const b = document.getElementById('btnVersAdmin');
+    b.style.display = '';
+    b.addEventListener('click', function () {
+      sessionStorage.setItem('jtcf_admin_user', adminId);
+      window.location.href = 'admin.html';
+    });
+  }
 }
 
 function duSecteur(p){ return (p.secteur || 'sud') === profil.secteur; };
