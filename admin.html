@@ -591,8 +591,8 @@ if (!userId) { window.location.href = 'index.html'; }
    ────────────────────────────────────────────────────────────────────────── */
 const COMPTES_ADMIN = [
   'contact@tbrgroup.fr',          // Alexandre
-  'commercial@tbrgroup.fr',       // Marine
   'commercial.go@tbrgroup.fr'     // Gabriel
+  // Marine (commercial@tbrgroup.fr) : pas d'accès admin, sauf évolution de poste
 ];
 function compteAutorise(user) {
   return !!(user && !user.isAnonymous && user.email
