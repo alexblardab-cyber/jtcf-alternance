@@ -88,7 +88,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
-await signInAnonymously(auth).catch(()=>{});
+// Session anonyme seulement si personne n'est connecté : sinon elle
+// remplacerait la connexion e-mail de l'équipe (admin), à retaper à chaque fois.
+await auth.authStateReady().catch(()=>{});
+if (!auth.currentUser) await signInAnonymously(auth).catch(()=>{});
 const CODE = "JTCF2026";
 
 // Une seule table : ajouter un profil ne demande plus de toucher à la logique.

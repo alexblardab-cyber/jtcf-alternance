@@ -174,7 +174,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 // Connexion anonyme : la base exige d'être connecté pour lire ou écrire.
-await signInAnonymously(getAuth(app)).catch(()=>{});
+// Seulement si personne n'est connecté, pour ne pas effacer une connexion e-mail.
+const auth = getAuth(app);
+await auth.authStateReady().catch(()=>{});
+if (!auth.currentUser) await signInAnonymously(auth).catch(()=>{});
 
 const userId = sessionStorage.getItem('jtcf_cip_user');
 if (!userId) { window.location.href = 'index.html'; }
