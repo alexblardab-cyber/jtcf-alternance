@@ -122,6 +122,10 @@
       <div class="card-title">📅 Mes rendez-vous du jour</div>
       <div id="rdvDuJour"><div class="loading">Chargement...</div></div>
     </div>
+    <div class="card">
+      <div class="card-title">✍️ Oublis des formatrices</div>
+      <div id="oublisForm"><div class="loading">Chargement...</div></div>
+    </div>
   </div>
 
   <div class="section" id="rendezvous">
@@ -270,6 +274,7 @@ async function chargerTout(){
   creneaux   = Object.keys(c).map(function(k){ const v = c[k]; v._id = k; return v; });
 
   rendreAujourdhui();
+  rendreOublis();
   rendreListe();
   rendreVigilance();
   majBadgeRdv();
@@ -370,6 +375,78 @@ async function rendreAujourdhui(){
           + '</div></div>';
       }).join('')
     : '<div style="font-size:13px;color:var(--gris);padding:4px 0;">Aucun rendez-vous aujourd\'hui.</div>';
+}
+
+/* ── Oublis des formatrices ───────────────────────────────────────────────
+   Une demi-journée signée par l'apprenant mais pas contresignée par la
+   formatrice. On ne montre que les jours passés (aujourd'hui, elle a encore
+   le temps), et on ne signe JAMAIS à sa place : on la prévient.
+   ────────────────────────────────────────────────────────────────────────── */
+const FORMATRICE_MAIL = 'emilie.robert974@me.com';   // Émilie Fontaine
+
+function echapper(s){
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+  });
+}
+
+async function rendreOublis(){
+  const boite = document.getElementById('oublisForm');
+  const lots = await Promise.all([litChemin('emargements'), litChemin('emargementsFC')]);
+  const auj = new Date(); auj.setHours(0,0,0,0);
+
+  // Qui est de mon antenne ? Une séance sans fiche (apprenant parti) est du Sud.
+  const noms = {};
+  alternants.forEach(function(a){ noms['alt:' + a.id] = a.nom; });
+  fcs.forEach(function(f){ noms['fc:' + f.id] = f.nom; });
+
+  const oublis = [];
+  [['alt', lots[0], /^(.+)_(\d{4})_(\d+)_(\d+)$/], ['fc', lots[1], /^(.+)_fc_(\d{4})_(\d+)_(\d+)$/]]
+    .forEach(function(l){
+      const type = l[0], o = l[1] || {}, motif = l[2];
+      Object.keys(o).forEach(function(k){
+        const m = k.match(motif);
+        if (!m) return;
+        const d = new Date(+m[2], +m[3]-1, +m[4]);
+        if (d >= auj) return;
+        const v = o[k] || {};
+        const manque = [];
+        if (v.matin_alt && !v.matin_form) manque.push('matin');
+        if (v.am_alt && !v.am_form)       manque.push('après-midi');
+        if (!manque.length) return;
+        const nom = noms[type + ':' + m[1]];
+        if (!nom && profil.secteur !== 'sud') return;
+        oublis.push({ d: d, nom: nom || m[1], type: type, manque: manque });
+      });
+    });
+
+  if (!oublis.length){
+    boite.innerHTML = '<div style="font-size:13px;color:#38a169;font-weight:600;padding:4px 0;">'
+      + '✓ Aucun oubli : toutes les signatures sont contresignées.</div>';
+    return;
+  }
+
+  oublis.sort(function(a, b){ return b.d - a.d; });
+  const jours = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+  function date(d){ return jours[d.getDay()] + ' ' + ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear(); }
+
+  const texte = oublis.map(function(o){
+    return '- ' + date(o.d) + ' : ' + o.nom + ' (' + o.manque.join(' et ') + ')';
+  }).join('\n');
+  const lien = 'mailto:' + FORMATRICE_MAIL
+    + '?subject=' + encodeURIComponent('[JTCF] Émargements à contresigner')
+    + '&body=' + encodeURIComponent('Bonjour Émilie,\n\nQuelques émargements attendent encore ta signature :\n\n'
+      + texte + '\n\nMerci beaucoup !\n' + profil.nom);
+
+  boite.innerHTML = oublis.map(function(o){
+    return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f5;">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--bleu-fonce);min-width:92px;">' + date(o.d) + '</div>'
+      + '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--bleu-fonce);">' + echapper(o.nom) + '</div>'
+      + '<div style="font-size:11px;color:var(--gris);">' + libelleType(o.type) + ' · ' + o.manque.join(' et ') + '</div></div></div>';
+  }).join('')
+    + '<a href="' + lien + '" style="display:block;text-align:center;padding:11px;margin-top:10px;'
+    + 'background:var(--or);color:#fff;border-radius:9px;font-weight:700;font-size:13px;text-decoration:none;">'
+    + '✉️ Prévenir Émilie (' + oublis.length + ')</a>';
 }
 
 /* ── Apprenants ───────────────────────────────────────────────────────── */
