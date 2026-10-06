@@ -324,6 +324,13 @@
           </div>
         </div>
 
+        <div id="blocHorsCentre" style="display:none;background:#fffaf0;border:2px solid #ed8936;border-radius:12px;padding:18px 16px;text-align:center;margin-bottom:12px;">
+          <div style="font-size:34px;margin-bottom:8px;">🏢</div>
+          <div id="blocHorsCentreTitre" style="font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:6px;">Stage en entreprise</div>
+          <div id="blocHorsCentreTexte" style="font-size:13px;color:#4a5568;line-height:1.6;">
+            Pendant votre stage, l'émargement se fait auprès de votre entreprise, pas dans cette application.
+          </div>
+        </div>
         <div id="blocAutonomie" style="display:none;background:linear-gradient(135deg,var(--bleu-clair),#f7fafc);border:2px solid var(--or);border-radius:12px;padding:18px 16px;text-align:center;margin-bottom:12px;">
           <div style="font-size:34px;margin-bottom:8px;">🏠</div>
           <div style="font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:6px;">Journée en autonomie</div>
@@ -948,6 +955,29 @@ async function updateEmargement() {
   const verouJour = document.getElementById('verouJour');
   const zoneEmarg = document.getElementById('zoneEmarg');
   const blocAuto  = document.getElementById('blocAutonomie');
+  const blocHors  = document.getElementById('blocHorsCentre');
+  if (blocHors) blocHors.style.display = 'none';
+
+  // Stage en entreprise, vacances ou férié : pas d'émargement dans
+  // l'application (règles de regles.js, les mêmes que côté formatrice).
+  if (horsCentreAujourdhui(d)) {
+    verouJour.style.display = 'none';
+    zoneEmarg.style.display = 'block';
+    if (blocAuto) blocAuto.style.display = 'none';
+    let type = 'stage';
+    try { type = getTypeJour(d); } catch (e) {}   // groupe sans planning local
+    document.getElementById('blocHorsCentreTitre').textContent =
+      type === 'vacances' ? 'Vacances' : (type === 'ferie' ? 'Jour férié' : 'Stage en entreprise');
+    document.getElementById('blocHorsCentreTexte').textContent =
+      type === 'stage'
+        ? 'Pendant votre stage, l\'émargement se fait auprès de votre entreprise, pas dans cette application.'
+        : 'Pas de formation en centre ce jour-là : rien à signer.';
+    if (blocHors) blocHors.style.display = 'block';
+    ['blocMatin','blocAM','motifZone','modeToggleWrap','presenceToggleWrap'].forEach(function(id){
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    return;
+  }
 
   // Journée en autonomie : 6h comptées d'office, rien à signer
   if (estJourAutonomie(d)) {
@@ -1057,13 +1087,13 @@ function initCanvases() {
 
 // Boutons mode
 ['btnPresentiel','btnDistanciel'].forEach(function(id) {
-  async function setMode(e) { e.preventDefault(); await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/mode'),document.getElementById(id).getAttribute('data-mode')); await updateEmargement(); }
+  async function setMode(e) { e.preventDefault(); if (horsCentreAujourdhui(joursFormation[jourIdx])) return; await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/mode'),document.getElementById(id).getAttribute('data-mode')); await updateEmargement(); }
   document.getElementById(id).addEventListener('touchend',setMode,{passive:false}); document.getElementById(id).addEventListener('click',setMode);
 });
 
 // Boutons présence
 ['btnPresent','btnAbsent'].forEach(function(id) {
-  async function setPresence(e) { e.preventDefault(); await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/presence'),document.getElementById(id).getAttribute('data-presence')); await updateEmargement(); }
+  async function setPresence(e) { e.preventDefault(); if (horsCentreAujourdhui(joursFormation[jourIdx])) return; await set(ref(db,'emargementsFC/'+getKey(joursFormation[jourIdx])+'/presence'),document.getElementById(id).getAttribute('data-presence')); await updateEmargement(); }
   document.getElementById(id).addEventListener('touchend',setPresence,{passive:false}); document.getElementById(id).addEventListener('click',setPresence);
 });
 
@@ -1102,10 +1132,17 @@ document.getElementById('justifInput').addEventListener('change', async function
   reader.readAsDataURL(file);
 });
 
+// Hors centre (stage, vacances, férié) : aucune écriture n'est acceptée,
+// même si l'écran a été contourné.
+function horsCentreAujourdhui(d) {
+  return !!(user && window.JTCF && JTCF.horsCentreFC(user, d));
+}
+
 // Validation signature
 document.querySelectorAll('.btn-valider').forEach(function(btn) {
   async function valider(e) {
     e.preventDefault();
+    if (horsCentreAujourdhui(joursFormation[jourIdx])) { alert('Pas d\'émargement dans l\'application pendant le stage.'); return; }
     const slot=btn.getAttribute('data-slot');
     const canvasMap={'matin_alt':'canvasMatinAlt','am_alt':'canvasAMAlt'};
     const canvas=document.getElementById(canvasMap[slot]); if(!canvas) return;

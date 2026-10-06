@@ -578,9 +578,21 @@ function stagesDuJour(d){
   });
 }
 
-function fcDuJour(jour){
+// Les stagiaires FC attendus un jour de la semaine. Si une date précise est
+// donnée, on retire aussi ceux qui ne sont pas en centre ce jour-là : stage
+// en entreprise, vacances, férié, ou parcours pas commencé / déjà terminé.
+// Sans cela, un stagiaire en stage apparaissait présent — et la signature
+// globale pouvait signer pour lui.
+function fcDuJour(jour, date){
   var n = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5}[jour];
-  return allFC.filter(function(fc){ return joursDeFC(fc).indexOf(n)>=0; });
+  return allFC.filter(function(fc){
+    if (joursDeFC(fc).indexOf(n) < 0) return false;
+    if (!date) return true;
+    var j = new Date(date); j.setHours(0,0,0,0);
+    var b = JTCF.bornesFC(fc);
+    if (j < b.debut || j > b.fin) return false;
+    return !JTCF.horsCentreFC(fc, j);
+  });
 }
 
 // ===== TABLEAU DE BORD =====
@@ -600,7 +612,7 @@ async function chargerDashboard(){
   }
 
   var alts=allAlternants.filter(function(a){return a.jourCentre===jour;});
-  var fcs=fcDuJour(jour);
+  var fcs=fcDuJour(jour, today);
   var y=today.getFullYear(),m=today.getMonth()+1,d=today.getDate();
 
   var sM=0,sA=0,tot=alts.length+fcs.length;
@@ -769,7 +781,7 @@ async function pointDuJourWhatsApp(){
   var y=today.getFullYear(), m=today.getMonth()+1, d=today.getDate();
 
   var alts=allAlternants.filter(function(a){ return a.jourCentre===jour; });
-  var fcs=fcDuJour(jour).filter(function(f){ return profil.fcIds?profil.fcIds.includes(f.id):true; });
+  var fcs=fcDuJour(jour, today).filter(function(f){ return profil.fcIds?profil.fcIds.includes(f.id):true; });
 
   var nonSignes=[], absents=[], dist=[], autonomie=[], attendus=0;
 
@@ -1064,7 +1076,7 @@ async function rendreJour(J){
   if(bm) bm.style.background = 'linear-gradient(135deg,'+couleur+','+couleur+'dd)';
 
   var alts = allAlternants.filter(function(a){ return a.jourCentre === J; });
-  var fcs  = fcDuJour(J).filter(function(fc){ return profil.fcIds ? profil.fcIds.includes(fc.id) : true; });
+  var fcs  = fcDuJour(J, d).filter(function(fc){ return profil.fcIds ? profil.fcIds.includes(fc.id) : true; });
   afficherListe('listeAlt', alts, J);
   afficherListeFC('listeFCJour', fcs, J);
 
@@ -1961,7 +1973,7 @@ async function signerGlobalJour(jour, period) {
   var sigRef = await signatureFormatrice();
   var valeur = sigRef || ('global_sign_'+Date.now());
   var lesAlt = allAlternants.filter(function(a){ return a.jourCentre===jour; });
-  var lesFC  = fcDuJour(jour);
+  var lesFC  = fcDuJour(jour, jourDate);
 
   // Écritures en parallèle : quelques dixièmes de seconde au lieu de plusieurs secondes.
   await Promise.all(
