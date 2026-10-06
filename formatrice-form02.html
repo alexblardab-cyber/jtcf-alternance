@@ -158,6 +158,7 @@
   </div>
 </div>
 
+<script src="regles.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -195,6 +196,15 @@ function getJoursFC() {
     d.setDate(d.getDate() + 1);
   }
   return jours;
+}
+
+// Le stagiaire est-il attendu en centre ce jour-là ?
+function fcAttendu(fc, d) {
+  const j = new Date(d); j.setHours(0,0,0,0);
+  if (JTCF.joursDeFC(fc).indexOf(j.getDay()) < 0) return false;   // autonomie, week-end
+  const b = JTCF.bornesFC(fc);
+  if (j < b.debut || j > b.fin) return false;
+  return !JTCF.horsCentreFC(fc, j);
 }
 
 function formatDate(d) {
@@ -238,7 +248,10 @@ function ouvrirFiche(fc) {
   document.getElementById('ficheView').style.display = 'block';
   document.getElementById('ficheNom').textContent = fc.nom;
   document.getElementById('ficheFormation').textContent = fc.formation;
-  seances = getJoursFC();
+  // Les vraies séances du stagiaire : ses dates de parcours, sans les
+  // stages, vacances et fériés (règles de regles.js).
+  seances = JTCF.seancesDeFC(fc);
+  if (!seances.length) { alert('Vérifiez les dates de début et de fin de ce stagiaire.'); return; }
   const today = new Date(); today.setHours(0,0,0,0);
   semIdx = 0;
   for (let i = 0; i < seances.length; i++) {
@@ -344,8 +357,11 @@ document.getElementById('btnRetour').addEventListener('touchend',retour,{passive
 // Signature globale FC
 async function signerGlobal(period) {
   const today = new Date(); today.setHours(0,0,0,0);
-  const todayFC = getJoursFC().find(function(s){ const d=new Date(s); d.setHours(0,0,0,0); return d.getTime()===today.getTime(); });
-  if (!todayFC) { alert("Pas de séance aujourd'hui."); return; }
+  // Seuls les stagiaires réellement attendus en centre aujourd'hui (pas en
+  // stage, pas en autonomie, parcours en cours) reçoivent la signature.
+  const attendus = allFC.filter(function(fc){ return fcAttendu(fc, today); });
+  if (!attendus.length) { alert("Aucun stagiaire FC attendu en centre aujourd'hui."); return; }
+  const todayFC = today;
   const slot = period === 'matin' ? 'matin_form' : 'am_form';
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -368,11 +384,11 @@ async function signerGlobal(period) {
     const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
     if(imgData===blank.toDataURL()){alert('Veuillez signer.');return;}
     document.getElementById('gStatus').textContent='⏳ Enregistrement...';
-    for(const fc of allFC){
+    for(const fc of attendus){
       const key=getFCKey(fc, todayFC);
       await set(ref(db,'emargementsFC/'+key+'/'+slot), imgData);
     }
-    document.getElementById('gStatus').textContent='✅ Signature appliquée pour ML01 et GM01 !';
+    document.getElementById('gStatus').textContent='✅ Signature appliquée pour : ' + attendus.map(function(f){ return f.nom; }).join(', ');
     setTimeout(function(){document.body.removeChild(modal);},1500);
   });
 }
