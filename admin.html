@@ -435,6 +435,7 @@
           <div style="font-size:11px;color:#718096;margin-top:4px;">Séparez par des virgules. Les jours fériés sont déjà exclus automatiquement.</div>
         </div>
         <button class="btn-primary" id="btnSauvegarderStage">💾 Sauvegarder</button>
+        <button class="btn-primary" id="btnEmargementStage" style="background:linear-gradient(135deg,#2a3f4e,#3d5a6e);margin-top:8px;">🖊️ Feuille d'émargement (PDF)</button>
         <button class="btn-primary" id="btnAttestationStage" style="background:linear-gradient(135deg,#2f855a,#38a169);margin-top:8px;">📄 Attestation de présence (PDF)</button>
         <button class="btn-danger" id="btnSupprimerStage" style="display:none;">🗑️ Supprimer</button>
         <div class="success-msg" id="stgFormSuccess">✅ Stagiaire sauvegardé !</div>
@@ -1853,6 +1854,7 @@ function ouvrirFormStage(st){
   document.getElementById('stgFormHAM').value = st ? (st.heuresAM||'') : '';
   document.getElementById('btnSupprimerStage').style.display = st ? 'block' : 'none';
   document.getElementById('btnAttestationStage').style.display = st ? 'block' : 'none';
+  document.getElementById('btnEmargementStage').style.display = st ? 'block' : 'none';
   document.getElementById('sectionDocsStage').style.display = st ? 'block' : 'none';
   document.getElementById('sectionContresign').style.display = st ? 'block' : 'none';
   if (st) chargerContresign(st);
@@ -1954,6 +1956,15 @@ async function sauvegarderDocsStage(e){
     attestationAssiduiteFC(fc)
       .catch(function(e){ alert('Génération impossible : ' + e.message); })
       .finally(function(){ b.disabled = false; b.textContent = '📄 Attestation d\'assiduité (PDF)'; });
+  });
+  brancher('btnEmargementStage', function(){
+    const st = (allStages||[]).filter(function(x){ return x.id === editingStage; })[0];
+    if (!st){ alert('Enregistrez d\'abord le stagiaire.'); return; }
+    const b = document.getElementById('btnEmargementStage');
+    b.disabled = true; b.textContent = '⏳ Génération...';
+    emargementStagePDF(st)
+      .catch(function(e){ alert('Génération impossible : ' + e.message); })
+      .finally(function(){ b.disabled = false; b.textContent = '🖊️ Feuille d\'émargement (PDF)'; });
   });
   brancher('btnAttestationStage', function(){
     const st = (allStages||[]).filter(function(x){ return x.id === editingStage; })[0];
@@ -2286,6 +2297,153 @@ async function attestationStage(st){
 
   const nomFichier = 'Attestation_stage_' + (st.nom||st.id).replace(/[^A-Za-z0-9]/g,'_') + '.pdf';
   doc.save(nomFichier);
+}
+
+/* ---- Feuille d'émargement de stage (PDF) --------------------------------
+   Une ligne par demi-journée, de la première journée de stage à aujourd'hui :
+   heures, signature du stagiaire (image) et visa du tuteur. Le visa est une
+   image quand une formatrice a signé, ou une marque « contresigne|tuteur|date »
+   quand il a été validé depuis cette page.
+   ------------------------------------------------------------------------ */
+
+async function emargementStagePDF(st){
+  if (!window.jspdf){
+    await new Promise(function(res, rej){
+      const sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      sc.onload = res; sc.onerror = rej;
+      document.head.appendChild(sc);
+    });
+  }
+
+  const auj = new Date(); auj.setHours(23,59,59,0);
+  const journees = JTCF.seancesDeStage(st).filter(function(d){ return d <= auj; });
+  if (!JTCF.seancesDeStage(st).length){ alert('Renseignez d\'abord les dates de stage.'); return; }
+  if (!journees.length){ alert('Le stage n\'a pas encore commencé : rien à émarger.'); return; }
+
+  const snap = await get(ref(db,'emargementsStage')).catch(function(){ return null; });
+  const tout = (snap && snap.exists()) ? snap.val() : {};
+  const H = JTCF.heuresStage(st);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const BLEU = [42,63,78], OR = [201,162,39], GRIS = [113,128,150], VERT = [56,161,105], ROUGE = [229,62,62];
+  const moisFr = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  let page = 1;
+
+  function entete(titre){
+    doc.setFillColor.apply(doc, BLEU); doc.rect(0,0,210,30,'F');
+    doc.setTextColor.apply(doc, OR); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('JT CONSEIL FORMATION', 15, 12);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
+    doc.text('20a rue du Général Lambert, 97480 Saint-Joseph - La Réunion', 15, 18);
+    doc.setFontSize(10); doc.setFont('helvetica','bold');
+    doc.text(titre, 15, 25);
+    doc.setFillColor.apply(doc, BLEU); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr', 15, 292);
+    doc.text('Page ' + page, 195, 292, { align:'right' });
+  }
+  function enteteTableau(y){
+    doc.setFillColor.apply(doc, BLEU); doc.rect(15, y, 180, 8, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
+    doc.text('Date', 18, y+5); doc.text('Demi-journée', 50, y+5); doc.text('Présence', 80, y+5);
+    doc.text('Heures', 112, y+5); doc.text('Sig. Stagiaire', 132, y+5); doc.text('Visa Tuteur', 165, y+5);
+    return y + 8;
+  }
+  // Visa du tuteur : image, marque de contresignature, ou rien.
+  function visa(v, x, y){
+    if (typeof v === 'string' && v.indexOf('contresigne|') === 0){
+      const p = v.split('|');
+      const quand = p[2] ? new Date(p[2]).toLocaleDateString('fr-FR') : '';
+      doc.setFontSize(6); doc.setTextColor.apply(doc, VERT);
+      doc.text('Validé', x, y+4.5);
+      doc.setTextColor.apply(doc, GRIS);
+      doc.text(doc.splitTextToSize((p[1] || '') + (quand ? ' · ' + quand : ''), 28), x, y+7.5);
+      doc.setFontSize(7);
+      return;
+    }
+    dessinerSignature(doc, v, x, y, null, null);
+  }
+
+  // Totaux
+  let hPres = 0, hAbs = 0, nbAbs = 0;
+  journees.forEach(function(d){
+    const v = tout[st.id + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate()] || {};
+    if (v.presence === 'absent'){ hAbs += H.jour; nbAbs++; return; }
+    if (v.matin_alt) hPres += H.matin;
+    if (v.am_alt)    hPres += H.am;
+  });
+
+  entete('FEUILLE D\'ÉMARGEMENT · STAGE EN ENTREPRISE');
+  doc.setFillColor.apply(doc, OR); doc.rect(0,30,210,2,'F');
+
+  doc.setFillColor.apply(doc, BLEU); doc.rect(15,38,180,34,'F');
+  doc.setTextColor.apply(doc, OR); doc.setFontSize(13); doc.setFont('helvetica','bold');
+  doc.text(st.nom || st.id, 20, 47);
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Diplôme préparé : ' + (st.formation || '-'), 20, 54);
+  doc.text('Établissement : ' + (st.etablissement || '-') + '   ·   Tuteur : ' + (st.tuteur || '-'), 20, 60);
+  doc.text('Période : ' + (st.debut || '-') + ' au ' + (st.fin || '-') + '   ·   Horaires : '
+    + String(st.heures || JTCF.HORAIRES_STAGE).replace(/–/g,'-') + ' (' + heuresHM(H.jour) + ' par jour)', 20, 66);
+
+  doc.setFillColor.apply(doc, VERT);  doc.rect(15,76,57,14,'F');
+  doc.setFillColor.apply(doc, ROUGE); doc.rect(76,76,57,14,'F');
+  doc.setFillColor.apply(doc, OR);    doc.rect(137,76,58,14,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text(heuresHM(hPres), 43.5, 85, { align:'center' });
+  doc.text(String(nbAbs) + ' j', 104.5, 85, { align:'center' });
+  doc.setTextColor.apply(doc, BLEU); doc.text(String(journees.length), 166, 85, { align:'center' });
+  doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
+  doc.text('Heures de présence', 43.5, 88.5, { align:'center' });
+  doc.text('Absences', 104.5, 88.5, { align:'center' });
+  doc.setTextColor.apply(doc, BLEU); doc.text('Journées à ce jour', 166, 88.5, { align:'center' });
+
+  let y = enteteTableau(96);
+
+  journees.forEach(function(d){
+    const v = tout[st.id + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate()] || {};
+    const absent = v.presence === 'absent';
+    const ds = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'][d.getDay()] + ' ' + d.getDate() + ' ' + moisFr[d.getMonth()] + ' ' + d.getFullYear();
+    [{ lib:'Matin', alt:v.matin_alt, form:v.matin_form, h:H.matin },
+     { lib:'Après-midi', alt:v.am_alt, form:v.am_form, h:H.am }].forEach(function(l, i){
+      if (y > 268){
+        page++; doc.addPage();
+        entete('ÉMARGEMENT · ' + String(st.nom || st.id).toUpperCase() + ' (suite)');
+        y = enteteTableau(38);
+      }
+      doc.setFillColor.apply(doc, absent ? [255,245,245] : (l.alt && l.form ? [240,255,244] : [250,250,252]));
+      doc.rect(15, y, 180, 10, 'F');
+      doc.setTextColor.apply(doc, BLEU); doc.setFontSize(7);
+      doc.setFont('helvetica', i === 0 ? 'bold' : 'normal'); if (i === 0) doc.text(ds, 18, y+6);
+      doc.setFont('helvetica','normal'); doc.setTextColor.apply(doc, GRIS); doc.text(l.lib, 50, y+6);
+      if (absent){ doc.setTextColor.apply(doc, ROUGE); doc.text(('Absent · ' + (v.motif || 'sans motif')).substring(0,24), 80, y+6); }
+      else if (l.alt){ doc.setTextColor.apply(doc, VERT); doc.text('Présent(e)', 80, y+6); }
+      else { doc.setTextColor.apply(doc, GRIS); doc.text('Non signé', 80, y+6); }
+      doc.setTextColor.apply(doc, BLEU);
+      doc.text((!absent && l.alt) ? heuresHM(l.h) : '—', 114, y+6);
+      if (absent){ doc.setTextColor.apply(doc, ROUGE); doc.text('Absent', 132, y+6); }
+      else {
+        dessinerSignature(doc, l.alt, 132, y, null, null);
+        visa(l.form, 165, y);
+      }
+      doc.setDrawColor(230,230,230); doc.line(15, y+10, 195, y+10);
+      y += 10;
+    });
+  });
+
+  if (y > 235){ page++; doc.addPage(); entete('ÉMARGEMENT · ' + String(st.nom || st.id).toUpperCase() + ' (suite)'); y = 40; }
+  y += 8;
+  doc.setTextColor(0,0,0); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Fait à Saint-Joseph, le ' + new Date().toLocaleDateString('fr-FR'), 15, y);
+  y += 5;
+  doc.setDrawColor.apply(doc, OR); doc.setLineWidth(0.5);
+  doc.rect(15, y, 84, 28); doc.rect(111, y, 84, 28);
+  doc.setTextColor.apply(doc, GRIS); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('Le stagiaire', 57, y+5, { align:'center' });
+  doc.text('Le tuteur - ' + (st.tuteur || 'JT Conseil Formation'), 153, y+5, { align:'center' });
+
+  doc.save('Emargement_stage_' + (st.nom || st.id).replace(/[^A-Za-z0-9]/g,'_') + '.pdf');
 }
 
 /* ---- Attestation d'assiduité — formation continue (PDF) -----------------
