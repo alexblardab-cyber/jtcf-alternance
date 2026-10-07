@@ -798,13 +798,13 @@ const INFOS_GROUPE = {
          stages:[['5 octobre','30 octobre 2026'],['23 novembre','18 décembre 2026']],
          bilan:'23 février 2027', examen:'2 mars 2027' },
   AD:  { titre:'TP Assistant de Direction',
-         stages:[['5 octobre','30 octobre 2026']],
+         stages:[['12 octobre','6 novembre 2026']],
          bilan:'9 février 2027', examen:'16 février 2027' },
   ACA: { titre:'Assistant Comptabilité et Administration',
-         stages:[['5 octobre','30 octobre 2026']],
+         stages:[['12 octobre','6 novembre 2026']],
          bilan:'9 février 2027', examen:'16 février 2027' },
   ACOM:{ titre:'TP Assistant Commercial',
-         stages:[['5 octobre','30 octobre 2026'],['18 janvier','12 février 2027']],
+         stages:[['9 novembre','11 décembre 2026'],['18 janvier','12 février 2027']],
          bilan:'5 avril 2027', examen:'12 avril 2027' }
 };
 
@@ -889,7 +889,7 @@ function afficherEtapesCles() {
   } else if (groupe === 'ACOM') {
     etapes = [
       { date: '17/08/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
-      { date: '05/10 → 30/10/2026', label: 'Stage 1 en entreprise', icone: '🏢', type: 'stage' },
+      { date: '09/11 → 11/12/2026', label: 'Stage 1 en entreprise', icone: '🏢', type: 'stage' },
       { date: '25/11/2026', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
       { date: '21/12/2026 → 08/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
       { date: '18/01 → 12/02/2027', label: 'Stage 2 en entreprise', icone: '🏢', type: 'stage' },
@@ -901,16 +901,25 @@ function afficherEtapesCles() {
   } else if (groupe === 'AD') {
     etapes = [
       { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
-      { date: '05/10 → 30/10/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '12/10 → 06/11/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
       { date: '09 → 10/11/2026', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
       { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
       { date: '09/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
       { date: '16/02/2027', label: 'Examen', icone: '🎓', type: 'exam' },
     ];
+  } else if (groupe === 'SAMA') {
+    // Étapes de fin de parcours non encore communiquées : seules les
+    // dates connues sont affichées.
+    etapes = [
+      { date: user.debut || '01/09/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '23/11 → 18/12/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: user.fin || '—', label: 'Fin de formation', icone: '🏁', type: 'fin' },
+    ];
   } else {
     etapes = [
       { date: '13/07/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
-      { date: '05/10 → 30/10/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '12/10 → 06/11/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
       { date: '09 → 12/11/2026', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
       { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
       { date: '09/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
