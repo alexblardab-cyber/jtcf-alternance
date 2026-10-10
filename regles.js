@@ -49,7 +49,37 @@
     return false;
   }
 
-  function joursDeFC(fc) { return estASCA(fc) ? [1, 3, 4, 5] : [1, 2, 3, 4]; }
+  /* ---- Rythme particulier -------------------------------------------------
+     Une fiche FC peut porter un aménagement individuel qui remplace, sur une
+     période, le rythme de son groupe. Saisi dans l'admin (fiche FC).
+       fc.rythme = { debut:'aaaa-mm-jj', fin:'aaaa-mm-jj' ou '' (= jusqu'à
+                     nouvel ordre), jours:[1,2,3,4], autonomie:5,
+                     sansStage:true }
+     Exemple : ML01 Maeva Lebon (ACA) reste en formation pendant le stage de
+     son groupe, du lundi au jeudi, vendredi en autonomie (octobre 2026).
+     Toutes les fonctions qui suivent prennent une date : sans date, c'est
+     le rythme d'aujourd'hui qui s'applique.                                  */
+
+  function rythmeActif(fc, d) {
+    var r = fc && fc.rythme;
+    if (!r || !r.debut) return null;
+    var iso = isoJour(d || new Date());
+    if (iso < r.debut) return null;
+    if (r.fin && iso > r.fin) return null;
+    return r;
+  }
+
+  function listeJours(v) {
+    if (!v) return [];
+    var l = Array.isArray(v) ? v : Object.keys(v).map(function (k) { return v[k]; });
+    return l.map(Number).filter(function (n) { return n >= 1 && n <= 5; });
+  }
+
+  function joursDeFC(fc, d) {
+    var r = rythmeActif(fc, d);
+    if (r && listeJours(r.jours).length) return listeJours(r.jours);
+    return estASCA(fc) ? [1, 3, 4, 5] : [1, 2, 3, 4];
+  }
 
   function joursSelonFormation(formation) {
     return (formation || '').indexOf('Comptabilit') >= 0
@@ -57,11 +87,18 @@
       : ['Lundi', 'Mardi', 'Mercredi', 'Jeudi'];
   }
 
-  function jourAutonomieFC(fc) { return estASCA(fc) ? 2 : 5; }
+  // 0 = pas de journée en autonomie dans le rythme particulier.
+  function jourAutonomieFC(fc, d) {
+    var r = rythmeActif(fc, d);
+    if (r && r.autonomie !== undefined && r.autonomie !== null && r.autonomie !== '') return Number(r.autonomie);
+    return estASCA(fc) ? 2 : 5;
+  }
 
-  function estJourAutonomie(fc, d) { return d.getDay() === jourAutonomieFC(fc); }
+  function estJourAutonomie(fc, d) { return d.getDay() === jourAutonomieFC(fc, d); }
 
-  function nomJourAutonomie(fc) { return estASCA(fc) ? 'Mardi' : 'Vendredi'; }
+  function nomJourAutonomie(fc, d) {
+    return ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][jourAutonomieFC(fc, d)] || 'Aucune';
+  }
 
   /* ---- Périodes hors centre ---------------------------------------------- */
   // Stages, vacances et jours fériés : ces journées ne sont ni des séances
@@ -122,7 +159,11 @@
     if (FERIES_FC.indexOf(iso) >= 0) return true;
     var p = PERIODES_FC[groupeFC(fc)];
     if (!p) return false;
-    var listes = (p.stages || []).concat(p.vacances || []);
+    // Rythme particulier « sans stage » : le stagiaire reste en formation
+    // pendant le stage de son groupe ; seules les vacances du centre comptent.
+    var r = rythmeActif(fc, d);
+    var listes = (r && r.sansStage) ? (p.vacances || [])
+                                    : (p.stages || []).concat(p.vacances || []);
     for (var i = 0; i < listes.length; i++) {
       if (iso >= listes[i][0] && iso <= listes[i][1]) return true;
     }
@@ -246,6 +287,7 @@
     stageEnCours: stageEnCours,
     estASCA: estASCA,
     joursDeFC: joursDeFC,
+    rythmeActif: rythmeActif,
     joursSelonFormation: joursSelonFormation,
     jourAutonomieFC: jourAutonomieFC,
     estJourAutonomie: estJourAutonomie,

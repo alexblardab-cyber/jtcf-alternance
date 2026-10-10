@@ -559,8 +559,9 @@ const MATIN_FC = JTCF.MATIN_FC, AM_FC = JTCF.AM_FC, JOUR_FC_H = JTCF.JOUR_FC_H;
 const PERIODES_FC = JTCF.PERIODES_FC, FERIES_FC = JTCF.FERIES_FC;
 
 function estASCA(fc){ return JTCF.estASCA(fc); }
-function joursDeFC(fc){ return JTCF.joursDeFC(fc); }
-function jourAutonomieFC(fc){ return JTCF.jourAutonomieFC(fc); }
+// La date compte : un stagiaire peut avoir un rythme particulier sur une période.
+function joursDeFC(fc, d){ return JTCF.joursDeFC(fc, d); }
+function jourAutonomieFC(fc, d){ return JTCF.jourAutonomieFC(fc, d); }
 function estJourAutonomie(fc, d){ return JTCF.estJourAutonomie(fc, d); }
 function groupeFC(fc){ return JTCF.groupeFC(fc); }
 function isoJour(d){ return JTCF.isoJour(d); }
@@ -570,6 +571,8 @@ function seancesDeFC(fc){ return JTCF.seancesDeFC(fc); }
 
 // Propre à cette page : dépend de la liste chargée en mémoire.
 // Stagiaires en PFMP présents à une date donnée.
+function today0(){ var t = new Date(); t.setHours(0,0,0,0); return t; }
+
 function stagesDuJour(d){
   var j = (d||new Date());
   if (j.getDay() < 1 || j.getDay() > 5) return [];
@@ -586,7 +589,7 @@ function stagesDuJour(d){
 function fcDuJour(jour, date){
   var n = {'Lundi':1,'Mardi':2,'Mercredi':3,'Jeudi':4,'Vendredi':5}[jour];
   return allFC.filter(function(fc){
-    if (joursDeFC(fc).indexOf(n) < 0) return false;
+    if (joursDeFC(fc, date).indexOf(n) < 0) return false;
     if (!date) return true;
     var j = new Date(date); j.setHours(0,0,0,0);
     var b = JTCF.bornesFC(fc);
@@ -910,8 +913,8 @@ async function completerSignatures(){
 
   var today=new Date(); today.setHours(23,59,59,0);
   var nomAlt={}; allAlternants.forEach(function(a){ nomAlt[a.id]=a.nom; });
-  var nomFC={}, autoFC={};
-  allFC.forEach(function(f){ nomFC[f.id]=f.nom; autoFC[f.id]=jourAutonomieFC(f); });
+  var nomFC={}, ficheFC={};
+  allFC.forEach(function(f){ nomFC[f.id]=f.nom; ficheFC[f.id]=f; });
 
   var aRemplacer=[];   // marqueur global_sign_ → vrai paraphe
   var aCombler=[];     // case formatrice vide, apprenant signé
@@ -930,7 +933,7 @@ async function completerSignatures(){
       var id=isFC ? key.split('_fc_')[0] : parts.slice(0,parts.length-3).join('_');
       var nom=isFC ? nomFC[id] : nomAlt[id]; if(!nom) return;
       if(v.presence==='absent') return;
-      if(isFC && dte.getDay()===autoFC[id]) return;
+      if(isFC && dte.getDay()===jourAutonomieFC(ficheFC[id], dte)) return;
       var base=isFC?'emargementsFC':'emargements';
 
       [['matin','matin_alt','matin_form'],['am','am_alt','am_form']].forEach(function(t){
@@ -1898,7 +1901,9 @@ function ouvrirFicheFC(fc) {
   document.getElementById('ficheJour').textContent = 'Lundi au Jeudi · ' + fc.heures;
   seances = seancesDeFC(fc);
   currentFCAutonomie = jourAutonomieFC(fc);
-  document.getElementById('ficheJour').textContent = (estASCA(fc)?'Lundi, Mercredi, Jeudi, Vendredi':'Lundi au Jeudi') + ' · ' + (fc.heures||'');
+  document.getElementById('ficheJour').textContent = joursDeFC(fc, today0()).map(function(n){
+      return ['','Lundi','Mardi','Mercredi','Jeudi','Vendredi'][n]; }).join(', ')
+    + (JTCF.rythmeActif(fc, today0()) ? ' (rythme particulier)' : '') + ' · ' + (fc.heures||'');
   const today = new Date(); today.setHours(0,0,0,0);
   semIdx = 0;
   for (let i = 0; i < seances.length; i++) { const s = new Date(seances[i]); s.setHours(0,0,0,0); if (s <= today) { semIdx = i; } else { break; } }
@@ -2527,7 +2532,7 @@ async function donneesFC(fc, filterYear, filterMonth, refDb, getFn, dbRef){
     const snap = await getFn(dbRef(refDb,'emargementsFC/'+key)).catch(function(){return null;});
     const data = (snap && snap.exists()) ? snap.val() : {};
     const absent = data.presence==='absent';
-    const auto = (s.getDay()===jAuto);
+    const auto = JTCF.estJourAutonomie(fc, s);   // tient compte d'un rythme particulier
     let hPs=0, hAs=0;
     if (auto){
       nAuto++;

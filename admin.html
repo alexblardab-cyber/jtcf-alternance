@@ -346,6 +346,34 @@
         <div class="form-field"><label class="form-label">Date de début</label><input class="form-input" id="fcFormDebut" placeholder="JJ/MM/AAAA" value="13/07/2026" /></div>
         <div class="form-field"><label class="form-label">Date de fin</label><input class="form-input" id="fcFormFin" placeholder="JJ/MM/AAAA" /></div>
         <div class="form-field"><label class="form-label">⏱️ Durée PASS (heures, d'après le dossier)</label><input class="form-input" id="fcFormDureePass" type="number" min="0" step="0.5" placeholder="Ex : 550" /></div>
+        <div class="form-field" style="background:#ebf8ff;border:1px solid #bee3f8;border-radius:10px;padding:12px;">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:700;color:#2c5282;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="fcRythmeActif" /> 📌 Rythme particulier
+          </label>
+          <div style="font-size:11.5px;color:#4a5568;margin:4px 0 0;">Remplace le rythme du groupe pendant une période (ex. stagiaire qui ne part pas en stage).</div>
+          <div id="fcRythmeZone" style="display:none;margin-top:10px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:130px;"><label class="form-label">À partir du</label><input class="form-input" id="fcRythmeDebut" type="date" /></div>
+              <div style="flex:1;min-width:130px;"><label class="form-label">Jusqu'au (vide = nouvel ordre)</label><input class="form-input" id="fcRythmeFin" type="date" /></div>
+            </div>
+            <label class="form-label" style="margin-top:8px;">Jours de formation</label>
+            <div id="fcRythmeJours" style="display:flex;gap:10px;flex-wrap:wrap;font-size:13px;">
+              <label><input type="checkbox" value="1" /> Lun</label>
+              <label><input type="checkbox" value="2" /> Mar</label>
+              <label><input type="checkbox" value="3" /> Mer</label>
+              <label><input type="checkbox" value="4" /> Jeu</label>
+              <label><input type="checkbox" value="5" /> Ven</label>
+            </div>
+            <label class="form-label" style="margin-top:8px;">Journée en autonomie</label>
+            <select class="form-select" id="fcRythmeAuto">
+              <option value="0">Aucune</option><option value="1">Lundi</option><option value="2">Mardi</option>
+              <option value="3">Mercredi</option><option value="4">Jeudi</option><option value="5">Vendredi</option>
+            </select>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="fcRythmeSansStage" /> Pas de stage pendant cette période (émarge chaque jour)
+            </label>
+          </div>
+        </div>
         <button class="btn-primary" id="btnSauvegarderFC">💾 Sauvegarder</button>
         <button class="btn-primary" id="btnAttestationFC" style="display:none;background:linear-gradient(135deg,#2f855a,#38a169);margin-top:8px;">📄 Attestation d'assiduité (PDF)</button>
         <button class="btn-danger" id="btnSupprimerFC" style="display:none;">🗑️ Supprimer</button>
@@ -681,7 +709,8 @@ const PERIODES_FC = JTCF.PERIODES_FC, FERIES_FC = JTCF.FERIES_FC;
 
 function estASCA_admin(f){ return JTCF.estASCA(f); }
 function joursSelonFormation(formation){ return JTCF.joursSelonFormation(formation); }
-function jourAutonomieFC_admin(f){ return JTCF.jourAutonomieFC(f); }
+// La date compte : un stagiaire peut avoir un rythme particulier sur une période.
+function jourAutonomieFC_admin(f, d){ return JTCF.jourAutonomieFC(f, d); }
 function groupeFC(fc){ return JTCF.groupeFC(fc); }
 function isoJour(d){ return JTCF.isoJour(d); }
 function horsCentreFC(fc, d){ return JTCF.horsCentreFC(fc, d); }
@@ -790,7 +819,7 @@ async function chargerDashboard() {
     if (j0 < d0 || j0 > f0) continue;                 // hors periode de formation
     if (jourNum < 1 || jourNum > 5) continue;          // week-end
     if (horsCentreFC(fc, j0)) continue;                // stage, vacances, ferie
-    fc._autonomie = (jourNum === jourAutonomieFC_admin(fc));
+    fc._autonomie = (jourNum === jourAutonomieFC_admin(fc, j0));
     fcDuJour.push(fc);
   }
 
@@ -1107,7 +1136,7 @@ async function chargerRecapAdmin(){
       const data = (snap&&snap.exists())?snap.val():{};
       const absent = data.presence==='absent';
       sCount++;
-      if(d.getDay()===jourAutonomieFC_admin(fc)){
+      if(d.getDay()===jourAutonomieFC_admin(fc, d)){
         nAuto++;
         if(absent){ hA+=JOUR_FC_H; const m=data.motif||'Non renseigné'; motifsFC[m]=(motifsFC[m]||0)+1; }
         else { hP+=JOUR_FC_H; }
@@ -1717,7 +1746,40 @@ function ouvrirFormFC(fc){
   document.getElementById('fcFormEmail').value=(fc&&fc.email)||'';
   document.getElementById('fcFormSecteur').value=fc?(fc.secteur||'sud'):monSecteur;
   if(fc) document.getElementById('docDossierFC').value=(fc.documents&&fc.documents.dossier)?fc.documents.dossier:'';
+  remplirRythme(fc && fc.rythme);
 }
+
+/* ---- Rythme particulier (fiche FC) ---------------------------------------
+   Lu par regles.js (rythmeActif) : remplace le rythme du groupe entre deux
+   dates. Fin vide = jusqu'à nouvel ordre.                                  */
+function remplirRythme(r){
+  const actif = !!(r && r.debut);
+  document.getElementById('fcRythmeActif').checked = actif;
+  document.getElementById('fcRythmeZone').style.display = actif ? 'block' : 'none';
+  document.getElementById('fcRythmeDebut').value = actif ? r.debut : '';
+  document.getElementById('fcRythmeFin').value = actif ? (r.fin || '') : '';
+  const jours = actif ? (Array.isArray(r.jours) ? r.jours : Object.values(r.jours || {})).map(Number) : [1,2,3,4];
+  document.querySelectorAll('#fcRythmeJours input').forEach(function(c){ c.checked = jours.indexOf(+c.value) >= 0; });
+  document.getElementById('fcRythmeAuto').value = actif ? String(r.autonomie || 0) : '5';
+  document.getElementById('fcRythmeSansStage').checked = actif ? !!r.sansStage : true;
+}
+function lireRythme(){
+  if (!document.getElementById('fcRythmeActif').checked) return null;
+  const debut = document.getElementById('fcRythmeDebut').value;
+  if (!debut) throw new Error('Indiquez la date de début du rythme particulier.');
+  const fin = document.getElementById('fcRythmeFin').value || '';
+  if (fin && fin < debut) throw new Error('La fin du rythme particulier doit suivre son début.');
+  const jours = [];
+  document.querySelectorAll('#fcRythmeJours input').forEach(function(c){ if (c.checked) jours.push(+c.value); });
+  if (!jours.length) throw new Error('Cochez au moins un jour de formation pour le rythme particulier.');
+  const autonomie = +document.getElementById('fcRythmeAuto').value;
+  if (autonomie && jours.indexOf(autonomie) >= 0) throw new Error('Le jour d\'autonomie ne peut pas être aussi un jour de formation.');
+  return { debut: debut, fin: fin, jours: jours, autonomie: autonomie,
+           sansStage: document.getElementById('fcRythmeSansStage').checked };
+}
+document.getElementById('fcRythmeActif').addEventListener('change', function(){
+  document.getElementById('fcRythmeZone').style.display = this.checked ? 'block' : 'none';
+});
 
 function retourListeFC(){
   document.getElementById('fcFormView').style.display='none';
@@ -1729,7 +1791,10 @@ async function sauvegarderFC(e){
   e.preventDefault();
   const id=editingFC||document.getElementById('fcFormId').value.trim().toUpperCase();
   if(!id){alert('Identifiant requis.');return;}
+  let rythme;
+  try { rythme = lireRythme(); } catch(err){ alert(err.message); return; }
   await update(ref(db,'stagiairesFC/'+id),{   // update : ne supprime pas documents/
+    rythme: rythme,                            // null efface un ancien rythme particulier
     nom:document.getElementById('fcFormNom').value.trim(),
     email:document.getElementById('fcFormEmail').value.trim(),
     secteur:document.getElementById('fcFormSecteur').value,
@@ -2477,11 +2542,10 @@ async function attestationAssiduiteFC(fc){
   const snap = await get(ref(db,'emargementsFC')).catch(function(){ return null; });
   const tout = (snap && snap.exists()) ? snap.val() : {};
 
-  const jA = JTCF.jourAutonomieFC(fc);
   const auj = new Date(); auj.setHours(0,0,0,0);
   let realise = 0, absence = 0;
   seances.forEach(function(d){
-    if (d > auj || d.getDay() === jA) return;      // à venir, ou autonomie
+    if (d > auj || JTCF.estJourAutonomie(fc, d)) return;   // à venir, ou autonomie (rythme du jour)
     const v = tout[fc.id + '_fc_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate()] || {};
     if (v.presence === 'absent'){ absence += JTCF.JOUR_FC_H; return; }
     if (v.matin_alt) realise += JTCF.MATIN_FC;
@@ -3301,13 +3365,19 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
   for(const fc of listeFC){
     if(!premier){ pageNum++; doc.addPage(); }
     premier=false;
-    const jA=jourAutoFC_p(fc);
-    const jANom=['','Lundi','Mardi','Mercredi','Jeudi','Vendredi'][jA];
     const auj=new Date();
     const retenues=seancesFC_p(fc).filter(function(d){
       if(fY!==null && (d.getFullYear()!==fY||d.getMonth()!==fM)) return false;
       return d<=auj;
     });
+    // Jour(s) d'autonomie de la période : il peut changer en cours de route
+    // quand la fiche porte un rythme particulier (ex. « Mardi puis Vendredi »).
+    const nomsJ=['','Lundi','Mardi','Mercredi','Jeudi','Vendredi'];
+    const jAListe=[];
+    (retenues.length?retenues:[auj]).forEach(function(d){
+      const n=nomsJ[JTCF.jourAutonomieFC(fc,d)]; if(n && jAListe.indexOf(n)<0) jAListe.push(n);
+    });
+    const jANom=jAListe.join(' puis ')||'Aucune';
 
     let hP=0,hA=0,nAuto=0; const detail=[];
     for(const s of retenues){
@@ -3315,7 +3385,7 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
       const snap=await get(ref(db,'emargementsFC/'+key)).catch(function(){return null;});
       const data=(snap&&snap.exists())?snap.val():{};
       const absent=data.presence==='absent';
-      const auto=(s.getDay()===jA);
+      const auto=JTCF.estJourAutonomie(fc,s);
       let hPs=0,hAs=0;
       if(auto){ nAuto++; if(absent) hAs=AUTO_FC_P; else hPs=AUTO_FC_P; }
       else if(absent){ hAs=MATIN_FC_P+AM_FC_P; }

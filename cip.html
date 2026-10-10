@@ -312,8 +312,8 @@ function attendus(d){
     const j0 = new Date(d); j0.setHours(0,0,0,0);
     if (j0 < b.debut || j0 > b.fin) return;
     if (JTCF.horsCentreFC(f, d)) return;
-    if (JTCF.joursDeFC(f).indexOf(jn) < 0) return;
-    if (jn === JTCF.jourAutonomieFC(f)) return;
+    if (JTCF.joursDeFC(f, j0).indexOf(jn) < 0) return;      // rythme du jour, aménagement compris
+    if (jn === JTCF.jourAutonomieFC(f, j0)) return;
     out.push(f);
   });
 

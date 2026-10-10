@@ -238,7 +238,7 @@ let semIdx = 0;
 // Le stagiaire est-il attendu en centre ce jour-là ?
 function fcAttendu(fc, d) {
   const j = new Date(d); j.setHours(0,0,0,0);
-  if (JTCF.joursDeFC(fc).indexOf(j.getDay()) < 0) return false;   // autonomie, week-end
+  if (JTCF.joursDeFC(fc, j).indexOf(j.getDay()) < 0) return false;   // autonomie, week-end
   const b = JTCF.bornesFC(fc);
   if (j < b.debut || j > b.fin) return false;
   return !JTCF.horsCentreFC(fc, j);
