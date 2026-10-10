@@ -105,7 +105,8 @@ firebase.initializeApp({
 });
 const db = firebase.database();
 // Connexion anonyme : la base exige d'être connecté pour lire ou écrire.
-firebase.auth().signInAnonymously().catch(function(){});
+// Anonyme seulement s'il n'y a pas déjà une session (connexion e-mail de l'équipe conservée).
+firebase.auth().onAuthStateChanged(function(u){ if (!u) firebase.auth().signInAnonymously().catch(function(){}); });
 
 // Init date aujourd'hui
 document.getElementById('dateSelect').value = new Date().toISOString().split('T')[0];

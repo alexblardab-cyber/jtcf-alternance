@@ -157,6 +157,7 @@
     <div style="display:flex;gap:6px;flex-shrink:0;">
       <button class="btn-logout" id="btnVersCip" style="display:none;">📅 Espace CIP</button>
       <button class="btn-logout" id="btnLogout">🚪 Quitter</button>
+      <button class="btn-logout" id="btnDeconnexion" title="À utiliser sur un ordinateur partagé : le mot de passe sera redemandé">🔒 Déconnecter cet appareil</button>
     </div>
   </div>
 </div>
@@ -1568,6 +1569,15 @@ document.querySelectorAll('.nav-btn').forEach(function(btn){
 
 document.getElementById('btnLogout').addEventListener('touchend',function(e){e.preventDefault();sessionStorage.removeItem('jtcf_admin_user');window.location.href='index.html';},{passive:false});
 document.getElementById('btnLogout').addEventListener('click',function(){sessionStorage.removeItem('jtcf_admin_user');window.location.href='index.html';});
+
+// « Quitter » garde la connexion e-mail : sur son propre ordinateur, on ne
+// retape pas son mot de passe. Sur un poste partagé, ce bouton l'efface.
+document.getElementById('btnDeconnexion').addEventListener('click', async function(){
+  if (!confirm('Se déconnecter de cet appareil ?\n\nVotre adresse et votre mot de passe seront redemandés à la prochaine ouverture de l\'espace admin.')) return;
+  await signOut(auth).catch(function(){});
+  sessionStorage.removeItem('jtcf_admin_user');
+  window.location.href = 'index.html';
+});
 
 chargerTout();
 

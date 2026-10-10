@@ -225,7 +225,10 @@ const app = initializeApp({
 });
 const db = getDatabase(app);
 const auth = getAuth(app);
-await signInAnonymously(auth).catch(()=>{});
+// Anonyme seulement s'il n'y a pas déjà une session (sinon on effacerait
+// la connexion e-mail de l'équipe et l'admin redemanderait le mot de passe).
+await auth.authStateReady().catch(()=>{});
+if (!auth.currentUser) await signInAnonymously(auth).catch(()=>{});
 
 // FORM02 — accès ML01 et GM01 uniquement
 // FORM03 — accès Lundi+Mardi+Mercredi+FC (tous stagiaires FC)

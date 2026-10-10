@@ -45,7 +45,9 @@ const app = initializeApp({
 });
 const db = getDatabase(app);
 // Connexion anonyme : la base exige d'être connecté pour lire ou écrire.
-await signInAnonymously(getAuth(app)).catch(()=>{});
+// Anonyme seulement s'il n'y a pas déjà une session (sinon on effacerait
+// la connexion e-mail de l'équipe et l'admin redemanderait le mot de passe).
+{ const a = getAuth(app); await a.authStateReady().catch(()=>{}); if (!a.currentUser) await signInAnonymously(a).catch(()=>{}); }
 
 document.getElementById('btn').addEventListener('click', async function(){
   const b = this, m = document.getElementById('msg');

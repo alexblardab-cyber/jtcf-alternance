@@ -41,7 +41,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
-await signInAnonymously(auth).catch(()=>{});
+// Anonyme seulement s'il n'y a pas déjà une session (sinon on effacerait
+// la connexion e-mail de l'équipe et l'admin redemanderait le mot de passe).
+await auth.authStateReady().catch(()=>{});
+if (!auth.currentUser) await signInAnonymously(auth).catch(()=>{});
 
 async function reset(e) {
   if (e) e.preventDefault();

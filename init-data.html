@@ -71,7 +71,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 // Connexion anonyme : la base exige d'être connecté pour lire ou écrire.
-await signInAnonymously(getAuth(app)).catch(()=>{});
+// Anonyme seulement s'il n'y a pas déjà une session (sinon on effacerait
+// la connexion e-mail de l'équipe et l'admin redemanderait le mot de passe).
+{ const a = getAuth(app); await a.authStateReady().catch(()=>{}); if (!a.currentUser) await signInAnonymously(a).catch(()=>{}); }
 
 const alternants = {
   "AB01": { nom: "Alexandre Blard", formation: "TP Assistant de Direction", entreprise: "JT Conseil Formation", maitre: "Tibère Julien", jourCentre: "Lundi", heures: "8h00 – 16h00", debut: "15/06/2026", fin: "10/06/2028", type: "alternant" },
