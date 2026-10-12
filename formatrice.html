@@ -178,6 +178,7 @@
       Prépare le message et ouvre WhatsApp. Vous choisissez le destinataire.
     </div>
     <button class="btn-global" id="btnCompleterSign" style="margin-top:14px;background:linear-gradient(135deg,#b7791f,var(--or));">🖊️ Compléter mes signatures manquantes</button>
+    <button class="btn-global" id="btnCorrigerFE" style="display:none;margin-top:10px;background:linear-gradient(135deg,#c53030,#e53e3e);">🔁 Remplacer le paraphe d'Élodie par le mien</button>
     <div style="font-size:11px;color:#718096;text-align:center;line-height:1.5;margin-top:-6px;">
       Appose votre paraphe sur toutes les séances passées que les apprenants ont signées sans contreseing.
     </div>
@@ -472,6 +473,9 @@ const PROFILS = {
 };
 
 const profil = PROFILS[userId] || PROFILS['FORM01'];
+// L'identifiant manquait : chaque formatrice cherchait alors le paraphe de
+// « formateurs/undefined » et héritait de celui d'une autre (12 octobre 2026).
+profil.id = PROFILS[userId] ? userId : 'FORM01';
 
 // Vérifier accès selon les dates
 function verifierAcces() {
@@ -853,29 +857,119 @@ async function pointDuJourWhatsApp(){
 // apparaissent réellement sur les PDF, au lieu du marqueur "global_sign_".
 var sigFormCache = null;
 
+// Le paraphe de la formatrice CONNECTÉE, et seulement le sien : celui
+// enregistré dans formateurs/<id>/signature. S'il n'existe pas, on lui
+// demande de le tracer une fois.
+// Avant le 12 octobre 2026, on prenait à défaut « le plus récent paraphe de
+// formatrice trouvé dans la base », quel qu'en soit l'auteur : depuis août,
+// l'espace d'Émilie posait ainsi le paraphe d'Élodie (« FE ») partout.
 async function signatureFormatrice(){
   if (sigFormCache) return sigFormCache;
-  // 1) une signature enregistrée explicitement ?
   var s = await get(ref(db,'formateurs/'+profil.id+'/signature')).catch(function(){return null;});
   if (s && s.exists() && String(s.val()).indexOf('data:image')===0){ sigFormCache = s.val(); return sigFormCache; }
-  // 2) sinon, la plus récente trouvée dans les émargements
-  var best=null, bestT=-1;
-  for (var b=0;b<2;b++){
-    var base = b===0 ? 'emargements' : 'emargementsFC';
-    var snap = await get(ref(db, base)).catch(function(){return null;});
-    if(!snap || !snap.exists()) continue;
-    snap.forEach(function(c){
-      var v=c.val()||{};
-      var parts=c.key.split('_'); var dt=parts.slice(-3);
-      if(dt.length!==3) return;
-      var t=new Date(+dt[0],+dt[1]-1,+dt[2]).getTime();
-      [v.matin_form, v.am_form].forEach(function(sig){
-        if(sig && String(sig).indexOf('data:image')===0 && t>bestT){ bestT=t; best=sig; }
-      });
-    });
+  var trace = await demanderParaphe();
+  if (trace) await enregistrerSignatureRef(trace);
+  return trace;
+}
+
+// Fenêtre pour tracer son paraphe de référence (une seule fois).
+function demanderParaphe(){
+  return new Promise(function(resolve){
+    var fond=document.createElement('div');
+    fond.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    fond.innerHTML='<div style="background:#fff;border-radius:16px;padding:20px;width:100%;max-width:420px;">'
+      +'<div style="font-weight:800;color:#2a3f4e;margin-bottom:6px;">✍️ Votre paraphe</div>'
+      +'<div style="font-size:12.5px;color:#4a5568;margin-bottom:10px;">Tracez votre paraphe, une seule fois. Il sera apposé sur les séances que vous validez (signature globale, rattrapage).</div>'
+      +'<canvas id="cvParaphe" style="width:100%;height:110px;border:2px dashed #f0d98a;border-radius:10px;touch-action:none;display:block;"></canvas>'
+      +'<div style="display:flex;gap:8px;margin-top:10px;">'
+      +'<button id="ppEff" style="flex:1;padding:10px;border:none;border-radius:8px;background:#e2e8f0;font-weight:700;cursor:pointer;">Effacer</button>'
+      +'<button id="ppOk" style="flex:1;padding:10px;border:none;border-radius:8px;background:#38a169;color:#fff;font-weight:700;cursor:pointer;">✅ Enregistrer</button>'
+      +'<button id="ppAnn" style="flex:1;padding:10px;border:1px solid #fed7d7;border-radius:8px;background:#fff5f5;color:#e53e3e;font-weight:700;cursor:pointer;">Annuler</button>'
+      +'</div></div>';
+    document.body.appendChild(fond);
+    var c=document.getElementById('cvParaphe'); c.width=c.offsetWidth; c.height=110;
+    var ctx=c.getContext('2d'), on=false;
+    function pos(e){ var r=c.getBoundingClientRect(), t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+    function dn(e){ e.preventDefault(); on=true; var p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+    function mv(e){ e.preventDefault(); if(!on) return; var p=pos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle='#2a3f4e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke(); }
+    function up(){ on=false; }
+    c.addEventListener('mousedown',dn); c.addEventListener('mousemove',mv); c.addEventListener('mouseup',up);
+    c.addEventListener('touchstart',dn,{passive:false}); c.addEventListener('touchmove',mv,{passive:false}); c.addEventListener('touchend',up);
+    function fin(v){ document.body.removeChild(fond); resolve(v); }
+    document.getElementById('ppEff').onclick=function(){ ctx.clearRect(0,0,c.width,c.height); };
+    document.getElementById('ppAnn').onclick=function(){ fin(null); };
+    document.getElementById('ppOk').onclick=function(){
+      var v=c.toDataURL(), vide=document.createElement('canvas'); vide.width=c.width; vide.height=c.height;
+      if(v===vide.toDataURL()){ alert('Tracez votre paraphe avant d\'enregistrer.'); return; }
+      fin(v);
+    };
+  });
+}
+
+/* ---- Correction ponctuelle (12 octobre 2026) -----------------------------
+   Remplace le paraphe d'Élodie Faconnier (« FE ») par celui de la formatrice
+   connectée sur les séances EN DEHORS des 3 semaines d'Élodie (10-28 août
+   2026). Réservé à Émilie (FORM01), qui confirme elle-même.
+   Les paraphes FE sont reconnus à leur empreinte exacte.                    */
+var PARAPHES_ELODIE = [
+  '513e0affbb1777ce75400fbf65c981c3ff6ab73d0b5528f24f31a3bcb1d8666a',
+  '68d812d203bb47f853787ddf68b79913f88e1614a3d2d88949bd1c2b58688086',
+  'c2e198d2527c144c1b56f69a8da62e61583b0b0b8a8e1e5ecca61cb45bf0f07d'
+];
+var SEMAINES_ELODIE = ['2026-08-10', '2026-08-28'];
+async function empreinte(s){
+  var h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(h)).map(function(b){ return ('0'+b.toString(16)).slice(-2); }).join('');
+}
+async function parapheElodieAPurger(){
+  var snapA = await get(ref(db,'emargements')).catch(function(){return null;});
+  var snapF = await get(ref(db,'emargementsFC')).catch(function(){return null;});
+  var cible = [], vus = new Map();   // une empreinte calculée par image différente
+  async function voir(chemin, iso, val){
+    if (typeof val !== 'string' || val.indexOf('data:image') !== 0) return;
+    if (iso >= SEMAINES_ELODIE[0] && iso <= SEMAINES_ELODIE[1]) return;
+    if (!vus.has(val)) vus.set(val, PARAPHES_ELODIE.indexOf(await empreinte(val)) >= 0);
+    if (vus.get(val)) cible.push(chemin);
   }
-  sigFormCache = best;
-  return best;
+  for (const [snap, base] of [[snapA,'emargements'],[snapF,'emargementsFC']]){
+    if (!snap || !snap.exists()) continue;
+    const tout = snap.val();
+    for (const k of Object.keys(tout)){
+      const v = tout[k] || {};
+      const m = /_(\d{4})_(\d+)_(\d+)$/.exec(k);
+      if (m){
+        const iso = m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);
+        await voir(base+'/'+k+'/matin_form', iso, v.matin_form);
+        await voir(base+'/'+k+'/am_form', iso, v.am_form);
+      } else if (base === 'emargements'){
+        for (const iso of Object.keys(v)){
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue;
+          for (const p of ['matin','apres-midi']){
+            const d = v[iso] && v[iso][p];
+            if (d) await voir(base+'/'+k+'/'+iso+'/'+p+'/form', iso, d.form);
+          }
+        }
+      }
+    }
+  }
+  return cible;
+}
+async function corrigerParapheElodie(){
+  var cible = await parapheElodieAPurger();
+  if (!cible.length){ alert('✅ Rien à corriger : aucun paraphe d\'Élodie en dehors de ses 3 semaines.'); return; }
+  var sig = await signatureFormatrice();
+  if (!sig) return;
+  if (!confirm('Le paraphe d\'Élodie (« FE ») figure sur ' + cible.length + ' séance(s) en dehors de ses 3 semaines (10 au 28 août).\n\n'
+    + 'Vous confirmez avoir assuré ces séances ? Votre paraphe remplacera le sien.\n\n'
+    + 'Les séances du 10 au 28 août ne sont pas touchées.')) return;
+  var maj = {};
+  cible.forEach(function(c){ maj[c] = sig; });
+  maj['corrections/paraphe_elodie_' + Date.now()] = { nb: cible.length, par: profil.id, le: new Date().toISOString(),
+    motif: 'Paraphe FE apposé à tort par l\'application (signature de référence empruntée)' };
+  await update(ref(db), maj);
+  videCache();
+  alert('✅ ' + cible.length + ' paraphe(s) corrigé(s).');
+  var b = document.getElementById('btnCorrigerFE'); if (b) b.style.display = 'none';
 }
 
 async function enregistrerSignatureRef(dataUrl){
@@ -903,10 +997,7 @@ function dernierParapheApprenant(snap, id, isFC){
 
 async function completerSignatures(){
   var sig = await signatureFormatrice();
-  if(!sig){
-    alert('Aucun paraphe enregistré.\n\nSignez d\'abord une séance à la main depuis la fiche d\'un apprenant : ce paraphe servira de référence.');
-    return;
-  }
+  if(!sig) return;   // paraphe non tracé : on ne signe rien
 
   var snapA = await get(ref(db,'emargements')).catch(function(){return null;});
   var snapF = await get(ref(db,'emargementsFC')).catch(function(){return null;});
@@ -2032,6 +2123,18 @@ majBadgeRdv();
   function go(e){ e.preventDefault(); b.disabled=true; b.textContent='⏳ Analyse en cours...';
     completerSignatures().catch(function(err){ alert('Erreur : '+err.message); })
       .finally(function(){ b.disabled=false; b.textContent='🖊️ Compléter mes signatures manquantes'; });
+  }
+  b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
+})();
+
+// Bouton de correction ponctuelle : Émilie seulement, et seulement s'il reste
+// des paraphes d'Élodie hors de ses 3 semaines.
+(function(){
+  var b=document.getElementById('btnCorrigerFE'); if(!b || profil.id!=='FORM01') return;
+  parapheElodieAPurger().then(function(l){ if(l.length){ b.style.display='block'; b.textContent='🔁 Remplacer le paraphe d\'Élodie par le mien ('+l.length+' séances)'; } }).catch(function(){});
+  function go(e){ e.preventDefault(); b.disabled=true; var t=b.textContent; b.textContent='⏳ Correction...';
+    corrigerParapheElodie().catch(function(err){ alert('Erreur : '+err.message); })
+      .finally(function(){ b.disabled=false; if(b.style.display!=='none') b.textContent=t; });
   }
   b.addEventListener('click',go); b.addEventListener('touchend',go,{passive:false});
 })();
