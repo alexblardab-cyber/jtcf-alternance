@@ -305,7 +305,7 @@ function attendus(d){
   const noms = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
   const out = [];
 
-  alternants.forEach(function(a){ if (a.jourCentre === noms[jn]) out.push(a); });
+  alternants.forEach(function(a){ if (a.jourCentre === noms[jn] && !JTCF.congeAlt(a, d)) out.push(a); });   // congés entreprise exclus
 
   fcs.forEach(function(f){
     const b = JTCF.bornesFC(f);
@@ -575,6 +575,14 @@ async function rendreVigilance(){
   gens.forEach(function(p, i){
     const b = bilans[i];
     if (p.fin && JTCF.bornesFC(p).fin < auj) return;      // parcours terminé
+    // Congés entreprise en cours, ou terminés depuis la dernière signature :
+    // pas d'alerte « sans signer ».
+    if (p._type === 'alt' && JTCF.congeAlt(p, auj)) return;
+    if (p._type === 'alt' && p.conges && b.derniere){
+      const lc = Array.isArray(p.conges) ? p.conges : Object.values(p.conges);
+      const q = b.derniere.split('/'), isoDer = q[2] + '-' + q[1] + '-' + q[0];
+      if (lc.some(function(c){ return c && c.fin && c.fin >= isoDer; })) return;
+    }
 
     if (!b.derniere){
       alertes.push({ n:3, t:p.nom, d:'Aucune signature depuis le début du parcours.' });

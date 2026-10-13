@@ -404,6 +404,7 @@ async function signerGlobalAlt(jour, period) {
     let d=new Date(today);
     while(d.getDay()!==jourNum) d.setDate(d.getDate()-1);
     for(const alt of altsJour){
+      if (JTCF.congeAlt(alt, d)) continue;   // congés entreprise : pas de signature
       const key=alt.id+'_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+d.getDate();
       await set(ref(db,'emargements/'+key+'/'+slot),imgData);
     }

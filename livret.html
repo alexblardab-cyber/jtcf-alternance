@@ -187,6 +187,11 @@
         <button class="btn-nav" id="btnNext">Suiv. ▶</button>
       </div>
       <div class="emarg-date" id="emargDate">—</div>
+      <div id="blocConge" style="display:none;background:#f0fff4;border:2px solid #68d391;border-radius:12px;padding:18px 16px;text-align:center;margin-bottom:12px;">
+        <div style="font-size:34px;margin-bottom:8px;">🌴</div>
+        <div style="font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:6px;">Congés entreprise</div>
+        <div id="blocCongeTexte" style="font-size:13px;color:#4a5568;line-height:1.6;">Vous êtes en congés ce jour-là : rien à signer.</div>
+      </div>
       <div style="margin-bottom:12px;">
         <div style="font-size:11px;font-weight:700;color:var(--bleu);text-transform:uppercase;margin-bottom:6px;">Mode de la séance</div>
         <div class="mode-toggle">
@@ -474,6 +479,21 @@ async function updateEmargement() {
   document.getElementById('emargDate').textContent=formatDate(d);
   document.getElementById('btnPrev').disabled=semIdx===0;
   document.getElementById('btnNext').disabled=semIdx===seances.length-1;
+  // Congés entreprise (saisis dans l'admin) : ni présence ni absence, rien à signer.
+  const conge = (window.JTCF && JTCF.congeAlt) ? JTCF.congeAlt(user, d) : null;
+  const zonesSaisie = [document.getElementById('btnPresentiel').closest('div').parentNode,
+                       document.getElementById('btnPresent').closest('div').parentNode,
+                       document.getElementById('blocMatin'), document.getElementById('blocAM'),
+                       document.getElementById('motifZone'), document.getElementById('zoneEntreprise')];
+  document.getElementById('blocConge').style.display = conge ? 'block' : 'none';
+  if (conge) {
+    const fr = function(iso){ const p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
+    document.getElementById('blocCongeTexte').textContent = 'Vous êtes en congés du ' + fr(conge.debut) + ' au ' + fr(conge.fin || conge.debut)
+      + (conge.motif ? ' (' + conge.motif + ')' : '') + ' : rien à signer ce jour-là.';
+    zonesSaisie.forEach(function(z){ if (z) z.style.display = 'none'; });
+    return;
+  }
+  zonesSaisie.slice(0,4).forEach(function(z){ if (z) z.style.display = ''; });
   const key=getKey(semIdx);
   const snap=await get(ref(db,'emargements/'+key));
   const data=snap.exists()?snap.val():{};
@@ -563,12 +583,12 @@ document.getElementById('justifInput').addEventListener('change',async function(
 });
 
 ['btnPresentiel','btnDistanciel'].forEach(function(id){
-  async function setMode(e){e.preventDefault();await set(ref(db,'emargements/'+getKey(semIdx)+'/mode'),document.getElementById(id).getAttribute('data-mode'));await updateEmargement();}
+  async function setMode(e){e.preventDefault();if(window.JTCF&&JTCF.congeAlt&&JTCF.congeAlt(user,seances[semIdx]))return;await set(ref(db,'emargements/'+getKey(semIdx)+'/mode'),document.getElementById(id).getAttribute('data-mode'));await updateEmargement();}
   document.getElementById(id).addEventListener('touchend',setMode,{passive:false});document.getElementById(id).addEventListener('click',setMode);
 });
 
 ['btnPresent','btnAbsent','btnEntreprise'].forEach(function(id){
-  async function setPresence(e){e.preventDefault();await set(ref(db,'emargements/'+getKey(semIdx)+'/presence'),document.getElementById(id).getAttribute('data-presence'));await updateEmargement();}
+  async function setPresence(e){e.preventDefault();if(window.JTCF&&JTCF.congeAlt&&JTCF.congeAlt(user,seances[semIdx]))return;await set(ref(db,'emargements/'+getKey(semIdx)+'/presence'),document.getElementById(id).getAttribute('data-presence'));await updateEmargement();}
   document.getElementById(id).addEventListener('touchend',setPresence,{passive:false});document.getElementById(id).addEventListener('click',setPresence);
 });
 
@@ -590,6 +610,7 @@ document.querySelectorAll('.btn-valider').forEach(function(btn){
     const imageData=canvas.toDataURL();
     const blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
     if(imageData===blank.toDataURL()){alert('Veuillez signer avant de valider.');return;}
+    if(window.JTCF&&JTCF.congeAlt&&JTCF.congeAlt(user,seances[semIdx])){alert('Vous êtes en congés ce jour-là : rien à signer.');return;}
     await set(ref(db,'emargements/'+getKey(semIdx)+'/'+slot),imageData);
     await updateEmargement();
   }

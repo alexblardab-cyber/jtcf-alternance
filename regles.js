@@ -249,6 +249,25 @@
     return fermeturesStage(st).indexOf(iso) >= 0;
   }
 
+  /* ---- Congés entreprise (alternants) ------------------------------------
+     Périodes où l'alternant est en congé côté entreprise : il ne va ni au
+     travail ni en formation. Ce n'est ni une présence ni une absence.
+     Saisi dans l'admin (fiche alternant, rubrique « 🌴 Congés entreprise »).
+       a.conges = [ { debut:'aaaa-mm-jj', fin:'aaaa-mm-jj', motif:'…' }, … ]
+     Exemples (octobre 2026) : Loelia Brassac, Camille Thérézo (fermeture de
+     son entreprise pendant les vacances scolaires).                         */
+  function congeAlt(a, d) {
+    var l = a && a.conges;
+    if (!l) return null;
+    l = Array.isArray(l) ? l : Object.keys(l).map(function (k) { return l[k]; });
+    var iso = isoJour(d || new Date());
+    for (var i = 0; i < l.length; i++) {
+      var c = l[i];
+      if (c && c.debut && iso >= c.debut && iso <= (c.fin || c.debut)) return c;
+    }
+    return null;
+  }
+
   function seancesDeStage(st) {
     var b = bornesStage(st);
     if (!b) return [];
@@ -288,6 +307,7 @@
     estASCA: estASCA,
     joursDeFC: joursDeFC,
     rythmeActif: rythmeActif,
+    congeAlt: congeAlt,
     joursSelonFormation: joursSelonFormation,
     jourAutonomieFC: jourAutonomieFC,
     estJourAutonomie: estJourAutonomie,

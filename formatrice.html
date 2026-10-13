@@ -618,7 +618,7 @@ async function chargerDashboard(){
     return;
   }
 
-  var alts=allAlternants.filter(function(a){return a.jourCentre===jour;});
+  var alts=allAlternants.filter(function(a){return a.jourCentre===jour && !JTCF.congeAlt(a, today);});
   var fcs=fcDuJour(jour, today);
   var y=today.getFullYear(),m=today.getMonth()+1,d=today.getDate();
 
@@ -787,7 +787,7 @@ async function pointDuJourWhatsApp(){
   var jour=noms[jn];
   var y=today.getFullYear(), m=today.getMonth()+1, d=today.getDate();
 
-  var alts=allAlternants.filter(function(a){ return a.jourCentre===jour; });
+  var alts=allAlternants.filter(function(a){ return a.jourCentre===jour && !JTCF.congeAlt(a, today); });
   var fcs=fcDuJour(jour, today).filter(function(f){ return profil.fcIds?profil.fcIds.includes(f.id):true; });
 
   var nonSignes=[], absents=[], dist=[], autonomie=[], attendus=0;
@@ -1003,7 +1003,7 @@ async function completerSignatures(){
   var snapF = await get(ref(db,'emargementsFC')).catch(function(){return null;});
 
   var today=new Date(); today.setHours(23,59,59,0);
-  var nomAlt={}; allAlternants.forEach(function(a){ nomAlt[a.id]=a.nom; });
+  var nomAlt={}, ficheAlt={}; allAlternants.forEach(function(a){ nomAlt[a.id]=a.nom; ficheAlt[a.id]=a; });
   var nomFC={}, ficheFC={};
   allFC.forEach(function(f){ nomFC[f.id]=f.nom; ficheFC[f.id]=f; });
 
@@ -1025,6 +1025,7 @@ async function completerSignatures(){
       var nom=isFC ? nomFC[id] : nomAlt[id]; if(!nom) return;
       if(v.presence==='absent') return;
       if(isFC && dte.getDay()===jourAutonomieFC(ficheFC[id], dte)) return;
+      if(!isFC && JTCF.congeAlt(ficheAlt[id], dte)) return;   // congés entreprise : rien à signer
       var base=isFC?'emargementsFC':'emargements';
 
       [['matin','matin_alt','matin_form'],['am','am_alt','am_form']].forEach(function(t){
@@ -1054,6 +1055,7 @@ async function completerSignatures(){
         if (!m) return;
         var dte = new Date(+m[1], +m[2]-1, +m[3]);
         if (dte > today) return;
+        if (JTCF.congeAlt(ficheAlt[id], dte)) return;
         var j = jours[iso] || {};
         ['matin','apres-midi'].forEach(function(per){
           var demi = j[per];
@@ -1169,7 +1171,7 @@ async function rendreJour(J){
   var bm=document.getElementById('btnSignMatin');
   if(bm) bm.style.background = 'linear-gradient(135deg,'+couleur+','+couleur+'dd)';
 
-  var alts = allAlternants.filter(function(a){ return a.jourCentre === J; });
+  var alts = allAlternants.filter(function(a){ return a.jourCentre === J && !JTCF.congeAlt(a, d); });
   var fcs  = fcDuJour(J, d).filter(function(fc){ return profil.fcIds ? profil.fcIds.includes(fc.id) : true; });
   afficherListe('listeAlt', alts, J);
   afficherListeFC('listeFCJour', fcs, J);
@@ -1346,6 +1348,7 @@ async function chargerRecap() {
       const dataMatinRetro = snapMatin.exists() ? snapMatin.val() : null;
       const dataAMRetro = snapAM.exists() ? snapAM.val() : null;
       const isRetro = !dataNormal && (dataMatinRetro || dataAMRetro);
+      if (JTCF.congeAlt(alt, d)) continue;   // congés entreprise : ni séance, ni présence, ni absence
       seancesCount++;
       if (isRetro) {
         // Format rétroactif : chaque demi-journée est un objet séparé
@@ -2068,7 +2071,7 @@ async function signerGlobalJour(jour, period) {
   // Apposer le vrai paraphe s'il existe, pour qu'il apparaisse sur les PDF
   var sigRef = await signatureFormatrice();
   var valeur = sigRef || ('global_sign_'+Date.now());
-  var lesAlt = allAlternants.filter(function(a){ return a.jourCentre===jour; });
+  var lesAlt = allAlternants.filter(function(a){ return a.jourCentre===jour && !JTCF.congeAlt(a, jourDate); });   // pas de signature un jour de congés
   var lesFC  = fcDuJour(jour, jourDate);
 
   // Écritures en parallèle : quelques dixièmes de seconde au lieu de plusieurs secondes.
@@ -2295,8 +2298,10 @@ async function exporterPDF() {
     let d=new Date(debut); while(d.getDay()!==jourNum) d.setDate(d.getDate()+1);
     const seancesMois=[];
     while(d<=fin){if(d.getFullYear()===filterYear&&d.getMonth()===filterMonth&&d<=new Date())seancesMois.push(new Date(d));d.setDate(d.getDate()+7);}
-    let hP=0,hA=0; const seancesDetail=[];
+    let hP=0,hA=0,nConges=0; const seancesDetail=[];
     for(const s of seancesMois){
+      const congeJ=JTCF.congeAlt(alt,s);   // congés entreprise : ligne affichée, hors décompte
+      if(congeJ){ nConges++; seancesDetail.push({date:s,data:{},absent:false,conge:congeJ}); continue; }
       const key=alt.id+'_'+s.getFullYear()+'_'+(s.getMonth()+1)+'_'+s.getDate();
       const snap=await get(ref(db,'emargements/'+key));
       const data=snap.exists()?snap.val():{};
@@ -2304,8 +2309,8 @@ async function exporterPDF() {
       if(absent){hA+=(MATIN_H+AM_H);}else{if(data.matin_alt)hP+=MATIN_H;if(data.am_alt)hP+=AM_H;}
       seancesDetail.push({date:s,data,absent,entreprise:data.presence==='entreprise'});
     }
-    totalHGlobal+=hP;totalAGlobal+=hA;totalSGlobal+=seancesMois.length;
-    recapData.push({alt,seancesDetail,hP,hA,seances:seancesMois.length});
+    totalHGlobal+=hP;totalAGlobal+=hA;totalSGlobal+=seancesMois.length-nConges;
+    recapData.push({alt,seancesDetail,hP,hA,seances:seancesMois.length-nConges});
   }
 
   doc.setTextColor(...BLEU_FONCE); doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.text('Résumé global',15,140);
@@ -2352,6 +2357,13 @@ async function exporterPDF() {
     for(const s of r.seancesDetail){
       if(y>265){addFooter(pageNum);pageNum++;doc.addPage();addHeader('ÉMARGEMENT · '+r.alt.nom.toUpperCase()+' (suite)');addFooter(pageNum);y=38;doc.setFillColor(42,63,78);doc.rect(15,y,180,8,'F');doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont('helvetica','bold');doc.text('Date',18,y+5);doc.text('Mode',55,y+5);doc.text('Presence',82,y+5);doc.text('H.Pres.',110,y+5);doc.text('H.Abs.',128,y+5);doc.text('Sig. Apprenant',145,y+5);doc.text('Sig. Formatrice',172,y+5);y+=8;}
       const dateStr=s.date.getDate()+' '+moisNomsFr[s.date.getMonth()];
+      if(s.conge){
+        doc.setFillColor(240,255,244);doc.rect(15,y,180,10,'F');
+        doc.setTextColor(...BLEU_FONCE);doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.text(dateStr,18,y+6);
+        doc.setFont('helvetica','normal');doc.setTextColor(47,133,90);doc.text('Congés entreprise',80,y+6);
+        doc.setTextColor(...GRIS);doc.text(String(s.conge.motif||'—').substring(0,25),110,y+6);doc.text('—',145,y+6);doc.text('—',172,y+6);
+        doc.setDrawColor(230,230,230);doc.line(15,y+10,195,y+10);y+=10;continue;
+      }
       const mode=s.data.mode||'—'; const present=!s.absent; const motif=s.data.motif||(present?'—':'Non renseigné');
       const altSigne=s.data.matin_alt||s.data.am_alt; const formSigne=s.data.matin_form||s.data.am_form;
       const rowColor=s.absent?[255,245,245]:(altSigne&&formSigne?[240,255,244]:[250,250,252]);
@@ -2477,9 +2489,11 @@ async function exporterPDFPersonne(alt) {
     d.setDate(d.getDate()+7);
   }
 
-  let hP=0, hA=0;
+  let hP=0, hA=0, nConges=0;
   const seancesDetail = [];
   for (const s of seancesFiltrees) {
+    const congeJ = JTCF.congeAlt(alt, s);   // congés entreprise : ligne affichée, hors décompte
+    if (congeJ) { nConges++; seancesDetail.push({date:s, conge:congeJ, absent:false, hP:0, hA:0}); continue; }
     const key = alt.id+'_'+s.getFullYear()+'_'+(s.getMonth()+1)+'_'+s.getDate();
     const yyyy=s.getFullYear(), mm=String(s.getMonth()+1).padStart(2,'0'), dd=String(s.getDate()).padStart(2,'0');
     const keyRetro = `emargements/${alt.id}/${yyyy}-${mm}-${dd}`;
@@ -2533,7 +2547,7 @@ async function exporterPDFPersonne(alt) {
   doc.setFillColor(229,62,62); doc.rect(76,78,57,14,'F');
   doc.setFillColor(...BLEU); doc.rect(137,78,58,14,'F');
   doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
-  doc.text(hP+'h',43,87,{align:'center'}); doc.text(hA+'h',104,87,{align:'center'}); doc.text(String(seancesFiltrees.length),166,87,{align:'center'});
+  doc.text(hP+'h',43,87,{align:'center'}); doc.text(hA+'h',104,87,{align:'center'}); doc.text(String(seancesFiltrees.length-nConges),166,87,{align:'center'});
   doc.setFontSize(7); doc.setFont('helvetica','normal');
   doc.text('Heures présence',43,90,{align:'center'}); doc.text('Heures absence',104,90,{align:'center'}); doc.text('Séances',166,90,{align:'center'});
 
@@ -2552,6 +2566,14 @@ async function exporterPDFPersonne(alt) {
       addHeader('ÉMARGEMENT · '+alt.nom.toUpperCase()+' (suite)'); addFooter(pageNum); y=38;doc.setFillColor(42,63,78);doc.rect(15,y,180,8,'F');doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont('helvetica','bold');doc.text('Date',18,y+5);doc.text('Mode',55,y+5);doc.text('Presence',82,y+5);doc.text('H.Pres.',110,y+5);doc.text('H.Abs.',128,y+5);doc.text('Sig. Apprenant',145,y+5);doc.text('Sig. Formatrice',172,y+5);y+=8;
     }
     const dateStr = s.date.getDate()+' '+moisNomsFr[s.date.getMonth()]+' '+s.date.getFullYear();
+    if (s.conge) {
+      doc.setFillColor(240,255,244); doc.rect(15,y,180,10,'F');
+      doc.setTextColor(...BLEU_FONCE); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(dateStr,18,y+6);
+      doc.setFont('helvetica','normal'); doc.setTextColor(47,133,90); doc.text('Congés entreprise',80,y+6);
+      doc.setTextColor(...GRIS); doc.text('—',112,y+6); doc.text('—',130,y+6);
+      doc.text(String(s.conge.motif||'').substring(0,30)||'—',145,y+6);
+      doc.setDrawColor(230,230,230); doc.line(15,y+10,195,y+10); y+=10; continue;
+    }
     const rowColor = s.absent ? [255,245,245] : (s.altSigne&&s.formSigne ? [240,255,244] : [250,250,252]);
     doc.setFillColor(...rowColor); doc.rect(15,y,180,10,'F');
     doc.setTextColor(...BLEU_FONCE); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(dateStr,18,y+6);
