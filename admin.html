@@ -207,6 +207,11 @@
         <button class="btn-primary" id="btnAjouterAlt" style="width:auto;padding:8px 14px;font-size:12px;">+ Ajouter</button>
       </div>
       <div id="listeAlternants"><div class="loading">Chargement...</div></div>
+      <div id="corbeilleBloc" style="display:none;margin-top:22px;padding:14px;background:#fffaf0;border:1px solid #fbd38d;border-radius:12px;">
+        <div style="font-size:12px;font-weight:800;color:#744210;margin-bottom:4px;">♻️ Fiches supprimées</div>
+        <div style="font-size:11.5px;color:#975a16;margin-bottom:10px;">Toute fiche supprimée est gardée ici. Un clic la remet en place.</div>
+        <div id="corbeilleListe"></div>
+      </div>
     </div>
     <div id="altFormView" style="display:none;">
       <button class="back-btn" id="btnRetourListe">◀ Retour à la liste</button>
@@ -762,6 +767,7 @@ async function chargerTout() {
   afficherListeAlternants();
   afficherListeFC();
   afficherListeStages();
+  afficherCorbeille();
   chargerGroupes();
   remplirMoisSelect();
   ctrlLancer();
@@ -1031,12 +1037,73 @@ document.getElementById('btnSauvegarder').addEventListener('click',sauvegarder);
 async function supprimer(e){
   e.preventDefault();
   if(!editingId)return;
-  if(!confirm('Supprimer '+editingId+' ? Cette action est irréversible.'))return;
+  if(!confirm('Supprimer '+editingId+' ?\n\nLa fiche sera gardée dans « ♻️ Fiches supprimées », en bas de la liste des alternants.'))return;
+  await mettreALaCorbeille('alternants', editingId);
   await remove(ref(db,'alternants/'+editingId));
   await chargerTout();
 
  retourListe();
 }
+/* ---- Corbeille --------------------------------------------------------
+   Une fiche supprimée n'est jamais perdue : on la copie d'abord dans
+   corbeille/, avec la date et l'adresse de qui l'a supprimée. Origine :
+   la fiche LB01 (Léa Baret) disparue sans trace en octobre 2026.
+   ------------------------------------------------------------------------ */
+const NOMS_NOEUD = { alternants:'Alternant', stagiairesFC:'Formation continue', stagiaires:'Stage PFMP' };
+
+async function mettreALaCorbeille(noeud, id){
+  const snap = await get(ref(db, noeud + '/' + id));
+  if (!snap.exists()) return;
+  const n = new Date(), z = function(x){ return (x < 10 ? '0' : '') + x; };
+  const stamp = n.getFullYear() + z(n.getMonth()+1) + z(n.getDate()) + '_' + z(n.getHours()) + z(n.getMinutes()) + z(n.getSeconds());
+  const u = auth.currentUser;
+  await set(ref(db, 'corbeille/' + noeud + '__' + id + '__' + stamp), {
+    noeud: noeud, id: id, fiche: snap.val(),
+    le: n.toISOString(), par: (u && u.email) || userId || ''
+  });
+}
+
+async function afficherCorbeille(){
+  const bloc = document.getElementById('corbeilleBloc');
+  const liste = document.getElementById('corbeilleListe');
+  const snap = await get(ref(db, 'corbeille')).catch(function(){ return null; });
+  const items = [];
+  if (snap && snap.exists()) snap.forEach(function(c){
+    const v = c.val() || {};
+    if (!v.fiche || ((v.fiche.secteur || 'sud') !== monSecteur)) return;
+    v.cle = c.key; items.push(v);
+  });
+  if (!items.length){ bloc.style.display = 'none'; return; }
+  items.sort(function(a, b){ return a.le < b.le ? 1 : -1; });
+  liste.innerHTML = items.map(function(v){
+    const d = new Date(v.le);
+    const quand = d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #feebc8;">'
+      + '<div style="flex:1;font-size:12px;color:#2d3748;"><b>' + (v.fiche.nom || v.id) + '</b> (' + v.id + ') · '
+      + (NOMS_NOEUD[v.noeud] || v.noeud) + '<br><span style="color:#975a16;font-size:11px;">Supprimée le ' + quand
+      + (v.par ? ' par ' + v.par : '') + '</span></div>'
+      + '<button class="btn-primary" data-cle="' + v.cle + '" style="width:auto;padding:7px 12px;font-size:12px;">↩️ Restaurer</button></div>';
+  }).join('');
+  liste.querySelectorAll('button[data-cle]').forEach(function(b){
+    b.addEventListener('click', function(){ restaurerFiche(b.getAttribute('data-cle')).catch(function(x){ alert('Erreur : ' + x.message); }); });
+  });
+  bloc.style.display = 'block';
+}
+
+async function restaurerFiche(cle){
+  const v = (await get(ref(db, 'corbeille/' + cle))).val();
+  if (!v) return;
+  if ((await get(ref(db, v.noeud + '/' + v.id))).exists()){
+    alert('Une fiche ' + v.id + ' existe déjà. Rien n\'a été remplacé.'); return;
+  }
+  if (!confirm('Remettre la fiche de ' + (v.fiche.nom || v.id) + ' ?')) return;
+  await set(ref(db, v.noeud + '/' + v.id), v.fiche);
+  await remove(ref(db, 'corbeille/' + cle));
+  videCache();
+  await chargerTout();
+  alert('✅ Fiche de ' + (v.fiche.nom || v.id) + ' restaurée.');
+}
+
 document.getElementById('btnSupprimer').addEventListener('touchend',supprimer,{passive:false});
 document.getElementById('btnSupprimer').addEventListener('click',supprimer);
 
@@ -1871,7 +1938,8 @@ async function sauvegarderFC(e){
 
 async function supprimerFC(e){
   e.preventDefault(); if(!editingFC)return;
-  if(!confirm('Supprimer ce stagiaire FC ?'))return;
+  if(!confirm('Supprimer ce stagiaire FC ?\n\nLa fiche sera gardée dans « ♻️ Fiches supprimées », en bas de la liste des alternants.'))return;
+  await mettreALaCorbeille('stagiairesFC', editingFC);
   await remove(ref(db,'stagiairesFC/'+editingFC));
   await chargerTout();
 
@@ -2042,7 +2110,8 @@ async function sauvegarderStage(e){
 async function supprimerStage(e){
   if (e) e.preventDefault();
   if (!editingStage) return;
-  if (!confirm('Supprimer définitivement ce stagiaire et ses émargements ?')) return;
+  if (!confirm('Supprimer ce stagiaire ?\n\nLa fiche sera gardée dans « ♻️ Fiches supprimées », en bas de la liste des alternants.')) return;
+  await mettreALaCorbeille('stagiaires', editingStage);
   await set(ref(db,'stagiaires/'+editingStage), null);
   videCache();
   await chargerTout();
