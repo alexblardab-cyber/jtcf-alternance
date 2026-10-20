@@ -584,6 +584,17 @@ async function rendreVigilance(){
       if (lc.some(function(c){ return c && c.fin && c.fin >= isoDer; })) return;
     }
 
+    // Formation continue : les jours de stage, de vacances et fériés ne
+    // comptent pas dans l'écart (sinon tout stagiaire en stage est signalé).
+    if (p._type === 'fc' && b.derniere){
+      const q = b.derniere.split('/');
+      const d = new Date(+q[2], +q[1] - 1, +q[0]);
+      d.setDate(d.getDate() + 1);
+      let hors = 0;
+      while (d <= auj){ if (JTCF.horsCentreFC(p, d)) hors++; d.setDate(d.getDate() + 1); }
+      b.ecart = Math.max(0, b.ecart - hors);
+    }
+
     if (!b.derniere){
       alertes.push({ n:3, t:p.nom, d:'Aucune signature depuis le début du parcours.' });
     } else if (b.ecart > 21){
