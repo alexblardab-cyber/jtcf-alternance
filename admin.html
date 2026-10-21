@@ -1510,8 +1510,16 @@ async function excReguler(slot, libelle){
     'Motif :\n1 = Oubli de signature\n2 = Panne de téléphone\n3 = Absence de réseau\n4 = Autre\n\nTapez 1, 2, 3 ou votre motif :','1');
   if(motif===null) return;
   var M={'1':'Oubli de signature','2':'Panne de téléphone','3':'Absence de réseau'};
+  if(motif.trim()==='4'){ motif=prompt('Précisez le motif :',''); if(motif===null) return; }
   motif=M[motif.trim()]||motif.trim();
-  if(!motif){alert('Motif obligatoire.');return;}
+  if(!motif||motif==='4'){alert('Motif obligatoire.');return;}
+  // Jamais de signature avant l'entrée ni après la fin de la fiche.
+  var lire=function(s){ if(!s) return null; var p=String(s).split('/'); return p.length===3 ? new Date(+p[2],+p[1]-1,+p[0]) : null; };
+  var deb=lire(excSujet.debut), fin=lire(excSujet.fin);
+  if((deb && excD<deb) || (fin && excD>fin)){
+    alert('❌ Cette date est en dehors du parcours de '+excSujet.nom+' ('+(excSujet.debut||'?')+' → '+(excSujet.fin||'?')+').\n\nVérifiez la date, ou corrigez d\'abord la date d\'entrée de la fiche.');
+    return;
+  }
   var sig=await excDerniereSignature(excSujet.id, excType);
   if(!sig){ alert('❌ Aucune signature enregistrée pour '+excSujet.nom+'.\n\nIl faut qu\'il/elle ait signé au moins une fois dans l\'application.'); return; }
   if(!confirm('Confirmer ?\n\n'+excSujet.nom+' — '+libelle+'\nMotif : '+motif)) return;

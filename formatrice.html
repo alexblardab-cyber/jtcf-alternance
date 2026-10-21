@@ -1024,6 +1024,7 @@ async function completerSignatures(){
       var id=isFC ? key.split('_fc_')[0] : parts.slice(0,parts.length-3).join('_');
       var nom=isFC ? nomFC[id] : nomAlt[id]; if(!nom) return;
       if(v.presence==='absent') return;
+      if(!dansParcours(isFC ? ficheFC[id] : ficheAlt[id], dte, isFC)) return;   // hors dates de la fiche
       if(isFC && dte.getDay()===jourAutonomieFC(ficheFC[id], dte)) return;
       if(!isFC && JTCF.congeAlt(ficheAlt[id], dte)) return;   // congés entreprise : rien à signer
       var base=isFC?'emargementsFC':'emargements';
@@ -1738,11 +1739,27 @@ async function derniereSignature(id, isFC){
   return best;
 }
 
+// Vrai si la date est entre l'entrée et la fin de la fiche. Une fiche
+// préparée à l'avance ne doit jamais recevoir de signature avant l'entrée.
+function dansParcours(sujet, d, isFC){
+  if(!sujet || !d) return false;
+  if(isFC){ var b = JTCF.bornesFC(sujet); return d >= b.debut && d <= b.fin; }
+  function lire(s){ if(!s) return null; var p=String(s).split('/'); return p.length===3 ? new Date(+p[2], +p[1]-1, +p[0]) : null; }
+  var deb = lire(sujet.debut), fin = lire(sujet.fin);
+  var j = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return (!deb || j >= deb) && (!fin || j <= fin);
+}
+
 async function signerException(slot, isFC){
   var sujet = isFC ? currentFC : currentAlt;
   if(!sujet){ alert('Aucun apprenant sélectionné.'); return; }
   var d = seances[semIdx];
   var libelle = slot==='matin_alt' ? 'MATIN' : 'APRÈS-MIDI';
+  if(!dansParcours(sujet, d, isFC)){
+    alert('❌ ' + formatDate(d) + ' est en dehors des dates du parcours de ' + sujet.nom + '.\n\n'
+        + 'Une régularisation n\'est possible qu\'entre la date d\'entrée et la date de fin de sa fiche.');
+    return;
+  }
 
   var motif = prompt(
     'Signer à la place de ' + sujet.nom + '\n' +
@@ -1755,8 +1772,12 @@ async function signerException(slot, isFC){
     'Tapez 1, 2, 3 ou votre motif :', '1');
   if(motif===null) return;
   var motifs={'1':'Oubli de signature','2':'Panne de téléphone','3':'Absence de réseau'};
+  if(motif.trim()==='4'){
+    motif = prompt('Précisez le motif de la régularisation :', '');
+    if(motif===null) return;
+  }
   motif = motifs[motif.trim()] || motif.trim();
-  if(!motif){ alert('Motif obligatoire pour une régularisation.'); return; }
+  if(!motif || motif==='4'){ alert('Motif obligatoire pour une régularisation.'); return; }
 
   var sig = await derniereSignature(sujet.id, isFC);
   if(!sig){
