@@ -1085,9 +1085,17 @@ async function completerSignatures(){
     videCache();
   }
 
-  // ── Étape 2 : régularisation des apprenants, sur demande explicite ──
+  // ── Étape 2 supprimée le 21 octobre 2026 ──
+  // Elle apposait en série la signature des apprenants sur toutes les
+  // demi-journées sans signature : 129 cases d'août à octobre 2026, dont des
+  // jours où la personne n'était pas là (mauvais jour, congés, avant l'entrée).
+  // La régularisation se fait désormais une par une, depuis la fiche.
   var n2=sansApprenant.length, msg2='';
   if(n2>0){
+    msg2='\n\n'+n2+' demi-journée(s) sans signature de l\'apprenant : à régulariser une par une '+
+         'depuis la fiche, seulement si la personne était présente.';
+  }
+  if(false){
     var apercu=sansApprenant.slice(0,6).map(function(m){
       return '· '+m.nom+' — '+('0'+m.d.getDate()).slice(-2)+'/'+('0'+(m.d.getMonth()+1)).slice(-2)+' '+(m.per==='matin'?'matin':'après-midi');
     }).join('\n');
