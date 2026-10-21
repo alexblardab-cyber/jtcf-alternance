@@ -2092,7 +2092,14 @@ async function signerGlobalJour(jour, period) {
   // Apposer le vrai paraphe s'il existe, pour qu'il apparaisse sur les PDF
   var sigRef = await signatureFormatrice();
   var valeur = sigRef || ('global_sign_'+Date.now());
-  var lesAlt = allAlternants.filter(function(a){ return a.jourCentre===jour && !JTCF.congeAlt(a, jourDate); });   // pas de signature un jour de congés
+  var lesAlt = allAlternants.filter(function(a){
+    return a.jourCentre===jour && !JTCF.congeAlt(a, jourDate) && dansParcours(a, jourDate, false);   // ni congés, ni hors contrat
+  });
+  // Ni absent ni « en entreprise » ce jour-là : la formatrice n'atteste que les présents attendus.
+  var etats = await Promise.all(lesAlt.map(function(a){
+    return get(ref(db,'emargements/'+a.id+'_'+yyyy+'_'+mm+'_'+dd+'/presence')).then(function(s){ return s.val(); }).catch(function(){ return null; });
+  }));
+  lesAlt = lesAlt.filter(function(a, i){ return etats[i]!=='entreprise' && etats[i]!=='absent'; });
   var lesFC  = fcDuJour(jour, jourDate);
 
   // Écritures en parallèle : quelques dixièmes de seconde au lieu de plusieurs secondes.
