@@ -379,7 +379,7 @@
               <label><input type="checkbox" value="4" /> Jeu</label>
               <label><input type="checkbox" value="5" /> Ven</label>
             </div>
-            <label class="form-label" style="margin-top:8px;">Journée en autonomie</label>
+            <label class="form-label" style="margin-top:8px;">Journée recherche de stage et révisions</label>
             <select class="form-select" id="fcRythmeAuto">
               <option value="0">Aucune</option><option value="1">Lundi</option><option value="2">Mardi</option>
               <option value="3">Mercredi</option><option value="4">Jeudi</option><option value="5">Vendredi</option>
@@ -870,7 +870,7 @@ async function chargerDashboard() {
         const rowA=document.createElement('div'); rowA.className='today-row';
         rowA.innerHTML='<div class="today-nom">'+fc.nom+'</div>'
           + '<div style="font-size:10px;font-weight:800;color:var(--or);background:rgba(201,162,39,0.15);'
-          + 'padding:3px 9px;border-radius:20px;white-space:nowrap;">🏠 Autonomie · 6 h</div>';
+          + 'padding:3px 9px;border-radius:20px;white-space:nowrap;">📚 Recherche de stage · 6 h</div>';
         todayList.appendChild(rowA);
         continue;
       }
@@ -1297,7 +1297,7 @@ async function chargerRecapAdmin(){
       <div class="recap-item or"><div class="recap-val or">${sCount}</div><div class="recap-lbl">Séances</div></div>
       <div class="recap-item"><div class="recap-val">${hP+hA}h</div><div class="recap-lbl">Total</div></div>
     </div>
-    <div style="font-size:11px;color:#718096;margin-top:8px;padding-top:8px;border-top:1px solid #f0f2f5;">🏠 ${nAuto} journée${nAuto>1?'s':''} en autonomie (${jAuto}) · ${nAuto*JOUR_FC_H}h incluses</div>${motifsHtml}`;
+    <div style="font-size:11px;color:#718096;margin-top:8px;padding-top:8px;border-top:1px solid #f0f2f5;">📚 ${nAuto} journée${nAuto>1?'s':''} en recherche de stage et révisions (${jAuto}) · ${nAuto*JOUR_FC_H}h incluses</div>${motifsHtml}`;
     container.appendChild(card);
   }
 
@@ -2065,7 +2065,7 @@ function lireRythme(){
   document.querySelectorAll('#fcRythmeJours input').forEach(function(c){ if (c.checked) jours.push(+c.value); });
   if (!jours.length) throw new Error('Cochez au moins un jour de formation pour le rythme particulier.');
   const autonomie = +document.getElementById('fcRythmeAuto').value;
-  if (autonomie && jours.indexOf(autonomie) >= 0) throw new Error('Le jour d\'autonomie ne peut pas être aussi un jour de formation.');
+  if (autonomie && jours.indexOf(autonomie) >= 0) throw new Error('Le jour de recherche de stage et révisions ne peut pas être aussi un jour de formation.');
   return { debut: debut, fin: fin, jours: jours, autonomie: autonomie,
            sansStage: document.getElementById('fcRythmeSansStage').checked };
 }
@@ -2902,7 +2902,7 @@ async function attestationAssiduiteFC(fc){
   y += 8;
   doc.setTextColor.apply(doc, GRIS); doc.setFontSize(7);
   doc.text(doc.splitTextToSize('Heures réalisées : demi-journées en centre signées par le stagiaire sur les émargements (matin 3h45, après-midi 2h15). '
-    + 'Les journées en autonomie, les périodes de stage en entreprise, les vacances et les jours fériés ne sont pas comptés.', 180), 15, y);
+    + 'Les journées de recherche de stage et révisions, les périodes de stage en entreprise, les vacances et les jours fériés ne sont pas comptés.', 180), 15, y);
   y += 14;
 
   doc.setTextColor(0,0,0); doc.setFontSize(9);
@@ -3728,7 +3728,7 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
     doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
     doc.text('Formation : '+(fc.formation||'—'),20,55);
     doc.text('Statut : Formation continue   ·   Horaires : 8h15-12h00 / 13h00-15h15   ·   6h par jour',20,61);
-    doc.text('Journée en autonomie : '+jANom+'   ·   Période : '+periode,20,67);
+    doc.text('Recherche de stage et révisions : '+jANom+'   ·   Période : '+periode,20,67);
 
     doc.setFillColor.apply(doc,VERT); doc.rect(15,78,42,14,'F');
     doc.setFillColor(229,62,62);      doc.rect(61,78,42,14,'F');
@@ -3743,7 +3743,7 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
     doc.text('Heures présence',36,90,{align:'center'});
     doc.text('Heures absence',82,90,{align:'center'});
     doc.text('Journées',128,90,{align:'center'});
-    doc.setTextColor.apply(doc,BLEU_FONCE); doc.text('dont autonomie',174,90,{align:'center'});
+    doc.setTextColor.apply(doc,BLEU_FONCE); doc.text('dont rech. stage',174,90,{align:'center'});
 
     let y=99;
     doc.setFillColor.apply(doc,BLEU_FONCE); doc.rect(15,y,180,8,'F');
@@ -3766,7 +3766,7 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
     for(const s of detail){
       const ds=s.date.getDate()+' '+moisFr[s.date.getMonth()]+' '+s.date.getFullYear();
       const lignes = s.auto
-        ? [{ lib:'Autonomie', hP:s.hP, hA:s.hA }]
+        ? [{ lib:'Rech. stage / révisions', hP:s.hP, hA:s.hA }]
         : [{ lib:'Matin',      alt:s.data.matin_alt, form:s.data.matin_form, h:MATIN_FC_P },
            { lib:'Après-midi', alt:s.data.am_alt,    form:s.data.am_form,    h:AM_FC_P }];
       lignes.forEach(function(l, i){
@@ -3781,7 +3781,7 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
         doc.setTextColor.apply(doc,BLEU_FONCE); doc.setFontSize(7);
         doc.setFont('helvetica', i===0?'bold':'normal'); doc.text(ds,18,y+6);
         doc.setFont('helvetica','normal');
-        if(s.auto){ doc.setTextColor(184,144,31); doc.text('Autonomie',52,y+6); }
+        if(s.auto){ doc.setTextColor(184,144,31); doc.text('Rech. stage/révisions',52,y+6); }
         else { doc.setTextColor.apply(doc,GRIS);
                doc.text(l.lib+(s.mode==='distanciel'?' · Distanciel':''),52,y+6); }
         if(s.absent){ doc.setTextColor.apply(doc,ROUGE); doc.text(s.motif?('Absent · '+s.motif).substring(0,22):'Absent(e)',82,y+6); }
@@ -3792,7 +3792,7 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
         doc.text(l.hA>0?heuresHM(l.hA):'—',130,y+6);
         if(s.auto && !s.absent){
           doc.setTextColor(184,144,31); doc.setFontSize(6);
-          doc.text('Travail en autonomie',145,y+6); doc.text('validé par le centre',172,y+6);
+          doc.text('Rech. stage / révisions',145,y+6); doc.text('validé par le centre',172,y+6);
           doc.setFontSize(7);
         } else {
           signatureOuEtat(l.alt,145,y,s.absent);
@@ -3808,8 +3808,8 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
       doc.setFillColor(253,246,227); doc.rect(15,y,180,12,'F');
       doc.setDrawColor.apply(doc,OR); doc.setLineWidth(0.3); doc.rect(15,y,180,12);
       doc.setTextColor(116,66,16); doc.setFontSize(7); doc.setFont('helvetica','normal');
-      doc.text('Les journées du '+jANom.toLowerCase()+' sont effectuées en autonomie (6h), sur activités fournies par le centre.',18,y+5);
-      doc.text('Volume hebdomadaire : 30h — 4 journées en centre et 1 journée en autonomie.',18,y+9);
+      doc.text('Les journées du '+jANom.toLowerCase()+' sont consacrées à la recherche de stage et aux révisions (6h), sur activités fournies par le centre.',18,y+5);
+      doc.text('Volume hebdomadaire : 30h — 4 journées en centre et 1 journée de recherche de stage et révisions.',18,y+9);
       y+=16;
     }
     if(y<245){

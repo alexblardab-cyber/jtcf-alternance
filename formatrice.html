@@ -838,7 +838,7 @@ async function pointDuJourWhatsApp(){
     absents.forEach(function(n){ t += '• ' + n + '\n'; }); }
   if(dist.length){ t += '\n*En distanciel (' + dist.length + ')*\n';
     dist.forEach(function(n){ t += '• ' + n + '\n'; }); }
-  if(autonomie.length){ t += '\n*En autonomie (' + autonomie.length + ')*\n';
+  if(autonomie.length){ t += '\n*Recherche de stage et révisions (' + autonomie.length + ')*\n';
     autonomie.forEach(function(n){ t += '• ' + n + '\n'; }); }
 
   window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank');
@@ -1483,7 +1483,7 @@ async function chargerRecap() {
         '<div class="recap-item"><div class="recap-val">'+(hPres+hAbs)+'h</div><div class="recap-lbl">Heures totales</div></div>' +
       '</div>' +
       '<div style="font-size:11px;color:#718096;margin-top:8px;padding-top:8px;border-top:1px solid #f0f2f5;">' +
-        '🏠 '+nbAutonomie+' journée'+(nbAutonomie>1?'s':'')+' en autonomie ('+jourAuto+') · '+(nbAutonomie*JOUR_FC_H)+'h incluses' +
+        '📚 '+nbAutonomie+' journée'+(nbAutonomie>1?'s':'')+' en recherche de stage et révisions ('+jourAuto+') · '+(nbAutonomie*JOUR_FC_H)+'h incluses' +
       '</div>' + motifsHtml;
     container.appendChild(card);
   }
@@ -2776,7 +2776,7 @@ async function exporterPDFFC(listeFC, titreFichier){
     doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
     doc.text('Formation : '+(fc.formation||'—'),20,55);
     doc.text('Statut : Formation continue   ·   Horaires : 8h15-12h00 / 13h00-15h15   ·   6h par jour',20,61);
-    doc.text('Journée en autonomie : '+jAutoNom+'   ·   Période : '+periodeTitre,20,67);
+    doc.text('Recherche de stage et révisions : '+jAutoNom+'   ·   Période : '+periodeTitre,20,67);
 
     // Récap
     doc.setFillColor.apply(doc,VERT);       doc.rect(15,78,42,14,'F');
@@ -2794,7 +2794,7 @@ async function exporterPDFFC(listeFC, titreFichier){
     doc.text('Heures absence',82,90,{align:'center'});
     doc.text('Journées',128,90,{align:'center'});
     doc.setTextColor.apply(doc,BLEU_FONCE);
-    doc.text('dont autonomie',174,90,{align:'center'});
+    doc.text('dont rech. stage',174,90,{align:'center'});
 
     // Tableau
     let y=99;
@@ -2818,7 +2818,7 @@ async function exporterPDFFC(listeFC, titreFichier){
       doc.setFont('helvetica','normal');
 
       if (s.auto){
-        doc.setTextColor(184,144,31); doc.text('Autonomie',52,y+6);
+        doc.setTextColor(184,144,31); doc.text('Rech. stage/révisions',52,y+6);
       } else {
         doc.setTextColor.apply(doc,GRIS);
         doc.text(s.mode==='presentiel'?'Présentiel':s.mode==='distanciel'?'Distanciel':'Centre',52,y+6);
@@ -2833,7 +2833,7 @@ async function exporterPDFFC(listeFC, titreFichier){
 
       if (s.auto && !s.absent){
         doc.setTextColor(184,144,31); doc.setFontSize(6);
-        doc.text('Travail en autonomie',145,y+6);
+        doc.text('Rech. stage / révisions',145,y+6);
         doc.text('validé par le centre',172,y+6);
         doc.setFontSize(7);
       } else {
@@ -2864,8 +2864,8 @@ async function exporterPDFFC(listeFC, titreFichier){
       doc.setFillColor(253,246,227); doc.rect(15,y,180,12,'F');
       doc.setDrawColor.apply(doc,OR); doc.setLineWidth(0.3); doc.rect(15,y,180,12);
       doc.setTextColor(116,66,16); doc.setFontSize(7); doc.setFont('helvetica','normal');
-      doc.text('Les journées du '+jAutoNom.toLowerCase()+' sont effectuées en autonomie (6h), sur activités fournies par le centre.',18,y+5);
-      doc.text('Volume hebdomadaire : 30h — 4 journées en centre et 1 journée en autonomie.',18,y+9);
+      doc.text('Les journées du '+jAutoNom.toLowerCase()+' sont consacrées à la recherche de stage et aux révisions (6h), sur activités fournies par le centre.',18,y+5);
+      doc.text('Volume hebdomadaire : 30h — 4 journées en centre et 1 journée de recherche de stage et révisions.',18,y+9);
       y+=16;
     }
 

@@ -141,17 +141,16 @@
       stages: [['2027-02-08', '2027-03-12']],
       vacances: [['2026-12-21', '2027-01-10']]
     },
-    // CADGA et Secrétaire comptable : lundi→vendredi au centre, sans autonomie,
+    // CADGA et Secrétaire comptable : lundi→jeudi au centre, vendredi en autonomie
+    // (précision d'Alex le 22 octobre 2026, « pour l'instant »),
     // période en entreprise du 01/02 au 26/02/2027, fin le 19/04/2027.
     CADGA: {
       stages: [['2027-02-01', '2027-02-26']],
-      vacances: [['2026-12-21', '2027-01-10']],
-      jours: [1, 2, 3, 4, 5], autonomie: 0
+      vacances: [['2026-12-21', '2027-01-10']]
     },
     SC: {
       stages: [['2027-02-01', '2027-02-26']],
-      vacances: [['2026-12-21', '2027-01-10']],
-      jours: [1, 2, 3, 4, 5], autonomie: 0
+      vacances: [['2026-12-21', '2027-01-10']]
     },
     // Formation sans planning déclaré : seules les vacances du centre.
     AUTRE: {
