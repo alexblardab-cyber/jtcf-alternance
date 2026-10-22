@@ -1022,10 +1022,34 @@ function lireConges(){
 }
 document.getElementById('btnAjoutConge').addEventListener('click', function(){ ligneConge(null); });
 
+/* ---- Code de connexion unique ------------------------------------------
+   La page de connexion cherche le code d'abord chez les alternants, puis
+   en formation continue, puis en stage. Un même code dans deux listes
+   ouvrirait le livret d'une autre personne (cas JR01 et LB01, 22 octobre
+   2026). On refuse donc tout code déjà utilisé ailleurs, toutes antennes
+   confondues, et, pour une nouvelle fiche, dans sa propre liste.
+   ------------------------------------------------------------------------ */
+const NOEUDS_CODES = { alternants:'les alternants', stagiairesFC:'la formation continue', stagiaires:'les stages',
+                       formateurs:'les formatrices', admins:'les administrateurs', cips:'les conseillers' };
+async function codeDejaPris(id, noeud, enEdition){
+  for (const n of Object.keys(NOEUDS_CODES)){
+    if (n === noeud && enEdition) continue;            // la fiche elle-même
+    const s = await get(ref(db, n + '/' + id)).catch(function(){ return null; });
+    if (s && s.exists()){
+      const v = s.val() || {};
+      alert('❌ Le code ' + id + ' est déjà utilisé dans ' + NOEUDS_CODES[n]
+        + (v.nom ? ' (' + v.nom + ')' : '') + '.\n\nChoisissez un autre code : deux personnes ne peuvent pas avoir le même code de connexion.');
+      return true;
+    }
+  }
+  return false;
+}
+
 async function sauvegarder(e){
   e.preventDefault();
   const id=editingId||document.getElementById('formId').value.trim().toUpperCase();
   if(!id){alert('Veuillez saisir un identifiant.');return;}
+  if(await codeDejaPris(id,'alternants',!!editingId)) return;
   let conges;
   try { conges = lireConges(); } catch(err){ alert(err.message); return; }
   const data={
@@ -2083,6 +2107,7 @@ async function sauvegarderFC(e){
   e.preventDefault();
   const id=editingFC||document.getElementById('fcFormId').value.trim().toUpperCase();
   if(!id){alert('Identifiant requis.');return;}
+  if(await codeDejaPris(id,'stagiairesFC',!!editingFC)) return;
   let rythme;
   try { rythme = lireRythme(); } catch(err){ alert(err.message); return; }
   await update(ref(db,'stagiairesFC/'+id),{   // update : ne supprime pas documents/
@@ -2239,6 +2264,7 @@ async function sauvegarderStage(e){
   if (e) e.preventDefault();
   const id = editingStage || document.getElementById('stgFormId').value.trim().toUpperCase();
   if (!id) { alert('Veuillez saisir un identifiant.'); return; }
+  if (await codeDejaPris(id,'stagiaires',!!editingStage)) return;
 
   const debut = document.getElementById('stgFormDebut').value.trim();
   const fin   = document.getElementById('stgFormFin').value.trim();
