@@ -171,6 +171,7 @@
   <a class="nav-btn" data-target="groupes">🗂️ Groupes</a>
   <a class="nav-btn" data-target="recap">📈 Récap heures</a>
   <a class="nav-btn" data-target="exceptions">✏️ Exceptions</a>
+  <a class="nav-btn" data-target="controle">🩺 Contrôle</a>
 </div>
 
 <div class="content">
@@ -543,6 +544,20 @@
     <div id="adminRecapListe"><div class="loading">Chargement...</div></div>
   </div>
 
+
+  <!-- CONTRÔLE DE LA BASE -->
+  <div class="section" id="controle">
+    <div class="card">
+      <div class="card-title">🩺 Contrôle des fiches et des émargements</div>
+      <div style="font-size:12px;color:#718096;line-height:1.5;margin-bottom:12px;">
+        Repère ce qui fausserait un PDF ou une alerte : fiche incomplète, absence signée,
+        signature un jour impossible, oubli de la formatrice, journée sans aucune trace.
+        Rien n'est modifié : chaque ligne mène à l'endroit où corriger.
+      </div>
+      <button class="btn-primary" id="btnControle" style="background:linear-gradient(135deg,var(--bleu),var(--bleu-fonce));color:#fff;font-weight:800;">🩺 Lancer le contrôle</button>
+    </div>
+    <div id="controleResultat"></div>
+  </div>
 
   <!-- EXCEPTIONS / CORRECTIONS -->
   <div class="section" id="exceptions">
@@ -1667,6 +1682,149 @@ async function chargerHistoriqueRegul(){
       '<div style="font-size:11px;color:#718096;">'+l.motif+' — par '+l.par+'</div></div>';
   }).join('');
 }
+
+/* ---- Contrôle de la base ----------------------------------------------
+   Les mêmes vérifications que la révision du 21 octobre 2026, en direct et
+   pour l'antenne de l'administrateur. Lecture seule : chaque ligne renvoie
+   vers la fiche ou vers l'onglet Exceptions, déjà réglé sur la bonne date.
+   ------------------------------------------------------------------------ */
+var JOURS_CTRL = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+function ctlDate(s){ if(!s) return null; var p=String(s).split('/'); if(p.length!==3) return 'BAD'; var d=new Date(+p[2],+p[1]-1,+p[0]); return isNaN(d)||+p[2]<2020||+p[2]>2035 ? 'BAD' : d; }
+function ctlFr(d){ return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
+function ctlIso(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+
+async function lancerControle(){
+  var zone = document.getElementById('controleResultat');
+  zone.innerHTML = '<div class="card"><div class="loading">Contrôle en cours… (quelques secondes)</div></div>';
+  var auj = new Date(); auj.setHours(0,0,0,0);
+  var snapA = await get(ref(db,'emargements')).catch(function(){ return null; });
+  var snapF = await get(ref(db,'emargementsFC')).catch(function(){ return null; });
+  var emA = (snapA && snapA.val()) || {}, emF = (snapF && snapF.val()) || {};
+  var alt = {}, fc = {};
+  allAlternants.forEach(function(a){ alt[a.id]=a; });
+  allFC.forEach(function(f){ fc[f.id]=f; });
+
+  var groupes = {};   // titre → [{texte, type, id, date}]
+  function ajoute(titre, texte, type, id, date){ (groupes[titre]=groupes[titre]||[]).push({texte:texte, type:type, id:id, date:date}); }
+
+  // ── Fiches ──
+  allAlternants.forEach(function(a){
+    var dd=ctlDate(a.debut), df=ctlDate(a.fin);
+    if(!a.debut || dd==='BAD') ajoute('📝 Fiche : date d\'entrée manquante ou illisible', a.nom, 'alt', a.id);
+    if(!a.fin || df==='BAD') ajoute('📝 Fiche : date de fin manquante ou illisible', a.nom, 'alt', a.id);
+    if(dd instanceof Date && df instanceof Date && df<dd) ajoute('📝 Fiche : fin avant l\'entrée', a.nom, 'alt', a.id);
+    if(JOURS_CTRL.indexOf(a.jourCentre)<1) ajoute('📝 Fiche : jour en centre manquant', a.nom, 'alt', a.id);
+    if(!a.email) ajoute('📝 Fiche : e-mail manquant', a.nom, 'alt', a.id);
+    if(!a.entreprise || a.entreprise==='—') ajoute('📝 Fiche : entreprise manquante', a.nom, 'alt', a.id);
+  });
+  allFC.forEach(function(f){
+    var dd=ctlDate(f.debut), df=ctlDate(f.fin);
+    if(!f.debut || dd==='BAD' || !f.fin || df==='BAD') ajoute('📝 Fiche : dates manquantes ou illisibles', f.nom+' (FC)', 'fc', f.id);
+    else if(df<dd) ajoute('📝 Fiche : fin avant l\'entrée', f.nom+' (FC)', 'fc', f.id);
+    if(!f.dureePass) ajoute('📝 Fiche FC : durée PASS manquante (attestation d\'assiduité impossible)', f.nom, 'fc', f.id);
+    if(!f.email) ajoute('📝 Fiche : e-mail manquant', f.nom+' (FC)', 'fc', f.id);
+  });
+
+  // ── Émargements ──
+  function examiner(o, isFC){
+    Object.keys(o).forEach(function(k){
+      var m = isFC ? k.match(/^(.+)_fc_(\d{4})_(\d{1,2})_(\d{1,2})$/) : k.match(/^(.+)_(\d{4})_(\d{1,2})_(\d{1,2})$/);
+      if(!m || /_0\d/.test(k.slice(m[1].length))) return;   // anciens doublons « _07_ » : sans effet
+      var id=m[1], d=new Date(+m[2],+m[3]-1,+m[4]), v=o[k]||{};
+      var p = isFC ? fc[id] : alt[id]; if(!p) return;           // autre antenne ou fiche disparue
+      var nom = p.nom + (isFC?' (FC)':''), type = isFC?'fc':'alt';
+      var signe = !!(v.matin_alt || v.am_alt), lib = nom+' — '+JOURS_CTRL[d.getDay()]+' '+ctlFr(d);
+      if(d>auj){ if(signe) ajoute('⚠️ Signature dans le futur', lib, type, id, d); return; }
+      if(v.presence==='absent' && signe) ajoute('⚠️ Marqué absent mais signé', lib, type, id, d);
+      if(v.presence==='absent' && !v.motif) ajoute('🟠 Absence sans motif', lib, type, id, d);
+      if(v.presence==='entreprise' && signe) ajoute('⚠️ Marqué « en entreprise » mais signé', lib, type, id, d);
+      if(signe && v.presence!=='entreprise'){
+        if(isFC){
+          var b = JTCF.bornesFC(p);
+          if(d<b.debut || d>b.fin) ajoute('⚠️ Signé en dehors des dates du parcours', lib, type, id, d);
+          else if(JTCF.horsCentreFC(p, d)) ajoute('⚠️ Signé un jour de stage, de vacances ou férié', lib, type, id, d);
+        } else {
+          var dd=ctlDate(p.debut), df=ctlDate(p.fin);
+          if((dd instanceof Date && d<dd) || (df instanceof Date && d>df)) ajoute('⚠️ Signé en dehors des dates du contrat', lib, type, id, d);
+          else if(JTCF.congeAlt(p, d)) ajoute('⚠️ Signé pendant des congés entreprise', lib, type, id, d);
+        }
+      }
+      if(d<auj && v.presence!=='absent' && v.presence!=='entreprise' &&
+         ((v.matin_alt && !v.matin_form) || (v.am_alt && !v.am_form))) ajoute('✍️ Oubli de signature formatrice', lib, type, id, d);
+    });
+  }
+  examiner(emA, false); examiner(emF, true);
+
+  // ── Journées attendues sans aucune trace (4 dernières semaines) ──
+  var dep = new Date(auj); dep.setDate(dep.getDate()-28);
+  for(var d=new Date(dep); d<auj; d.setDate(d.getDate()+1)){
+    if(d.getDay()===0 || d.getDay()===6) continue;
+    var y=d.getFullYear(), mo=d.getMonth()+1, j=d.getDate(), jd=new Date(d);
+    allAlternants.forEach(function(a){
+      if(a.jourCentre!==JOURS_CTRL[jd.getDay()] || JTCF.congeAlt(a, jd)) return;
+      if(JTCF.FERIES_FC && JTCF.FERIES_FC.indexOf(ctlIso(jd))>=0) return;
+      var dd=ctlDate(a.debut), df=ctlDate(a.fin);
+      if((dd instanceof Date && jd<dd) || (df instanceof Date && jd>df)) return;
+      var v=emA[a.id+'_'+y+'_'+mo+'_'+j];
+      if(!v || !(v.matin_alt || v.am_alt || v.presence)) ajoute('🔍 Journée en centre sans signature ni motif (4 dernières semaines)', a.nom+' — '+JOURS_CTRL[jd.getDay()]+' '+ctlFr(jd), 'alt', a.id, jd);
+    });
+    allFC.forEach(function(f){
+      var b=JTCF.bornesFC(f); if(jd<b.debut || jd>b.fin) return;
+      if(JTCF.horsCentreFC(f, jd) || JTCF.estJourAutonomie(f, jd) || JTCF.joursDeFC(f, jd).indexOf(jd.getDay())<0) return;
+      var v=emF[f.id+'_fc_'+y+'_'+mo+'_'+j];
+      if(!v || !(v.matin_alt || v.am_alt || v.presence)) ajoute('🔍 Journée en centre sans signature ni motif (4 dernières semaines)', f.nom+' (FC) — '+JOURS_CTRL[jd.getDay()]+' '+ctlFr(jd), 'fc', f.id, jd);
+    });
+  }
+
+  // ── Affichage ──
+  var titres = Object.keys(groupes);
+  var total = titres.reduce(function(s,t){ return s+groupes[t].length; }, 0);
+  if(!total){ zone.innerHTML='<div class="card" style="text-align:center;color:#276749;font-weight:800;">✅ Rien à signaler.</div>'; return; }
+  var ordre = ['⚠️','🟠','✍️','🔍','📝'];
+  titres.sort(function(a,b){ return ordre.indexOf(a.slice(0,2)) - ordre.indexOf(b.slice(0,2)) || a.localeCompare(b); });
+  var lignes = [];
+  var html = '<div class="card" style="font-size:13px;font-weight:800;color:var(--bleu-fonce);">'+total+' point(s) à vérifier</div>';
+  titres.forEach(function(t){
+    var l = groupes[t].sort(function(a,b){ return (a.date||0)-(b.date||0) || a.texte.localeCompare(b.texte); });
+    html += '<div class="card"><div class="card-title">'+t+' ('+l.length+')</div>';
+    l.forEach(function(it){
+      var n = lignes.push(it)-1;
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f0f2f5;">'
+        + '<div style="flex:1;font-size:12px;color:#2d3748;">'+it.texte+'</div>'
+        + '<button data-ctrl="'+n+'" style="border:none;background:#ebf8ff;color:#2b6cb0;border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:800;cursor:pointer;">'
+        + (it.date ? '✏️ Corriger' : '👤 Fiche') + '</button></div>';
+    });
+    html += '</div>';
+  });
+  zone.innerHTML = html;
+  zone.querySelectorAll('button[data-ctrl]').forEach(function(b){
+    b.addEventListener('click', function(){ allerCorriger(lignes[+b.getAttribute('data-ctrl')]).catch(function(x){ alert('Erreur : '+x.message); }); });
+  });
+}
+
+function ouvrirOnglet(cible){
+  var b = document.querySelector('.nav-btn[data-target="'+cible+'"]'); if(b) b.click();
+  window.scrollTo(0,0);
+}
+
+async function allerCorriger(it){
+  if(it.date){
+    ouvrirOnglet('exceptions');
+    document.getElementById('excPersonne').value = it.type+':'+it.id;
+    document.getElementById('excDate').value = ctlIso(it.date);
+    await excAfficher();
+    var r = document.getElementById('excResultat'); if(r) r.scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  if(it.type==='alt'){ var a=allAlternants.filter(function(x){return x.id===it.id;})[0]; ouvrirOnglet('alternants'); if(a) ouvrirFormModif(a); }
+  else { var f=allFC.filter(function(x){return x.id===it.id;})[0]; ouvrirOnglet('stagiairesfc'); if(f) ouvrirFormFC(f); }
+}
+
+(function(){
+  var b=document.getElementById('btnControle'); if(!b) return;
+  function g(e){ e.preventDefault(); lancerControle().catch(function(x){ document.getElementById('controleResultat').innerHTML='<div class="card">Erreur : '+x.message+'</div>'; }); }
+  b.addEventListener('click',g); b.addEventListener('touchend',g,{passive:false});
+})();
 
 (function(){
   var b=document.getElementById('excCharger'); if(!b) return;
