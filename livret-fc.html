@@ -332,10 +332,10 @@
           </div>
         </div>
         <div id="blocAutonomie" style="display:none;background:linear-gradient(135deg,var(--bleu-clair),#f7fafc);border:2px solid var(--or);border-radius:12px;padding:18px 16px;text-align:center;margin-bottom:12px;">
-          <div style="font-size:34px;margin-bottom:8px;">🏠</div>
-          <div style="font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:6px;">Journée en autonomie</div>
+          <div style="font-size:34px;margin-bottom:8px;">📚</div>
+          <div style="font-size:15px;font-weight:800;color:var(--bleu-fonce);margin-bottom:6px;">Recherche de stage et révisions</div>
           <div style="font-size:13px;color:#4a5568;line-height:1.6;margin-bottom:12px;">
-            Vous travaillez depuis chez vous sur les activités données par votre formatrice.
+            Aujourd'hui, vous recherchez votre stage et révisez depuis chez vous, avec les activités données par votre formatrice.
           </div>
           <div style="display:inline-block;background:var(--or);color:var(--bleu-fonce);font-size:13px;font-weight:800;padding:7px 16px;border-radius:20px;">
             ✅ 6h comptées automatiquement
@@ -814,7 +814,7 @@ function rythmeParticulierHtml() {
     + '📌 <strong>Votre rythme particulier</strong> — à partir du ' + fr(d0)
     + (fin ? ' et jusqu\'au ' + fr(fin) : ', jusqu\'à nouvel ordre') + ' : formation le '
     + jours.join(', ').replace(/, ([^,]*)$/, ' et $1')
-    + (auto ? ', ' + auto + ' en autonomie' : '')
+    + (auto ? ', le ' + auto + ' en recherche de stage et révisions' : '')
     + (r.sansStage ? '. Vous n\'êtes pas en stage pendant cette période : vous émargez chaque jour, en présentiel ou à distance.' : '.')
     + '</div>';
 }
@@ -864,13 +864,13 @@ function afficherExplicationPlanning() {
     ligne('🏫', 'Vos semaines en centre',
       'Formation en présentiel le ' + joursCentre + ', de 8h15 à 12h00 puis de 13h00 à 15h15.') +
 
-    (nomJourAuto ? ligne('🏠', 'Votre journée en autonomie',
-      'Chaque ' + nomJourAuto + ', vous travaillez depuis chez vous sur les activités données par votre formatrice. ' +
+    (nomJourAuto ? ligne('📚', 'Votre journée de recherche de stage et révisions',
+      'Chaque ' + nomJourAuto + ', vous recherchez votre stage et révisez depuis chez vous, avec les activités données par votre formatrice. ' +
       'Cette journée compte pour <strong>6h</strong>, sans signature à fournir.') : '') +
 
     ligne('⏱️', 'Votre volume horaire',
       '6h par jour, soit <strong>30h par semaine</strong> — ' +
-      (nomJourAuto ? 'les ' + nbCentre + ' journées en centre et la journée en autonomie réunies.'
+      (nomJourAuto ? 'les ' + nbCentre + ' journées en centre et la journée de recherche de stage et révisions réunies.'
                    : 'les ' + nbCentre + ' journées en centre.')) +
 
     ligne('🏢', nbStages > 1 ? 'Vos ' + nbStages + ' périodes de stage' : 'Votre période de stage',
