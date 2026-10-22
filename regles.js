@@ -75,22 +75,31 @@
     return l.map(Number).filter(function (n) { return n >= 1 && n <= 5; });
   }
 
+  // Ordre de priorité : rythme particulier de la fiche, puis rythme du
+  // groupe (PERIODES_FC[g].jours / .autonomie), puis la règle historique.
   function joursDeFC(fc, d) {
     var r = rythmeActif(fc, d);
     if (r && listeJours(r.jours).length) return listeJours(r.jours);
+    var p = PERIODES_FC[groupeFC(fc)];
+    if (p && p.jours) return p.jours.slice();
     return estASCA(fc) ? [1, 3, 4, 5] : [1, 2, 3, 4];
   }
 
   function joursSelonFormation(formation) {
+    var p = PERIODES_FC[groupeFC({ formation: formation, debut: '' })];
+    var noms = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
+    if (p && p.jours) return p.jours.map(function (n) { return noms[n]; });
     return (formation || '').indexOf('Comptabilit') >= 0
       ? ['Lundi', 'Mercredi', 'Jeudi', 'Vendredi']
       : ['Lundi', 'Mardi', 'Mercredi', 'Jeudi'];
   }
 
-  // 0 = pas de journée en autonomie dans le rythme particulier.
+  // 0 = pas de journée en autonomie (rythme particulier ou groupe).
   function jourAutonomieFC(fc, d) {
     var r = rythmeActif(fc, d);
     if (r && r.autonomie !== undefined && r.autonomie !== null && r.autonomie !== '') return Number(r.autonomie);
+    var p = PERIODES_FC[groupeFC(fc)];
+    if (p && p.autonomie !== undefined) return p.autonomie;
     return estASCA(fc) ? 2 : 5;
   }
 
@@ -124,28 +133,65 @@
     ACOM: {
       stages: [['2026-11-09', '2026-12-11'], ['2027-01-18', '2027-02-12']],
       vacances: [['2026-12-21', '2027-01-08']]
+    },
+    // ── Entrées du 2 novembre 2026 (plannings individuels d'octobre 2026) ──
+    // SAMA, nouvelle promotion : lundi→jeudi au centre, vendredi en autonomie,
+    // stage du 08/02 au 12/03/2027, fin le 07/05/2027.
+    SAMA2: {
+      stages: [['2027-02-08', '2027-03-12']],
+      vacances: [['2026-12-21', '2027-01-10']]
+    },
+    // CADGA et Secrétaire comptable : lundi→vendredi au centre, sans autonomie,
+    // période en entreprise du 01/02 au 26/02/2027, fin le 19/04/2027.
+    CADGA: {
+      stages: [['2027-02-01', '2027-02-26']],
+      vacances: [['2026-12-21', '2027-01-10']],
+      jours: [1, 2, 3, 4, 5], autonomie: 0
+    },
+    SC: {
+      stages: [['2027-02-01', '2027-02-26']],
+      vacances: [['2026-12-21', '2027-01-10']],
+      jours: [1, 2, 3, 4, 5], autonomie: 0
+    },
+    // Formation sans planning déclaré : seules les vacances du centre.
+    AUTRE: {
+      stages: [],
+      vacances: [['2026-12-21', '2027-01-10']]
     }
   };
 
+  // Une promotion se distingue aussi par sa date d'entrée : le SAMA entré
+  // à partir de novembre 2026 n'a pas le calendrier du SAMA de juillet.
+  function debutIso(fc) {
+    var s = String((fc && fc.debut) || '').trim(), p = s.split('/');
+    if (p.length === 3) return p[2] + '-' + ('0' + p[1]).slice(-2) + '-' + ('0' + p[0]).slice(-2);
+    return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+  }
+
   // Jours fériés à La Réunion sur la période de formation
   var FERIES_FC = [
-    '2026-08-15', '2026-11-01', '2026-11-11', '2026-12-20', '2026-12-25',
-    '2027-01-01', '2027-03-29', '2027-05-01', '2027-05-08', '2027-05-13',
-    '2027-05-24', '2027-06-20', '2027-07-14'
+    '2026-07-14', '2026-08-15', '2026-11-01', '2026-11-11', '2026-12-20', '2026-12-25',
+    '2027-01-01', '2027-03-29', '2027-05-01', '2027-05-08', '2027-05-06',
+    '2027-05-17', '2027-06-20', '2027-07-14'
   ];
 
   // Rattache un parcours à son groupe de planning.
   // Détection précise : avec seize intitulés, un simple mot-clé ne suffit plus.
   function groupeFC(fc) {
     var f = (fc && fc.formation) || '';
+    if (f.indexOf('Secr') >= 0 && f.indexOf('Comptable') >= 0) return 'SC';
+    if (f.indexOf('Accueil et de Gestion') >= 0 || f.indexOf('CADGA') >= 0) return 'CADGA';
     if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
-  if (f.indexOf('Medic') >= 0 || f.indexOf('dico') >= 0 || f.indexOf('SAMA') >= 0) return 'SAMA';
+    if (f.indexOf('Medic') >= 0 || f.indexOf('dico') >= 0 || f.indexOf('SAMA') >= 0)
+      return debutIso(fc) >= '2026-11-01' ? 'SAMA2' : 'SAMA';
     if (f.indexOf('Direction') >= 0) return 'AD';
     if (f.indexOf('Assistant') >= 0 && f.indexOf('Commercial') >= 0) return 'ACOM';
     if (f.indexOf('ACOM') >= 0) return 'ACOM';
     if (f.indexOf('Conseiller') >= 0 && f.indexOf('Vente') >= 0) return 'CV';
     if (f.indexOf('CV') >= 0) return 'CV';
-    return 'CV';   // repli neutre : aucune période hors centre appliquée
+    // Repli : vacances du centre seulement. Avant le 22 octobre 2026, le repli
+    // était CV, ce qui appliquait à tort les stages CV (cas SAMA en 2026).
+    return 'AUTRE';
   }
 
   function isoJour(d) {

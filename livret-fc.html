@@ -510,7 +510,10 @@ function getJoursFC(joursAutorise, debutStr, finStr) {
     : [1, 2, 3, 4];
   // Le jour en autonomie fait partie du parcours : 6h comptées, sans signature
   const tous = joursNum.slice();
-  if (tous.indexOf(jourAutonomie) < 0) tous.push(jourAutonomie);
+  if (jourAutonomie >= 1 && tous.indexOf(jourAutonomie) < 0) tous.push(jourAutonomie);
+  // Jours du groupe (CADGA, Secrétaire comptable : du lundi au vendredi),
+  // même si la fiche a été créée avec l'ancienne liste de 4 jours.
+  JTCF.joursDeFC(user, debut).forEach(function(n){ if (tous.indexOf(n) < 0) tous.push(n); });
   // Rythme particulier : ses jours (et son autonomie) s'ajoutent au parcours.
   const r = user && user.rythme;
   if (r) {
@@ -539,63 +542,28 @@ function getKey(d) {
 }
 
 // ── Déterminer le type d'un jour ───────────────────────────
-// Plannings par groupe
-const PLANNINGS_FC = {
-  CV: {
-    stages: [
-      {debut:'2026-10-05', fin:'2026-10-30'},
-      {debut:'2026-11-23', fin:'2026-12-18'},
-    ],
-    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
-  },
-  AD: {
-    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
-    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
-  },
-  ACA: {
-    stages: [{debut:'2026-10-12', fin:'2026-11-06'}],
-    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
-  },
-  SAMA: {
-    stages: [{debut:'2026-11-23', fin:'2026-12-18'}],
-    vacances: [{debut:'2026-12-21', fin:'2027-01-10'}],
-  },
-  ACOM: {
-    stages: [
-      {debut:'2026-11-09', fin:'2026-12-11'},
-      {debut:'2027-01-18', fin:'2027-02-12'},
-    ],
-    vacances: [{debut:'2026-12-21', fin:'2027-01-08'}],
-  }
-};
+// Plannings par groupe : lus dans regles.js (source unique depuis le
+// 22 octobre 2026). Avant, ils étaient recopiés ici et pouvaient diverger.
+const PLANNINGS_FC = {};
+Object.keys(JTCF.PERIODES_FC).forEach(function(g){
+  const p = JTCF.PERIODES_FC[g];
+  const conv = function(l){ return (l || []).map(function(x){ return { debut: x[0], fin: x[1] }; }); };
+  PLANNINGS_FC[g] = { stages: conv(p.stages), vacances: conv(p.vacances) };
+});
 
 function getGroupeFC() {
-  if (!user) return null;
-  var f = (user.formation) || '';
-  // Detection precise : avec 16 intitules, un simple mot-cle ne suffit plus.
-  if (f.indexOf('Comptabilit') >= 0 || f.indexOf('ACA') >= 0) return 'ACA';
-   if (f.indexOf('Medic') >= 0 || f.indexOf('dico') >= 0 || f.indexOf('SAMA') >= 0) return 'SAMA';
-  if (f.indexOf('Direction') >= 0) return 'AD';
-  if (f.indexOf('Assistant') >= 0 && f.indexOf('Commercial') >= 0) return 'ACOM';
-  if (f.indexOf('ACOM') >= 0) return 'ACOM';
-  if (f.indexOf('Conseiller') >= 0 && f.indexOf('Vente') >= 0) return 'CV';
-  if (f.indexOf('CV') >= 0) return 'CV';
-  return null;   // parcours sans planning defini
+  return user ? JTCF.groupeFC(user) : null;
 }
-
 function getTypeJour(d) {
   const y = d.getFullYear(), m = d.getMonth(), j = d.getDate();
   const mm = String(m+1).padStart(2,'0'), jj = String(j).padStart(2,'0');
   const iso = y + '-' + mm + '-' + jj;
 
-  // Jours fériés Réunion
-  const feries = ['2026-07-14','2026-08-15','2026-11-01','2026-11-11',
-                  '2026-12-25','2027-01-01','2027-04-05','2027-05-01',
-                  '2027-05-08','2027-05-13','2027-05-24'];
-  if (feries.includes(iso)) return 'ferie';
+  // Jours fériés Réunion (regles.js)
+  if (JTCF.FERIES_FC.indexOf(iso) >= 0) return 'ferie';
 
   const groupe = getGroupeFC();
-  const planning = PLANNINGS_FC[groupe];
+  const planning = PLANNINGS_FC[groupe] || PLANNINGS_FC.AUTRE;
 
   // Vacances
   for (const v of planning.vacances) {
@@ -636,7 +604,7 @@ function getEtapeJour(iso) {
     '2027-02-09': { label: 'Bilan Final', icone: '🏁' },
     '2027-02-16': { label: 'Examen', icone: '🎓' },
   };
-  const map = groupe === 'ACA' ? etapesACA : groupe === 'AD' ? etapesAD : etapesCV;
+  const map = groupe === 'ACA' ? etapesACA : groupe === 'AD' ? etapesAD : groupe === 'CV' ? etapesCV : {};
   return map[iso] || null;
 }
 
@@ -817,7 +785,17 @@ const INFOS_GROUPE = {
          bilan:'9 février 2027', examen:'16 février 2027' },
   ACOM:{ titre:'TP Assistant Commercial',
          stages:[['9 novembre','11 décembre 2026'],['18 janvier','12 février 2027']],
-         bilan:'5 avril 2027', examen:'12 avril 2027' }
+         bilan:'5 avril 2027', examen:'12 avril 2027' },
+  // Entrées du 2 novembre 2026 (plannings individuels)
+  SAMA2:{ titre:'TP Secrétaire Assistant(e) Médico-Administratif(ve)',
+         stages:[['8 février','12 mars 2027']],
+         bilan:'7 mai 2027', examen:null },
+  CADGA:{ titre:'TP Chargé(e) d\'Accueil et de Gestion Administrative',
+         stages:[['1er février','26 février 2027']],
+         bilan:'19 avril 2027', examen:'26 avril 2027 (date indicative)' },
+  SC:  { titre:'TP Secrétaire Comptable',
+         stages:[['1er février','26 février 2027']],
+         bilan:'19 avril 2027', examen:'26 avril 2027 (date indicative)' }
 };
 
 // Encadré affiché quand la fiche porte un rythme particulier.
@@ -855,10 +833,12 @@ function afficherExplicationPlanning() {
     if (st0) st0.textContent = (user.formation || '') + ' · ' + (user.debut || '') + ' → ' + (user.fin || '—');
     return;
   }
-  const nomJourAuto = ['','lundi','mardi','mercredi','jeudi','vendredi'][jourAutonomie] || 'vendredi';
-  const joursCentre = (jourAutonomie === 2)
-    ? 'lundi, mercredi, jeudi et vendredi'
-    : 'lundi, mardi, mercredi et jeudi';
+  const NOMS_J = ['','lundi','mardi','mercredi','jeudi','vendredi'];
+  const nomJourAuto = NOMS_J[jourAutonomie] || '';
+  const jRef = parseDateFC(user.debut) || new Date();
+  const joursCentre = JTCF.joursDeFC(user, jRef).map(function(n){ return NOMS_J[n]; })
+    .join(', ').replace(/, ([^,]*)$/, ' et $1');
+  const nbCentre = JTCF.joursDeFC(user, jRef).length;
 
   const nbStages = info.stages.length;
   const stagesHtml = info.stages.map(function(s, i){
@@ -884,12 +864,14 @@ function afficherExplicationPlanning() {
     ligne('🏫', 'Vos semaines en centre',
       'Formation en présentiel le ' + joursCentre + ', de 8h15 à 12h00 puis de 13h00 à 15h15.') +
 
-    ligne('🏠', 'Votre journée en autonomie',
+    (nomJourAuto ? ligne('🏠', 'Votre journée en autonomie',
       'Chaque ' + nomJourAuto + ', vous travaillez depuis chez vous sur les activités données par votre formatrice. ' +
-      'Cette journée compte pour <strong>6h</strong>, sans signature à fournir.') +
+      'Cette journée compte pour <strong>6h</strong>, sans signature à fournir.') : '') +
 
     ligne('⏱️', 'Votre volume horaire',
-      '6h par jour, soit <strong>30h par semaine</strong> — les 4 journées en centre et la journée en autonomie réunies.') +
+      '6h par jour, soit <strong>30h par semaine</strong> — ' +
+      (nomJourAuto ? 'les ' + nbCentre + ' journées en centre et la journée en autonomie réunies.'
+                   : 'les ' + nbCentre + ' journées en centre.')) +
 
     ligne('🏢', nbStages > 1 ? 'Vos ' + nbStages + ' périodes de stage' : 'Votre période de stage',
       (nbStages > 1
@@ -902,7 +884,7 @@ function afficherExplicationPlanning() {
       'Le centre est fermé du 21 décembre 2026 au 10 janvier 2027.') +
 
     ligne('🎓', 'La fin de parcours',
-      'Bilan final le ' + info.bilan + ', puis examen le ' + info.examen + '.');
+      'Bilan final le ' + info.bilan + (info.examen ? ', puis examen le ' + info.examen : '') + '.');
 
   const st = document.getElementById('sousTitreEtapes');
   if (st) st.textContent = info.titre + ' · ' + (user.debut || '13/07/2026') + ' → ' + (user.fin || '—');
@@ -941,12 +923,50 @@ function afficherEtapesCles() {
       { date: '09/02/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
       { date: '16/02/2027', label: 'Examen', icone: '🎓', type: 'exam' },
     ];
+  } else if (groupe === 'SAMA2') {
+    etapes = [
+      { date: user.debut || '02/11/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '26/01/2027', label: 'Bilan intermédiaire', icone: '🔵', type: 'bilan' },
+      { date: '04/02/2027', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '08/02 → 12/03/2027', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '15 → 17/03/2027', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
+      { date: '28/04/2027', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '07/05/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+    ];
+  } else if (groupe === 'CADGA' || groupe === 'SC') {
+    etapes = (groupe === 'CADGA') ? [
+      { date: user.debut || '02/11/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '18/12/2026', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '01/02 → 26/02/2027', label: 'Période en entreprise', icone: '🏢', type: 'stage' },
+      { date: '05/04/2027', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '06 → 09/04/2027', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
+      { date: '19/04/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+      { date: '26/04/2027', label: 'Examen (date indicative)', icone: '🎓', type: 'exam' },
+    ] : [
+      { date: user.debut || '02/11/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
+      { date: '15/12/2026', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: '01/02 → 26/02/2027', label: 'Période en entreprise', icone: '🏢', type: 'stage' },
+      { date: '17/03/2027', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '09/04/2027', label: 'Évaluation en cours de formation', icone: '📝', type: 'dp' },
+      { date: '12 → 14/04/2027', label: 'Dossier Professionnel', icone: '📁', type: 'dp' },
+      { date: '19/04/2027', label: 'Bilan Final', icone: '🏁', type: 'fin' },
+      { date: '26/04/2027', label: 'Examen (date indicative)', icone: '🎓', type: 'exam' },
+    ];
   } else if (groupe === 'SAMA') {
     // Étapes de fin de parcours non encore communiquées : seules les
     // dates connues sont affichées.
     etapes = [
       { date: user.debut || '01/09/2026', label: 'Début de formation', icone: '🟢', type: 'debut' },
       { date: '23/11 → 18/12/2026', label: 'Stage en entreprise', icone: '🏢', type: 'stage' },
+      { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
+      { date: user.fin || '—', label: 'Fin de formation', icone: '🏁', type: 'fin' },
+    ];
+  } else if (groupe === 'AUTRE') {
+    etapes = [
+      { date: user.debut || '—', label: 'Début de formation', icone: '🟢', type: 'debut' },
       { date: '21/12/2026 → 10/01/2027', label: 'Vacances du centre', icone: '🔴', type: 'vacances' },
       { date: user.fin || '—', label: 'Fin de formation', icone: '🏁', type: 'fin' },
     ];
