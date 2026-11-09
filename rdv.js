@@ -59,7 +59,7 @@
     'Autre'
   ];
 
-  var LIEU_DEFAUT = 'Bureau JTCF — 20a rue du Général Lambert';
+  var LIEU_DEFAUT = 'Bureau JTCF — 13 rue du Général Lambert';
 
   /* Alexandre et Marine reçoivent dans LE MÊME bureau : un rendez-vous pris
      par l'un rend l'heure indisponible pour l'autre. Emilie a sa salle, elle

@@ -2307,7 +2307,7 @@ async function exporterPDF() {
   function addFooter(pageN) {
     doc.setFillColor(...BLEU_FONCE); doc.rect(0,285,210,12,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('JTCF · 13 rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
     doc.text('Page '+pageN,195,292,{align:'right'});
   }
 
@@ -2499,7 +2499,7 @@ async function exporterPDFPersonne(alt) {
   function addFooter(n) {
     doc.setFillColor(...BLEU_FONCE); doc.rect(0,285,210,12,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('JTCF · 13 rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
     doc.text('Page '+n,195,292,{align:'right'});
   }
 
@@ -2753,7 +2753,7 @@ async function exporterPDFFC(listeFC, titreFichier){
   function addFooter(n){
     doc.setFillColor.apply(doc,BLEU_FONCE); doc.rect(0,285,210,12,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('JTCF · 13 rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
     doc.text('Page '+n,195,292,{align:'right'});
   }
 

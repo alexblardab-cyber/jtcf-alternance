@@ -2599,7 +2599,7 @@ async function attestationStage(st){
     doc.setTextColor.apply(doc, OR); doc.setFontSize(14); doc.setFont('helvetica','bold');
     doc.text('JT CONSEIL FORMATION', 15, 12);
     doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
-    doc.text('20a rue du General Lambert, 97480 Saint-Joseph - La Reunion', 15, 18);
+    doc.text('13 rue du General Lambert, 97480 Saint-Joseph - La Reunion', 15, 18);
     doc.setFontSize(10); doc.setFont('helvetica','bold');
     doc.text('ATTESTATION DE PRESENCE EN STAGE', 15, 25);
   }
@@ -2721,12 +2721,12 @@ async function emargementStagePDF(st){
     doc.setTextColor.apply(doc, OR); doc.setFontSize(14); doc.setFont('helvetica','bold');
     doc.text('JT CONSEIL FORMATION', 15, 12);
     doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
-    doc.text('20a rue du Général Lambert, 97480 Saint-Joseph - La Réunion', 15, 18);
+    doc.text('13 rue du Général Lambert, 97480 Saint-Joseph - La Réunion', 15, 18);
     doc.setFontSize(10); doc.setFont('helvetica','bold');
     doc.text(titre, 15, 25);
     doc.setFillColor.apply(doc, BLEU); doc.rect(0,285,210,12,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr', 15, 292);
+    doc.text('JTCF · 13 rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr', 15, 292);
     doc.text('Page ' + page, 195, 292, { align:'right' });
   }
   function enteteTableau(y){
@@ -2883,7 +2883,7 @@ async function attestationAssiduiteFC(fc){
   doc.setTextColor.apply(doc, OR); doc.setFontSize(14); doc.setFont('helvetica','bold');
   doc.text('JT CONSEIL FORMATION', 15, 12);
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(255,255,255);
-  doc.text('20a rue du Général Lambert, 97480 Saint-Joseph - La Réunion', 15, 18);
+  doc.text('13 rue du Général Lambert, 97480 Saint-Joseph - La Réunion', 15, 18);
   doc.setFontSize(10); doc.setFont('helvetica','bold');
   doc.text('ATTESTATION D\'ASSIDUITÉ', 15, 25);
 
@@ -3307,7 +3307,7 @@ async function exporterPDFAdmin() {
   function addFooter(n){
     doc.setFillColor(...BLEU_FONCE);doc.rect(0,285,210,12,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont('helvetica','normal');
-    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('JTCF · 13 rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
     doc.text('Page '+n,195,292,{align:'right'});
   }
 
@@ -3503,7 +3503,7 @@ async function exporterPDFAdminPersonne(alt) {
   function addFooter(n) {
     doc.setFillColor(...BLEU_FONCE); doc.rect(0,285,210,12,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('JTCF · 13 rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
     doc.text('Page '+n,195,292,{align:'right'});
   }
 
@@ -3705,7 +3705,7 @@ async function exporterPDFFCAdmin(listeFC, titreFichier){
   function addFooter(n){
     doc.setFillColor.apply(doc,BLEU_FONCE); doc.rect(0,285,210,12,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('JTCF · 20a rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
+    doc.text('JTCF · 13 rue du Général Lambert · 97480 Saint-Joseph · contact@tbrgroup.fr',15,292);
     doc.text('Page '+n,195,292,{align:'right'});
   }
 
