@@ -2570,6 +2570,10 @@ async function attestationStage(st){
     if (v.presence === 'absent'){
       etat = 'Absent — ' + (v.motif || 'sans motif');
       hAbs += H.jour; nbAbs++;
+    } else if (v.presence === 'valide'){
+      // Journée validée par le tuteur sans signature du stagiaire (ex. dernier
+      // vendredi accordé, Noémie Vitry le 20/11/2026).
+      h = H.jour; hPres += h; etat = 'Présent (validé par le tuteur)';
     } else {
       if (v.matin_alt) h += H.matin;
       if (v.am_alt)    h += H.am;
@@ -2578,7 +2582,7 @@ async function attestationStage(st){
            : h > 0 ? 'Présent (demi-journée)'
            : 'Non signé';
     }
-    const contresigne = !!(v.matin_form || v.am_form);
+    const contresigne = !!(v.matin_form || v.am_form || v.presence === 'valide');
     if (contresigne) nbContresignes++;
 
     lignes.push([
@@ -2702,12 +2706,14 @@ async function emargementStagePDF(st){
   }
 
   const auj = new Date(); auj.setHours(23,59,59,0);
-  const journees = JTCF.seancesDeStage(st).filter(function(d){ return d <= auj; });
+  const snap = await get(ref(db,'emargementsStage')).catch(function(){ return null; });
+  const tout = (snap && snap.exists()) ? snap.val() : {};
+  const cleJ = function(d){ return st.id + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate(); };
+  // Jours passés, plus un jour à venir déjà validé par le tuteur.
+  const journees = JTCF.seancesDeStage(st).filter(function(d){ return d <= auj || (tout[cleJ(d)] || {}).presence === 'valide'; });
   if (!JTCF.seancesDeStage(st).length){ alert('Renseignez d\'abord les dates de stage.'); return; }
   if (!journees.length){ alert('Le stage n\'a pas encore commencé : rien à émarger.'); return; }
 
-  const snap = await get(ref(db,'emargementsStage')).catch(function(){ return null; });
-  const tout = (snap && snap.exists()) ? snap.val() : {};
   const H = JTCF.heuresStage(st);
 
   const { jsPDF } = window.jspdf;
@@ -2756,6 +2762,7 @@ async function emargementStagePDF(st){
   journees.forEach(function(d){
     const v = tout[st.id + '_stg_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + d.getDate()] || {};
     if (v.presence === 'absent'){ hAbs += H.jour; nbAbs++; return; }
+    if (v.presence === 'valide'){ hPres += H.jour; return; }
     if (v.matin_alt) hPres += H.matin;
     if (v.am_alt)    hPres += H.am;
   });
@@ -2803,11 +2810,15 @@ async function emargementStagePDF(st){
       doc.setFont('helvetica', i === 0 ? 'bold' : 'normal'); if (i === 0) doc.text(ds, 18, y+6);
       doc.setFont('helvetica','normal'); doc.setTextColor.apply(doc, GRIS); doc.text(l.lib, 50, y+6);
       if (absent){ doc.setTextColor.apply(doc, ROUGE); doc.text(('Absent · ' + (v.motif || 'sans motif')).substring(0,24), 80, y+6); }
-      else if (l.alt){ doc.setTextColor.apply(doc, VERT); doc.text('Présent(e)', 80, y+6); }
+      else if (l.alt || v.presence === 'valide'){ doc.setTextColor.apply(doc, VERT); doc.text('Présent(e)', 80, y+6); }
       else { doc.setTextColor.apply(doc, GRIS); doc.text('Non signé', 80, y+6); }
       doc.setTextColor.apply(doc, BLEU);
-      doc.text((!absent && l.alt) ? heuresHM(l.h) : '—', 114, y+6);
+      doc.text((!absent && (l.alt || v.presence === 'valide')) ? heuresHM(l.h) : '—', 114, y+6);
       if (absent){ doc.setTextColor.apply(doc, ROUGE); doc.text('Absent', 132, y+6); }
+      else if (v.presence === 'valide' && !l.alt){
+        doc.setFontSize(6); doc.setTextColor.apply(doc, GRIS); doc.text('Non signé', 132, y+6);
+        doc.setTextColor.apply(doc, VERT); doc.text('Validé par le tuteur', 165, y+6); doc.setFontSize(7);
+      }
       else {
         dessinerSignature(doc, l.alt, 132, y, null, null);
         visa(l.form, 165, y);
