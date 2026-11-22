@@ -387,11 +387,17 @@ async function signerGlobal(period) {
     const blank = document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
     if(imgData===blank.toDataURL()){alert('Veuillez signer.');return;}
     document.getElementById('gStatus').textContent='⏳ Enregistrement...';
+    // Seuls ceux qui ont eux-mêmes signé cette demi-journée (22 novembre 2026).
+    const signes=[], attente=[];
     for(const fc of attendus){
       const key=getFCKey(fc, todayFC);
+      const v=(await get(ref(db,'emargementsFC/'+key))).val()||{};
+      if(v.presence==='absent'||v.presence==='entreprise') continue;
+      if(!v[period+'_alt']){ attente.push(fc.nom); continue; }
       await set(ref(db,'emargementsFC/'+key+'/'+slot), imgData);
+      signes.push(fc.nom);
     }
-    document.getElementById('gStatus').textContent='✅ Signature appliquée pour : ' + attendus.map(function(f){ return f.nom; }).join(', ');
+    document.getElementById('gStatus').textContent='✅ Signé pour : ' + (signes.join(', ')||'personne') + (attente.length ? ' · ⏳ pas encore signé : ' + attente.join(', ') + ' (recliquez plus tard)' : '');
     setTimeout(function(){document.body.removeChild(modal);},1500);
   });
 }

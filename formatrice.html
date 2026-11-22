@@ -2103,25 +2103,40 @@ async function signerGlobalJour(jour, period) {
   var lesAlt = allAlternants.filter(function(a){
     return a.jourCentre===jour && !JTCF.congeAlt(a, jourDate) && dansParcours(a, jourDate, false);   // ni congés, ni hors contrat
   });
-  // Ni absent ni « en entreprise » ce jour-là : la formatrice n'atteste que les présents attendus.
-  var etats = await Promise.all(lesAlt.map(function(a){
-    return get(ref(db,'emargements/'+a.id+'_'+yyyy+'_'+mm+'_'+dd+'/presence')).then(function(s){ return s.val(); }).catch(function(){ return null; });
-  }));
-  lesAlt = lesAlt.filter(function(a, i){ return etats[i]!=='entreprise' && etats[i]!=='absent'; });
   var lesFC  = fcDuJour(jour, jourDate);
 
+  // La formatrice n'atteste que ceux qui ont eux-mêmes signé cette demi-journée.
+  // Avant le 22 novembre 2026, elle signait tous les attendus, y compris
+  // ceux qui n'étaient pas venus (11 journées « signées » pour une stagiaire
+  // jamais présente). Les autres restent en attente : un nouveau clic plus
+  // tard dans la journée signera ceux qui ont signé entre-temps.
+  function lire(chemin){ return get(ref(db, chemin)).then(function(s){ return s.val() || {}; }).catch(function(){ return {}; }); }
+  var cheminsA = lesAlt.map(function(a){ return 'emargements/'+a.id+'_'+yyyy+'_'+mm+'_'+dd; });
+  var cheminsF = lesFC.map(function(f){ return 'emargementsFC/'+f.id+'_fc_'+yyyy+'_'+mm+'_'+dd; });
+  var vA = await Promise.all(cheminsA.map(lire));
+  var vF = await Promise.all(cheminsF.map(lire));
+  var aSigner = [], enAttente = [];
+  function trier(liste, chemins, valeurs, suffixe){
+    liste.forEach(function(p, i){
+      var v = valeurs[i];
+      if (v.presence === 'absent' || v.presence === 'entreprise') return;   // ni présent ni à relancer
+      if (v[period + '_alt']) aSigner.push(chemins[i]);
+      else enAttente.push(p.nom + suffixe);
+    });
+  }
+  trier(lesAlt, cheminsA, vA, '');
+  trier(lesFC, cheminsF, vF, ' (FC)');
+
   // Écritures en parallèle : quelques dixièmes de seconde au lieu de plusieurs secondes.
-  await Promise.all(
-    lesAlt.map(function(a){
-      return set(ref(db,'emargements/'+a.id+'_'+yyyy+'_'+mm+'_'+dd+'/'+period+'_form'), valeur);
-    }).concat(lesFC.map(function(f){
-      return set(ref(db,'emargementsFC/'+f.id+'_fc_'+yyyy+'_'+mm+'_'+dd+'/'+period+'_form'), valeur);
-    }))
-  );
+  await Promise.all(aSigner.map(function(c){ return set(ref(db, c + '/' + period + '_form'), valeur); }));
   videCache();
 
-  var nA=lesAlt.length, nF=lesFC.length;
-  alert('✅ '+jour+' '+dd+'/'+mm+' — '+(period==='matin'?'Matin':'Après-midi')+'\n'+nA+' alternant(s) + '+nF+' stagiaire(s) FC signé(s).');
+  alert('✅ '+jour+' '+dd+'/'+mm+' — '+(period==='matin'?'Matin':'Après-midi')+'\n'
+    + aSigner.length + ' signature(s) posée(s), pour les personnes qui ont signé.'
+    + (enAttente.length
+        ? '\n\n⏳ Pas encore signé (' + enAttente.length + ') :\n• ' + enAttente.join('\n• ')
+          + '\n\nRecliquez plus tard pour les signer dès qu\'ils auront signé.'
+        : ''));
   if(typeof rendreJour==='function' && jourActif) rendreJour(jourActif);
 }
 var signerGlobalAlt = signerGlobalJour;
