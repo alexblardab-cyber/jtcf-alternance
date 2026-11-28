@@ -611,6 +611,7 @@ document.querySelectorAll('.btn-valider').forEach(function(btn){
     const blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
     if(imageData===blank.toDataURL()){alert('Veuillez signer avant de valider.');return;}
     if(window.JTCF&&JTCF.congeAlt&&JTCF.congeAlt(user,seances[semIdx])){alert('Vous êtes en congés ce jour-là : rien à signer.');return;}
+    if(!(function(d){const n=new Date();return d&&d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();})(seances[semIdx])){alert('La signature n\'est possible que le jour même de la séance.');return;}
     await set(ref(db,'emargements/'+getKey(semIdx)+'/'+slot),imageData);
     await updateEmargement();
   }

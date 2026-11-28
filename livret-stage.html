@@ -1090,6 +1090,7 @@ document.querySelectorAll('.btn-valider').forEach(function(btn) {
     const imageData=canvas.toDataURL();
     const blank=document.createElement('canvas'); blank.width=canvas.width; blank.height=canvas.height;
     if(imageData===blank.toDataURL()){alert('Veuillez signer avant de valider.');return;}
+    if(!(function(d){const n=new Date();return d&&d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();})(joursFormation[jourIdx])){alert('La signature n\'est possible que le jour même de la séance.');return;}
     await set(ref(db,'emargementsStage/'+getKey(joursFormation[jourIdx])+'/'+slot),imageData);
     await updateEmargement();
   }
